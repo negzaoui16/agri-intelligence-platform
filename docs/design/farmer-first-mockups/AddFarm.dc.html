@@ -1,0 +1,80 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Add my farm: where is it</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Atkinson+Hyperlegible:wght@400;700&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0}
+a{color:#1D4F91}a:hover{color:#123766}
+</style>
+</helmet>
+<div style="width: 390px; height: 844px; box-sizing: border-box; background: #F6F4EE; font-family: 'Atkinson Hyperlegible', system-ui, sans-serif; color: #17251C; display: flex; flex-direction: column; overflow: hidden">
+
+  <header style="padding: 16px 20px 8px; display: flex; align-items: center; gap: 12px">
+    <a href="Main.dc.html" aria-label="Back to home" style="width: 44px; height: 44px; border-radius: 22px; background: #FFFFFF; border: 1.5px solid #E4DFD2; display: flex; align-items: center; justify-content: center; flex: none">
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#17251C" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M19 12H5"></path><path d="m11 6-6 6 6 6"></path></svg>
+    </a>
+    <span style="font-size: 17px; font-weight: 700">Add my farm</span>
+  </header>
+
+  <ol aria-label="Steps" style="list-style: none; margin: 0; padding: 4px 20px 0; display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px">
+    <li style="display: flex; flex-direction: column; gap: 6px">
+      <span style="height: 6px; border-radius: 3px; background: #2E6B3A"></span>
+      <span style="font-size: 14px; font-weight: 700; color: #2E6B3A">1 · Where</span>
+    </li>
+    <li style="display: flex; flex-direction: column; gap: 6px">
+      <span style="height: 6px; border-radius: 3px; background: #D9D3C3"></span>
+      <span style="font-size: 14px; color: #4A5A4F">2 · What you grow</span>
+    </li>
+    <li style="display: flex; flex-direction: column; gap: 6px">
+      <span style="height: 6px; border-radius: 3px; background: #D9D3C3"></span>
+      <span style="font-size: 14px; color: #4A5A4F">3 · Water</span>
+    </li>
+  </ol>
+
+  <main style="flex: 1; padding: 18px 20px 0; display: flex; flex-direction: column; gap: 14px; overflow: hidden">
+    <h1 style="margin: 0; font-size: 28px; line-height: 1.2">Where is your farm?</h1>
+    <p style="margin: 0; font-size: 17px; line-height: 1.45; color: #4A5A4F">Stand on your land and tap the green button. We do the rest.</p>
+
+    <button style="min-height: 60px; border-radius: 30px; border: none; background: #2E6B3A; color: #FFFFFF; font: 700 19px 'Atkinson Hyperlegible', sans-serif; display: flex; align-items: center; justify-content: center; gap: 10px">
+      <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#FFFFFF" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 21s-7-6.2-7-11.5A7 7 0 0 1 19 9.5C19 14.8 12 21 12 21z"></path><circle cx="12" cy="9.5" r="2.5"></circle></svg>
+      I am on my farm now
+    </button>
+
+    <div style="display: flex; align-items: center; gap: 10px; color: #4A5A4F; font-size: 15px">
+      <span style="flex: 1; height: 1.5px; background: #D9D3C3"></span>or<span style="flex: 1; height: 1.5px; background: #D9D3C3"></span>
+    </div>
+
+    <label for="village" style="font-size: 17px; font-weight: 700">Nearest village or town</label>
+    <input id="village" type="text" placeholder="For example: Korba" style="min-height: 52px; border-radius: 14px; border: 1.5px solid #B8B1A0; background: #FFFFFF; padding: 0 16px; font: 400 18px 'Atkinson Hyperlegible', sans-serif; color: #17251C">
+
+    <figure style="margin: 0; position: relative; height: 220px; border-radius: 18px; overflow: hidden; border: 1.5px solid #E4DFD2; background: #DCE5CF">
+      <div style="position: absolute; inset: 0; background-image: linear-gradient(#C9D6B8 1px, transparent 1px), linear-gradient(90deg, #C9D6B8 1px, transparent 1px); background-size: 36px 36px"></div>
+      <div style="position: absolute; left: 92px; top: 52px; width: 170px; height: 110px; background: rgba(46,107,58,0.22); border: 3px solid #2E6B3A; border-radius: 6px; transform: rotate(-6deg)"></div>
+      <svg width="40" height="40" viewBox="0 0 24 24" fill="#B45309" stroke="#FFFFFF" stroke-width="1.5" style="position: absolute; left: 158px; top: 74px" aria-hidden="true"><path d="M12 21s-7-6.2-7-11.5A7 7 0 0 1 19 9.5C19 14.8 12 21 12 21z"></path><circle cx="12" cy="9.5" r="2.5" fill="#FFFFFF"></circle></svg>
+      <figcaption style="position: absolute; left: 12px; right: 12px; bottom: 12px; background: #FFFFFF; border-radius: 12px; padding: 10px 12px; font-size: 15px; line-height: 1.35">Your farm: about <b>4 hectares</b>. Drag the corners if the shape is wrong. <span style="color: #4A5A4F">(Optional)</span></figcaption>
+    </figure>
+  </main>
+
+  <footer style="padding: 14px 20px 22px; display: flex; gap: 10px">
+    <a href="Main.dc.html" style="flex: 1; min-height: 56px; border-radius: 28px; border: 1.5px solid #B8B1A0; background: #FFFFFF; color: #17251C; font-size: 17px; font-weight: 700; text-decoration: none; display: flex; align-items: center; justify-content: center">Later</a>
+    <a href="Main.dc.html" style="flex: 2; min-height: 56px; border-radius: 28px; background: #17251C; color: #FFFFFF; font-size: 17px; font-weight: 700; text-decoration: none; display: flex; align-items: center; justify-content: center">Next: what you grow</a>
+  </footer>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":390,"height":844}}'>
+class Component extends DCLogic {
+  renderVals() {
+    return {};
+  }
+}
+</script>
+</body>
+</html>

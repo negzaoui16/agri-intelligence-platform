@@ -1,0 +1,81 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Weather this week</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Atkinson+Hyperlegible:wght@400;700&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0}
+a{color:#1D4F91}a:hover{color:#123766}
+</style>
+</helmet>
+<div style="width: 390px; height: 844px; box-sizing: border-box; background: #F6F4EE; font-family: 'Atkinson Hyperlegible', system-ui, sans-serif; color: #17251C; display: flex; flex-direction: column; overflow: hidden">
+
+  <header style="padding: 16px 20px 8px; display: flex; align-items: center; gap: 12px">
+    <a href="Main.dc.html" aria-label="Back to home" style="width: 44px; height: 44px; border-radius: 22px; background: #FFFFFF; border: 1.5px solid #E4DFD2; display: flex; align-items: center; justify-content: center; flex: none">
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#17251C" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M19 12H5"></path><path d="m11 6-6 6 6 6"></path></svg>
+    </a>
+    <span style="font-size: 17px; font-weight: 700">Weather</span>
+  </header>
+
+  <main style="flex: 1; padding: 6px 20px 20px; display: flex; flex-direction: column; gap: 14px; overflow: hidden">
+    <h1 style="margin: 0; font-size: 26px; line-height: 1.2">Should I water today?</h1>
+
+    <section style="background: #E3EFE2; border: 2px solid #7FB083; border-radius: 20px; padding: 16px 18px; display: flex; flex-direction: column; gap: 8px">
+      <p style="margin: 0; font-size: 22px; font-weight: 700; color: #1F4D28">Yes, water as normal.</p>
+      <p style="margin: 0; font-size: 16px; line-height: 1.45; color: #22392A">No rain is coming. Sun and wind take about <b>2 mm</b> of water from your soil each day.</p>
+    </section>
+
+    <section style="background: #FFFFFF; border: 1.5px solid #E4DFD2; border-radius: 20px; padding: 8px 18px; display: flex; flex-direction: column">
+      <h2 style="margin: 8px 0 4px; font-size: 19px">Next 4 days</h2>
+      <div style="display: grid; grid-template-columns: 70px 1fr auto; align-items: center; gap: 12px; padding: 12px 0; border-bottom: 1.5px solid #EFEBE1">
+        <b style="font-size: 17px">Today</b>
+        <span style="font-size: 16px; color: #4A5A4F">Partly cloudy · No rain</span>
+        <span style="font-size: 17px"><b>22°</b> / 14°</span>
+      </div>
+      <div style="display: grid; grid-template-columns: 70px 1fr auto; align-items: center; gap: 12px; padding: 12px 0; border-bottom: 1.5px solid #EFEBE1">
+        <b style="font-size: 17px">Sat</b>
+        <span style="font-size: 16px; color: #4A5A4F">Sunny · No rain</span>
+        <span style="font-size: 17px"><b>26°</b> / 12°</span>
+      </div>
+      <div style="display: grid; grid-template-columns: 70px 1fr auto; align-items: center; gap: 12px; padding: 12px 0; border-bottom: 1.5px solid #EFEBE1">
+        <b style="font-size: 17px">Sun</b>
+        <span style="font-size: 16px; color: #4A5A4F">A few drops</span>
+        <span style="font-size: 17px"><b>23°</b> / 15°</span>
+      </div>
+      <div style="display: grid; grid-template-columns: 70px 1fr auto; align-items: center; gap: 12px; padding: 12px 0">
+        <b style="font-size: 17px">Mon</b>
+        <span style="font-size: 16px; color: #4A5A4F">Sunny · No rain</span>
+        <span style="font-size: 17px"><b>22°</b> / 12°</span>
+      </div>
+    </section>
+
+    <section style="background: #FFFFFF; border: 1.5px solid #E4DFD2; border-radius: 20px; padding: 14px 18px; display: flex; flex-direction: column; gap: 10px">
+      <h2 style="margin: 0; font-size: 19px">Warnings</h2>
+      <div style="display: flex; flex-wrap: wrap; gap: 8px">
+        <span style="min-height: 36px; padding: 0 14px; border-radius: 18px; background: #E3EFE2; color: #1F4D28; font-size: 15px; font-weight: 700; display: inline-flex; align-items: center">No frost</span>
+        <span style="min-height: 36px; padding: 0 14px; border-radius: 18px; background: #E3EFE2; color: #1F4D28; font-size: 15px; font-weight: 700; display: inline-flex; align-items: center">No heat wave</span>
+        <span style="min-height: 36px; padding: 0 14px; border-radius: 18px; background: #E3EFE2; color: #1F4D28; font-size: 15px; font-weight: 700; display: inline-flex; align-items: center">No strong wind</span>
+      </div>
+      <p style="margin: 0; font-size: 15px; color: #4A5A4F">We will send a message if frost or a storm is coming.</p>
+    </section>
+
+    <p style="margin: 0; font-size: 15px; line-height: 1.45; color: #4A5A4F"><b style="color: #17251C">Last year:</b> 891 mm of rain, but only 15 mm from June to August. Plan your summer water early.</p>
+  </main>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":390,"height":844}}'>
+class Component extends DCLogic {
+  renderVals() {
+    return {};
+  }
+}
+</script>
+</body>
+</html>
