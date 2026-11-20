@@ -22,7 +22,7 @@ export async function GET(request: Request) {
 
   const { searchParams } = new URL(request.url);
   const farmId = searchParams.get("farmId") || undefined;
-  return NextResponse.json({ reports: listReports(farmId, state.user.id) });
+  return NextResponse.json({ reports: await listReports(farmId, state.user.id) });
 }
 
 export async function POST(request: Request) {
@@ -47,7 +47,7 @@ export async function POST(request: Request) {
     }
 
     const report = buildFeasibilityReport(farm, bundle);
-    saveReport(report);
+    await saveReport(report);
     return NextResponse.json({ report, analysis: bundle }, { status: 201 });
   } catch (err) {
     return apiError(

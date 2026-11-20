@@ -63,12 +63,12 @@ export async function loginWithEmail(input: {
   email: string;
   password: string;
 }): Promise<AuthOutcome> {
-  const user = findUserByEmail(input.email);
+  const user = await findUserByEmail(input.email);
   if (!user || !verifyPassword(input.password, user.passwordHash)) {
     throw new Error("INVALID_CREDENTIALS");
   }
 
-  const progress = getOnboardingProgress(user.id);
+  const progress = await getOnboardingProgress(user.id);
   return {
     user: {
       id: user.id,
@@ -87,7 +87,7 @@ export async function loginOrRegisterWithGoogle(input: {
   googleId: string;
   avatarUrl?: string | null;
 }): Promise<AuthOutcome> {
-  let user = findUserByEmail(input.email);
+  let user = await findUserByEmail(input.email);
   const nameParts = input.name.trim().split(/\s+/);
   const firstName = nameParts[0] || "Farmer";
   const lastName = nameParts.slice(1).join(" ") || "Tunisia";
@@ -122,7 +122,7 @@ export async function loginOrRegisterWithGoogle(input: {
         emailVerified: true,
       });
     }
-    const profile = getFarmerProfile(user.id);
+    const profile = await getFarmerProfile(user.id);
     if (!profile) {
       await upsertFarmerProfile(user.id, {
         firstName,
@@ -134,7 +134,7 @@ export async function loginOrRegisterWithGoogle(input: {
     }
   }
 
-  const progress = getOnboardingProgress(user.id);
+  const progress = await getOnboardingProgress(user.id);
   return {
     user: {
       id: user.id,
@@ -151,7 +151,7 @@ export async function requestPasswordReset(email: string): Promise<{
   accepted: boolean;
   devResetCode?: string;
 }> {
-  const user = findUserByEmail(email);
+  const user = await findUserByEmail(email);
   if (!user) {
     // Always return accepted=true to prevent account enumeration
     return { accepted: true };
@@ -178,7 +178,7 @@ export async function confirmPasswordReset(input: {
   newPassword: string;
 }): Promise<boolean> {
   const tokenHash = hashResetToken(input.token.trim());
-  const user = findUserByResetTokenHash(tokenHash);
+  const user = await findUserByResetTokenHash(tokenHash);
   if (!user) return false;
 
   await updateUserAccount(user.id, {
