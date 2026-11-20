@@ -27,8 +27,8 @@ export async function GET() {
       onboardingProgress: null,
     });
   }
-  const farmerProfile = getFarmerProfile(state.user.id);
-  const onboardingProgress = getOnboardingProgress(state.user.id);
+  const farmerProfile = await getFarmerProfile(state.user.id);
+  const onboardingProgress = await getOnboardingProgress(state.user.id);
   return NextResponse.json({
     user: state.user,
     isAuthenticated: true,

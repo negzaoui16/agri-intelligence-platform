@@ -27,8 +27,8 @@ export async function GET() {
     );
   }
 
-  const profile = getFarmerProfile(state.user.id);
-  const progress = getOnboardingProgress(state.user.id);
+  const profile = await getFarmerProfile(state.user.id);
+  const progress = await getOnboardingProgress(state.user.id);
   const farms = await listFarms(state.user.id);
   const activeFarm =
     (progress.activeFarmId ? farms.find((f) => f.id === progress.activeFarmId) : null) ??
@@ -73,7 +73,7 @@ export async function PUT(request: Request) {
     const stage = Number(body.stage ?? body.currentStep ?? 1);
     const markStepComplete = body.markStepComplete !== false;
     const userId = state.user.id;
-    let progress = getOnboardingProgress(userId);
+    let progress = await getOnboardingProgress(userId);
     const nextStep = Number.isFinite(Number(body.nextStep))
       ? Math.min(6, Math.max(1, Number(body.nextStep)))
       : stage;

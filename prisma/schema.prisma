@@ -149,6 +149,8 @@ model Farm {
   perimeterMeters  Float    @default(400.0)
   boundaryVerified Boolean  @default(true)
   primaryCropCode  String   @default("tomato")
+  irrigationMethod String   @default("DRIP")
+  allowCropOverlap Boolean  @default(false)
   plantingMonth    Int      @default(3)
   createdAt        DateTime @default(now())
   updatedAt        DateTime @updatedAt
@@ -340,6 +342,7 @@ model PumpConfiguration {
   staticHeadM            Float    @default(15.0)
   pipeLengthM            Float    @default(150.0)
   pipeDiameterMm         Float    @default(75.0)
+  pipeMaterialC          Float    @default(140.0)
   frictionLossM          Float    @default(4.2)
   operatingPressureHeadM Float    @default(15.0)
   totalDynamicHeadM      Float    @default(34.2)
@@ -457,6 +460,7 @@ model FeasibilityReport {
   farm Farm @relation(fields: [farmId], references: [id], onDelete: Cascade)
 
   @@index([farmId])
+  @@index([createdAt])
 }
 
 model AIConversation {

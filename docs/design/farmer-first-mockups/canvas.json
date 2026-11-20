@@ -1,0 +1,49 @@
+{
+  "v": 3,
+  "createdOnFiles": { "v": 1, "at": "2026-11-21T09:00:00Z" },
+  "title": "TerraPulse Farmer-First Mockups",
+  "launch": { "view": "canvas" },
+  "pages": [],
+  "boards": {
+    "Main.dc.html": { "x": 0, "y": 1244, "w": 390, "h": 844, "title": "1 · Home: my farm today", "is_interactive": true },
+    "AddFarm.dc.html": { "x": 470, "y": 1244, "w": 390, "h": 844, "title": "2 · Add my farm (step 1 of 3)", "is_interactive": true },
+    "Water.dc.html": { "x": 940, "y": 1244, "w": 390, "h": 844, "title": "3 · Do I have enough water?", "is_interactive": true },
+    "Sun.dc.html": { "x": 1410, "y": 1244, "w": 390, "h": 844, "title": "4 · Can the sun run my pump?", "is_interactive": true },
+    "Weather.dc.html": { "x": 1880, "y": 1244, "w": 390, "h": 844, "title": "5 · Weather this week", "is_interactive": true },
+    "Ask.dc.html": { "x": 2350, "y": 1244, "w": 390, "h": 844, "title": "6 · Ask a question", "is_interactive": true },
+    "Report.dc.html": { "x": 2820, "y": 1244, "w": 390, "h": 844, "title": "7 · Should I invest?", "is_interactive": true },
+    "HomeArabic.dc.html": { "x": 3290, "y": 1244, "w": 390, "h": 844, "title": "8 · Home in Arabic (RTL)", "is_interactive": true },
+    "Principles.dc.html": { "x": 0, "y": 0, "w": 880, "h": 844, "title": "Design rules" },
+    "Words.dc.html": { "x": 960, "y": 0, "w": 880, "h": 844, "title": "Word swap: jargon → farmer words" },
+    "desktop/DeskHome.dc.html": { "x": 0, "y": 2788, "w": 1440, "h": 960, "title": "D1 · Home: my farm today", "expand": "fill", "is_interactive": true },
+    "desktop/DeskAddFarm.dc.html": { "x": 1520, "y": 2788, "w": 1440, "h": 960, "title": "D2 · Add my farm", "expand": "fill", "is_interactive": true },
+    "desktop/DeskWater.dc.html": { "x": 3040, "y": 2788, "w": 1440, "h": 960, "title": "D3 · Do I have enough water?", "expand": "fill", "is_interactive": true },
+    "desktop/DeskSun.dc.html": { "x": 0, "y": 3868, "w": 1440, "h": 960, "title": "D4 · Can the sun run my pump?", "expand": "fill", "is_interactive": true },
+    "desktop/DeskAsk.dc.html": { "x": 1520, "y": 3868, "w": 1440, "h": 960, "title": "D5 · Ask a question", "expand": "fill", "is_interactive": true },
+    "desktop/DeskReport.dc.html": { "x": 3040, "y": 3868, "w": 1440, "h": 960, "title": "D6 · Is this farm a good choice?", "expand": "fill", "is_interactive": true }
+  },
+  "order": [
+    "Main.dc.html",
+    "AddFarm.dc.html",
+    "Water.dc.html",
+    "Sun.dc.html",
+    "Weather.dc.html",
+    "Ask.dc.html",
+    "Report.dc.html",
+    "HomeArabic.dc.html",
+    "Principles.dc.html",
+    "Words.dc.html",
+    "desktop/DeskHome.dc.html",
+    "desktop/DeskAddFarm.dc.html",
+    "desktop/DeskWater.dc.html",
+    "desktop/DeskSun.dc.html",
+    "desktop/DeskAsk.dc.html",
+    "desktop/DeskReport.dc.html"
+  ],
+  "notes": {
+    "rulesTitle": { "x": 0, "y": -300, "text": "How a farmer reads this app", "kind": "title1", "maxW": 1840 },
+    "screensTitle": { "x": 0, "y": 960, "text": "Phone screens: one question per screen", "kind": "title1", "maxW": 3680 },
+    "desktopTitle": { "x": 0, "y": 2488, "text": "Desktop screens: same words, more room", "kind": "title1", "maxW": 4480 }
+  },
+  "designSystems": []
+}
