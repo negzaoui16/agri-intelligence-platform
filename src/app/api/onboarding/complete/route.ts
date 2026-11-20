@@ -23,7 +23,7 @@ export async function POST(request: Request) {
   try {
     const body = await request.json().catch(() => ({}));
     const userId = state.user.id;
-    const progress = getOnboardingProgress(userId);
+    const progress = await getOnboardingProgress(userId);
     const farmId = body.farmId || progress.activeFarmId;
     if (!farmId) {
       return apiError("No farm created during onboarding yet.", 400);
@@ -61,7 +61,7 @@ export async function POST(request: Request) {
           elevationM: analysis.elevation.farmElevationM,
         });
         const report = buildFeasibilityReport(farm, analysis);
-        saveReport(report);
+        await saveReport(report);
       } catch (err) {
         analysisStatus = "PENDING_EXTERNAL";
         pendingMessage =

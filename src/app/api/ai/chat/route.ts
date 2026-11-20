@@ -8,7 +8,8 @@ import { aiChatRequestSchema } from "@/lib/validation/schemas";
 export async function GET(request: Request) {
   const { searchParams } = new URL(request.url);
   const farmId = searchParams.get("farmId") || undefined;
-  return NextResponse.json({ messages: getConversationMessages(farmId) });
+  const user = await getActiveSessionUser();
+  return NextResponse.json({ messages: await getConversationMessages(user.id, farmId) });
 }
 
 export async function POST(request: Request) {
@@ -39,7 +40,7 @@ export async function POST(request: Request) {
       groqModelOverride: parsed.data.groqModelOverride,
     });
 
-    appendConversationMessages(user.id, parsed.data.farmId, [userMsg, assistantMsg]);
+    await appendConversationMessages(user.id, parsed.data.farmId, [userMsg, assistantMsg]);
 
     return NextResponse.json({ message: assistantMsg });
   } catch (err) {

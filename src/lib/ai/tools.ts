@@ -528,7 +528,7 @@ export async function executeAITool(
     const bundle = await runCompleteFarmAnalysis(farm);
     saveAnalysisBundle(bundle);
     const report = buildFeasibilityReport(farm, bundle);
-    saveReport(report);
+    await saveReport(report);
     citations.push(...report.sources);
     return {
       trace: {
