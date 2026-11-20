@@ -1,7 +1,7 @@
 # Prompt: implement the farmer-first UI
 
 Copy everything below the line into Claude Code (or your coding agent) from the repo root,
-on a new branch made from `fix/postgres-persistence`.
+on a new branch made from an up-to-date `main`.
 
 ---
 
@@ -12,9 +12,10 @@ navigation change.
 
 ## 0. Setup (do this first)
 
-1. `git switch -c feat/farmer-first-ui` (from `fix/postgres-persistence`).
+1. `git switch main && git pull`, then `git switch -c feat/farmer-first-ui`.
 2. `npm install`, then `npx prisma migrate deploy` and `npx prisma generate` (migration 0003 is new).
-3. `npm test` must pass (21 tests) before and after your work. Tests run on the local JSON store, never on Supabase.
+3. `npm test` must pass (21 tests) before and after your work. Tests use their own throwaway store (`.data-test/`),
+   never Supabase and never your `.data/` folder.
 4. Read, in this order: `docs/design/farmer-first-mockups/README.md`, `Principles.dc.html`, `Words.dc.html`,
    then each screen file. The `.dc.html` files are HTML with inline styles: copy their wording, sizes and
    colors exactly; rebuild them as React/Tailwind components (do not import the .dc.html files).
@@ -89,5 +90,5 @@ Start from the strings in the mockups and `Words.dc.html`; mark Arabic/French st
 - The demo farm shows "Water will be short in July" on Home, Water and Report with the same numbers.
 - `npm test`, `npx tsc --noEmit` and `npm run build` pass; add tests for the pump-capacity check and the
   shared numbers selector.
-- Commit in small steps (nav, each page, logic, i18n, bug fixes) and open a PR against `fix/postgres-persistence`
+- Commit in small steps (nav, each page, logic, i18n, bug fixes) and open a PR against `main`
   with before/after screenshots.
