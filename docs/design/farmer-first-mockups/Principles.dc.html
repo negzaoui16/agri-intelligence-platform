@@ -1,0 +1,69 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Design rules for farmers</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Atkinson+Hyperlegible:wght@400;700&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0}
+a{color:#1D4F91}a:hover{color:#123766}
+</style>
+</helmet>
+<div style="width: 880px; height: 844px; box-sizing: border-box; background: #F6F4EE; font-family: 'Atkinson Hyperlegible', system-ui, sans-serif; color: #17251C; padding: 44px 48px; display: flex; flex-direction: column; gap: 24px">
+  <header style="display: flex; flex-direction: column; gap: 8px">
+    <span style="font-size: 15px; font-weight: 700; color: #2E6B3A; letter-spacing: 0.06em">TERRAPULSE · FARMER-FIRST</span>
+    <h1 style="margin: 0; font-size: 38px; line-height: 1.15">8 rules: think like a farmer, not an engineer</h1>
+    <p style="margin: 0; font-size: 18px; color: #4A5A4F; line-height: 1.45">The science stays the same. Only the words and the order change.</p>
+  </header>
+
+  <div style="display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 14px">
+    <section style="background: #FFFFFF; border: 1.5px solid #E4DFD2; border-radius: 18px; padding: 16px 18px; display: flex; flex-direction: column; gap: 6px">
+      <b style="font-size: 19px">1. One question per screen</b>
+      <span style="font-size: 16px; line-height: 1.45; color: #22392A">The title is the farmer's question: "Do I have enough water?", not "Water Sources, FAO-56 &amp; Pump Hydraulics".</span>
+    </section>
+    <section style="background: #FFFFFF; border: 1.5px solid #E4DFD2; border-radius: 18px; padding: 16px 18px; display: flex; flex-direction: column; gap: 6px">
+      <b style="font-size: 19px">2. Answer first, numbers second</b>
+      <span style="font-size: 16px; line-height: 1.45; color: #22392A">"Not in July." Then 196 vs 621 m³. Formulas and data sources go behind "How do we know this?".</span>
+    </section>
+    <section style="background: #FFFFFF; border: 1.5px solid #E4DFD2; border-radius: 18px; padding: 16px 18px; display: flex; flex-direction: column; gap: 6px">
+      <b style="font-size: 19px">3. Every problem comes with a fix</b>
+      <span style="font-size: 16px; line-height: 1.45; color: #22392A">Never show a red number alone. Always add "What can you do?" with 2–3 choices.</span>
+    </section>
+    <section style="background: #FFFFFF; border: 1.5px solid #E4DFD2; border-radius: 18px; padding: 16px 18px; display: flex; flex-direction: column; gap: 6px">
+      <b style="font-size: 19px">4. Be honest on the home screen</b>
+      <span style="font-size: 16px; line-height: 1.45; color: #22392A">The biggest problem goes on top. No "100%" or "Highly feasible" when the pump only gives a third of July's water.</span>
+    </section>
+    <section style="background: #FFFFFF; border: 1.5px solid #E4DFD2; border-radius: 18px; padding: 16px 18px; display: flex; flex-direction: column; gap: 6px">
+      <b style="font-size: 19px">5. Word + icon + color, never color alone</b>
+      <span style="font-size: 16px; line-height: 1.45; color: #22392A">"Good", "OK", "Problem" are always written. Colors differ in lightness too, for color-blind users.</span>
+    </section>
+    <section style="background: #FFFFFF; border: 1.5px solid #E4DFD2; border-radius: 18px; padding: 16px 18px; display: flex; flex-direction: column; gap: 6px">
+      <b style="font-size: 19px">6. Big enough for the field</b>
+      <span style="font-size: 16px; line-height: 1.45; color: #22392A">Text 16px or bigger, buttons 48–60px tall, high contrast. Works in bright sun and with dirty fingers.</span>
+    </section>
+    <section style="background: #FFFFFF; border: 1.5px solid #E4DFD2; border-radius: 18px; padding: 16px 18px; display: flex; flex-direction: column; gap: 6px">
+      <b style="font-size: 19px">7. "Skip if you don't know"</b>
+      <span style="font-size: 16px; line-height: 1.45; color: #22392A">Pump efficiency, pipe size, tilt: optional. We use a safe estimate and say so. Adding a farm takes 3 steps, not 20 fields.</span>
+    </section>
+    <section style="background: #FFFFFF; border: 1.5px solid #E4DFD2; border-radius: 18px; padding: 16px 18px; display: flex; flex-direction: column; gap: 6px">
+      <b style="font-size: 19px">8. Speak, listen, own language</b>
+      <span style="font-size: 16px; line-height: 1.45; color: #22392A">Arabic (right to left), French, English. Microphone to ask, "Listen" to hear answers. Only 4 tabs: Home, My farm, Ask, Report.</span>
+    </section>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":880,"height":844}}'>
+class Component extends DCLogic {
+  renderVals() {
+    return {};
+  }
+}
+</script>
+</body>
+</html>
