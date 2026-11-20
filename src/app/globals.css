@@ -1,0 +1,63 @@
+@import "tailwindcss";
+
+@custom-variant dark (&:where(.dark, .dark *));
+
+@theme {
+  --color-background: var(--bg-canvas);
+  --color-foreground: var(--fg-primary);
+  --color-card: var(--bg-card);
+  --color-card-foreground: var(--fg-primary);
+  --color-muted: var(--bg-muted);
+  --color-muted-foreground: var(--fg-muted);
+  --color-border: var(--border-subtle);
+  --color-primary: var(--brand-primary);
+  --color-primary-foreground: #ffffff;
+  --color-water: #0284c7;
+  --color-solar: #d97706;
+}
+
+:root {
+  --bg-canvas: #f7f6f2;
+  --bg-card: #ffffff;
+  --bg-muted: #efede6;
+  --fg-primary: #1a241e;
+  --fg-muted: #5c665f;
+  --border-subtle: #dedad0;
+  --brand-primary: #14532d;
+}
+
+.dark {
+  --bg-canvas: #0b1410;
+  --bg-card: #122019;
+  --bg-muted: #182b22;
+  --fg-primary: #ecf3ee;
+  --fg-muted: #98aba0;
+  --border-subtle: #243b2f;
+  --brand-primary: #22c55e;
+}
+
+html,
+body {
+  background-color: var(--bg-canvas);
+  color: var(--fg-primary);
+  font-feature-settings: "cv02", "cv03", "cv04", "cv11";
+  -webkit-tap-highlight-color: transparent;
+}
+
+/* MapLibre GL overrides for crisp controls */
+.maplibregl-ctrl-group {
+  border-radius: 10px !important;
+  overflow: hidden;
+  border: 1px solid var(--border-subtle) !important;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08) !important;
+}
+
+@media print {
+  .no-print {
+    display: none !important;
+  }
+  body {
+    background: #ffffff !important;
+    color: #111827 !important;
+  }
+}

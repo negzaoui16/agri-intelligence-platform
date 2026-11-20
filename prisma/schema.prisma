@@ -1,0 +1,405 @@
+generator client {
+  provider        = "prisma-client-js"
+  previewFeatures = ["postgresqlExtensions"]
+}
+
+datasource db {
+  provider   = "postgresql"
+  url        = env("DATABASE_URL")
+  extensions = [postgis]
+}
+
+enum PinRole {
+  FIELD_CENTER
+  WELL_CANDIDATE
+  SOLAR_ARRAY
+  PUMP_INTAKE
+  SOIL_SAMPLE
+  CUSTOM
+}
+
+enum SoilTextureClass {
+  SANDY
+  SANDY_LOAM
+  LOAM
+  SILT_LOAM
+  CLAY_LOAM
+  CLAY
+}
+
+enum WaterSourceType {
+  RIVER
+  STREAM
+  CANAL
+  LAKE
+  RESERVOIR
+  WELL
+  SPRING
+  WATER_INFRASTRUCTURE
+}
+
+enum WaterProvider {
+  OSM_OVERPASS
+  HYDRORIVERS
+  HYDROSHEDS
+}
+
+enum WeatherObservationType {
+  CURRENT_FORECAST
+  HISTORICAL_ARCHIVE
+}
+
+enum IrrigationMethod {
+  DRIP
+  SUBSURFACE_DRIP
+  SPRINKLER
+  CENTER_PIVOT
+  FURROW
+}
+
+enum FeasibilityVerdict {
+  HIGHLY_FEASIBLE
+  FEASIBLE_WITH_MITIGATION
+  CONDITIONAL
+  HIGH_RISK
+}
+
+enum SyncAction {
+  CREATE
+  UPDATE
+  DELETE
+}
+
+enum SyncStatus {
+  APPLIED
+  CONFLICT
+  REJECTED
+}
+
+model User {
+  id           String   @id @default(cuid())
+  email        String   @unique
+  name         String
+  passwordHash String
+  role         String   @default("FARMER")
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  farms           Farm[]
+  conversations   AIConversation[]
+  syncOperations  SyncOperation[]
+}
+
+model Farm {
+  id              String   @id @default(cuid())
+  userId          String
+  name            String
+  description     String?
+  country         String?
+  region          String?
+  centerLat       Float
+  centerLon       Float
+  elevationM      Float?
+  areaHectares    Float    @default(1.0)
+  perimeterMeters Float    @default(400.0)
+  primaryCropCode String   @default("tomato")
+  plantingMonth   Int      @default(3)
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  user                  User                   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  boundary              FarmBoundary?
+  locations             FarmLocation[]
+  soilProfile           SoilProfile?
+  waterSources          WaterSource[]
+  weatherObservations   WeatherObservation[]
+  solarConfig           SolarConfiguration?
+  solarAnalyses         SolarAnalysis[]
+  pumpConfig            PumpConfiguration?
+  irrigationAnalyses    IrrigationAnalysis[]
+  environmentalAnalyses EnvironmentalAnalysis[]
+  feasibilityReports    FeasibilityReport[]
+  aiConversations       AIConversation[]
+
+  @@index([userId])
+  @@index([centerLat, centerLon])
+}
+
+model FarmBoundary {
+  id              String                                  @id @default(cuid())
+  farmId          String                                  @unique
+  geojson         Json
+  areaHectares    Float
+  perimeterMeters Float
+  geom            Unsupported("geometry(Polygon, 4326)")?
+  updatedAt       DateTime                                @updatedAt
+
+  farm Farm @relation(fields: [farmId], references: [id], onDelete: Cascade)
+
+  @@index([geom], type: Gist)
+}
+
+model FarmLocation {
+  id         String                                @id @default(cuid())
+  farmId     String
+  label      String
+  role       PinRole                               @default(CUSTOM)
+  latitude   Float
+  longitude  Float
+  elevationM Float?
+  notes      String?
+  geom       Unsupported("geometry(Point, 4326)")?
+  createdAt  DateTime                              @default(now())
+
+  farm Farm @relation(fields: [farmId], references: [id], onDelete: Cascade)
+
+  @@index([farmId])
+  @@index([geom], type: Gist)
+}
+
+model Crop {
+  id                   String @id @default(cuid())
+  code                 String @unique
+  name                 String
+  scientificName       String
+  category             String
+  kcIni                Float
+  kcMid                Float
+  kcEnd                Float
+  stageIniDays         Int
+  stageDevDays         Int
+  stageMidDays         Int
+  stageLateDays        Int
+  rootDepthMinM        Float
+  rootDepthMaxM        Float
+  depletionFractionP   Float
+  yieldResponseKy      Float
+  optimalTempMinC      Float
+  optimalTempMaxC      Float
+  droughtTolerance     String
+  salinityToleranceDsm Float
+}
+
+model SoilProfile {
+  id                   String           @id @default(cuid())
+  farmId               String           @unique
+  textureClass         SoilTextureClass @default(LOAM)
+  fieldCapacityMmM     Float
+  wiltingPointMmM      Float
+  tawMmM               Float
+  infiltrationRateMmHr Float
+  organicMatterPct     Float?
+  ph                   Float?
+  source               String           @default("USER_INPUT_OR_DEFAULT")
+  updatedAt            DateTime         @updatedAt
+
+  farm Farm @relation(fields: [farmId], references: [id], onDelete: Cascade)
+}
+
+model WaterSource {
+  id                  String                                @id @default(cuid())
+  farmId              String
+  externalId          String
+  name                String
+  sourceType          WaterSourceType
+  provider            WaterProvider
+  latitude            Float
+  longitude           Float
+  distanceMeters      Float
+  bearingDegrees      Float
+  elevationM          Float?
+  elevationDiffM      Float?
+  confidence          String
+  operationalVerified Boolean                               @default(false)
+  metadataJson        Json?
+  geom                Unsupported("geometry(Point, 4326)")?
+  retrievedAt         DateTime                              @default(now())
+
+  farm Farm @relation(fields: [farmId], references: [id], onDelete: Cascade)
+
+  @@index([farmId])
+  @@index([geom], type: Gist)
+}
+
+model WeatherObservation {
+  id               String                 @id @default(cuid())
+  farmId           String
+  observationType  WeatherObservationType
+  currentTempC     Float?
+  humidityPct      Float?
+  windSpeedKmh     Float?
+  windDirectionDeg Float?
+  annualPrecipMm   Float?
+  annualEt0Mm      Float?
+  payloadJson      Json
+  retrievedAt      DateTime               @default(now())
+
+  farm Farm @relation(fields: [farmId], references: [id], onDelete: Cascade)
+
+  @@index([farmId, observationType])
+}
+
+model SolarConfiguration {
+  id             String   @id @default(cuid())
+  farmId         String   @unique
+  capacityKwp    Float    @default(5.0)
+  tiltDeg        Float    @default(30.0)
+  azimuthDeg     Float    @default(0.0)
+  mountingType   String   @default("free")
+  systemLossPct  Float    @default(14.0)
+  optimizeAngles Boolean  @default(false)
+  updatedAt      DateTime @updatedAt
+
+  farm     Farm            @relation(fields: [farmId], references: [id], onDelete: Cascade)
+  analyses SolarAnalysis[]
+}
+
+model SolarAnalysis {
+  id                String   @id @default(cuid())
+  farmId            String
+  solarConfigId     String?
+  dailyAvgKwh       Float
+  annualKwh         Float
+  optimalTiltDeg    Float?
+  optimalAzimuthDeg Float?
+  totalLossPct      Float
+  monthlyJson       Json
+  provider          String   @default("JRC_PVGIS_V5_3")
+  retrievedAt       DateTime @default(now())
+
+  farm        Farm                @relation(fields: [farmId], references: [id], onDelete: Cascade)
+  solarConfig SolarConfiguration? @relation(fields: [solarConfigId], references: [id], onDelete: SetNull)
+
+  @@index([farmId])
+}
+
+model PumpConfiguration {
+  id                     String   @id @default(cuid())
+  farmId                 String   @unique
+  flowRateM3Hr           Float    @default(18.0)
+  staticHeadM            Float    @default(15.0)
+  pipeLengthM            Float    @default(150.0)
+  pipeDiameterMm         Float    @default(75.0)
+  frictionLossM          Float    @default(4.2)
+  operatingPressureHeadM Float    @default(15.0)
+  totalDynamicHeadM      Float    @default(34.2)
+  pumpEfficiencyPct      Float    @default(65.0)
+  motorEfficiencyPct     Float    @default(88.0)
+  operatingHoursDay      Float    @default(6.0)
+  updatedAt              DateTime @updatedAt
+
+  farm Farm @relation(fields: [farmId], references: [id], onDelete: Cascade)
+}
+
+model IrrigationAnalysis {
+  id                       String           @id @default(cuid())
+  farmId                   String
+  cropCode                 String
+  irrigatedAreaHa          Float
+  irrigationMethod         IrrigationMethod @default(DRIP)
+  applicationEfficiencyPct Float            @default(90.0)
+  annualEtcMm              Float
+  annualEffectiveRainMm    Float
+  annualNetIrrigationMm    Float
+  peakDailyWaterM3         Float
+  annualGrossWaterM3       Float
+  hydraulicPowerKw         Float
+  electricalPowerKw        Float
+  dailyPumpEnergyKwh       Float
+  annualPumpEnergyKwh      Float
+  solarCoveragePct         Float
+  worstMonthCoveragePct    Float
+  scheduleJson             Json
+  retrievedAt              DateTime         @default(now())
+
+  farm Farm @relation(fields: [farmId], references: [id], onDelete: Cascade)
+
+  @@index([farmId])
+}
+
+model EnvironmentalAnalysis {
+  id                 String   @id @default(cuid())
+  farmId             String
+  elevationM         Float
+  slopePct           Float
+  aridityIndex       Float
+  waporAetiMmYr      Float?
+  waporRetMmYr       Float?
+  waporPcpMmYr       Float?
+  waporBiomassKgHa   Float?
+  waporNbwpKgM3      Float?
+  hydroBasinId       String?
+  pfafstetterId      String?
+  upstreamAreaKm2    Float?
+  basinIrrigationGap Float?
+  alertsJson         Json?
+  retrievedAt        DateTime @default(now())
+
+  farm Farm @relation(fields: [farmId], references: [id], onDelete: Cascade)
+
+  @@index([farmId])
+}
+
+model FeasibilityReport {
+  id                String             @id @default(cuid())
+  farmId            String
+  title             String
+  overallScore      Float
+  verdict           FeasibilityVerdict
+  reportJson        Json
+  sourcesJson       Json
+  uncertaintiesJson Json
+  generatedBy       String             @default("TERRAPULSE_ENGINE")
+  createdAt         DateTime           @default(now())
+
+  farm Farm @relation(fields: [farmId], references: [id], onDelete: Cascade)
+
+  @@index([farmId])
+}
+
+model AIConversation {
+  id        String   @id @default(cuid())
+  farmId    String?
+  userId    String
+  title     String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  farm     Farm?       @relation(fields: [farmId], references: [id], onDelete: SetNull)
+  user     User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+  messages AIMessage[]
+
+  @@index([userId])
+  @@index([farmId])
+}
+
+model AIMessage {
+  id             String   @id @default(cuid())
+  conversationId String
+  role           String
+  content        String
+  toolCallsJson  Json?
+  citationsJson  Json?
+  createdAt      DateTime @default(now())
+
+  conversation AIConversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+
+  @@index([conversationId])
+}
+
+model SyncOperation {
+  id              String     @id @default(cuid())
+  operationId     String     @unique
+  userId          String
+  entityType      String
+  entityId        String
+  action          SyncAction
+  payloadJson     Json
+  clientTimestamp DateTime
+  serverTimestamp DateTime   @default(now())
+  status          SyncStatus
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, serverTimestamp])
+}
