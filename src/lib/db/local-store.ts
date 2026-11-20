@@ -41,7 +41,10 @@ export interface LocalDbSnapshot {
   syncLog: SyncLogEntry[];
 }
 
-const DATA_DIR = path.join(process.cwd(), ".data");
+// LOCAL_DATA_DIR lets tests use their own throwaway store instead of the real .data folder
+const DATA_DIR = process.env.LOCAL_DATA_DIR
+  ? path.resolve(process.env.LOCAL_DATA_DIR)
+  : path.join(process.cwd(), ".data");
 const DB_FILE = path.join(DATA_DIR, "agri-platform-db.json");
 
 function createSeedData(): LocalDbSnapshot {

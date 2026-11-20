@@ -24,3 +24,6 @@ next-env.d.ts
 
 # Prisma
 /src/generated/
+
+# Throwaway store used by vitest
+.data-test
