@@ -1,5 +1,6 @@
 import {
   calculateCropWaterRequirements,
+  calculateMultiCropWaterRequirements,
   getCropSpec,
   rankCropSuitability,
 } from "@/lib/engines/fao56-calculator";
@@ -63,15 +64,27 @@ export async function runCompleteFarmAnalysis(
     operatingHoursDay: farm.pumpConfig.operatingHoursDay,
   });
 
-  const irrigation = calculateCropWaterRequirements({
-    cropCode: farm.irrigationConfig.cropCode,
-    irrigatedAreaHa: farm.areaHectares,
-    irrigationMethod: farm.irrigationConfig.irrigationMethod,
-    plantingMonth: farm.irrigationConfig.plantingMonth,
-    monthlyClimate: climate.monthly,
-    soilProfile: farm.soilProfile,
-    pumpFlowRateM3Hr: farm.pumpConfig.flowRateM3Hr,
-  });
+  const multiCropResult =
+    farm.crops && farm.crops.length > 0
+      ? calculateMultiCropWaterRequirements({
+          farmCrops: farm.crops,
+          monthlyClimate: climate.monthly,
+          soilProfile: farm.soilProfile,
+          pumpFlowRateM3Hr: farm.pumpConfig.flowRateM3Hr,
+        })
+      : null;
+
+  const irrigation =
+    multiCropResult ??
+    calculateCropWaterRequirements({
+      cropCode: farm.irrigationConfig.cropCode,
+      irrigatedAreaHa: farm.areaHectares,
+      irrigationMethod: farm.irrigationConfig.irrigationMethod,
+      plantingMonth: farm.irrigationConfig.plantingMonth,
+      monthlyClimate: climate.monthly,
+      soilProfile: farm.soilProfile,
+      pumpFlowRateM3Hr: farm.pumpConfig.flowRateM3Hr,
+    });
 
   const solarVsPump = compareSolarAndPumpEnergy({
     solarMonthly: solar.monthly,

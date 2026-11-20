@@ -2,12 +2,17 @@ import * as turf from "@turf/turf";
 import type {
   AIChatMessageRecord,
   CompleteFarmAnalysisBundle,
+  FarmCropRecord,
+  FarmerProfileRecord,
+  FarmerWaterSourceRecord,
   FarmPin,
   FarmRecord,
   FeasibilityReportPayload,
   GeoPolygon,
   IrrigationMethod,
+  OnboardingProgressRecord,
   SoilTextureClass,
+  UserAccountRecord,
 } from "@/types/agri";
 import { IRRIGATION_EFFICIENCY_DEFAULTS, SOIL_TEXTURE_DEFAULTS } from "./defaults";
 import { readLocalDb, writeLocalDb } from "./local-store";
@@ -165,17 +170,24 @@ export async function listFarms(userId: string): Promise<FarmRecord[]> {
   }
 
   const db = readLocalDb();
-  return db.farms.filter((f) => f.userId === userId || f.userId === "user_demo_agronomist");
+  return db.farms.filter((f) => f.userId === userId);
 }
 
-export async function getFarmById(farmId: string): Promise<FarmRecord | null> {
+export async function getFarmById(
+  farmId: string,
+  ownerUserId?: string
+): Promise<FarmRecord | null> {
   const db = readLocalDb();
   const localMatch = db.farms.find((f) => f.id === farmId) ?? null;
+  if (localMatch && ownerUserId && localMatch.userId !== ownerUserId) {
+    return null;
+  }
   const prisma = getPrismaClient();
   if (!prisma) return localMatch;
   try {
     const row = await prisma.farm.findUnique({ where: { id: farmId } });
     if (!row) return localMatch;
+    if (ownerUserId && row.userId !== ownerUserId) return null;
     const all = await listFarms(row.userId);
     return all.find((f) => f.id === farmId) ?? localMatch;
   } catch {
@@ -190,13 +202,20 @@ export interface UpsertFarmInput {
   description?: string | null;
   country?: string | null;
   region?: string | null;
+  governorate?: string | null;
+  delegation?: string | null;
+  locality?: string | null;
   centerLat: number;
   centerLon: number;
   elevationM?: number | null;
   areaHectares?: number;
   perimeterMeters?: number;
   boundary?: GeoPolygon | null;
+  boundaryVerified?: boolean;
   pins?: Array<Omit<FarmPin, "farmId" | "createdAt"> & { createdAt?: string }>;
+  crops?: FarmCropRecord[];
+  allowCropOverlap?: boolean;
+  farmerWaterSources?: FarmerWaterSourceRecord[];
   primaryCropCode?: string;
   plantingMonth?: number;
   soilTexture?: SoilTextureClass;
@@ -210,7 +229,11 @@ export async function upsertFarm(input: UpsertFarmInput): Promise<FarmRecord> {
   const db = readLocalDb();
   const now = input.updatedAt ?? new Date().toISOString();
   const existing = input.id ? db.farms.find((f) => f.id === input.id) : undefined;
-  const farmId = existing?.id ?? input.id ?? `farm_${Date.now()}_${Math.random().toString(36).slice(2, 7)}`;
+  if (existing && existing.userId !== input.userId) {
+    throw new Error("Forbidden: You do not own this agricultural property");
+  }
+  const farmId =
+    existing?.id ?? input.id ?? `farm_${Date.now()}_${Math.random().toString(36).slice(2, 7)}`;
 
   const boundary = input.boundary !== undefined ? input.boundary : existing?.boundary ?? null;
   const polyMetrics = computePolygonMetrics(boundary);
@@ -219,6 +242,10 @@ export async function upsertFarm(input: UpsertFarmInput): Promise<FarmRecord> {
   const areaHectares = polyMetrics?.areaHectares ?? input.areaHectares ?? existing?.areaHectares ?? 1.0;
   const perimeterMeters =
     polyMetrics?.perimeterMeters ?? input.perimeterMeters ?? existing?.perimeterMeters ?? 400.0;
+  const boundaryVerified =
+    input.boundaryVerified !== undefined
+      ? input.boundaryVerified
+      : boundary !== null;
 
   const soilClass: SoilTextureClass =
     input.soilTexture ?? existing?.soilProfile.textureClass ?? "LOAM";
@@ -258,20 +285,36 @@ export async function upsertFarm(input: UpsertFarmInput): Promise<FarmRecord> {
     description: input.description ?? existing?.description ?? null,
     country: input.country ?? existing?.country ?? null,
     region: input.region ?? existing?.region ?? null,
+    governorate: input.governorate ?? existing?.governorate ?? null,
+    delegation: input.delegation ?? existing?.delegation ?? null,
+    locality: input.locality ?? existing?.locality ?? null,
     centerLat,
     centerLon,
     elevationM: input.elevationM ?? existing?.elevationM ?? null,
     areaHectares,
     perimeterMeters,
     boundary,
+    boundaryVerified,
     pins,
+    crops: input.crops !== undefined ? input.crops : existing?.crops,
+    allowCropOverlap:
+      input.allowCropOverlap !== undefined
+        ? input.allowCropOverlap
+        : existing?.allowCropOverlap,
+    farmerWaterSources:
+      input.farmerWaterSources !== undefined
+        ? input.farmerWaterSources
+        : existing?.farmerWaterSources,
     soilProfile: {
       ...SOIL_TEXTURE_DEFAULTS[soilClass],
       source: existing?.soilProfile.source ?? "User Selected / Soil Texture Baseline",
       updatedAt: now,
     },
     solarConfig: {
+      solarStatus: input.solarConfig?.solarStatus ?? existing?.solarConfig.solarStatus ?? "NOT_SURE",
       capacityKwp: input.solarConfig?.capacityKwp ?? existing?.solarConfig.capacityKwp ?? 8.0,
+      panelCount: input.solarConfig?.panelCount ?? existing?.solarConfig.panelCount ?? null,
+      panelWattageW: input.solarConfig?.panelWattageW ?? existing?.solarConfig.panelWattageW ?? null,
       tiltDeg:
         input.solarConfig?.tiltDeg ??
         existing?.solarConfig.tiltDeg ??
@@ -281,9 +324,21 @@ export async function upsertFarm(input: UpsertFarmInput): Promise<FarmRecord> {
       systemLossPct: input.solarConfig?.systemLossPct ?? existing?.solarConfig.systemLossPct ?? 14,
       optimizeAngles:
         input.solarConfig?.optimizeAngles ?? existing?.solarConfig.optimizeAngles ?? false,
+      hasBattery: input.solarConfig?.hasBattery ?? existing?.solarConfig.hasBattery ?? false,
+      batteryCapacityKwh:
+        input.solarConfig?.batteryCapacityKwh ?? existing?.solarConfig.batteryCapacityKwh ?? null,
+      hasGridConnection:
+        input.solarConfig?.hasGridConnection ?? existing?.solarConfig.hasGridConnection ?? false,
+      wantsEstimate: input.solarConfig?.wantsEstimate ?? existing?.solarConfig.wantsEstimate ?? "YES",
+      budgetAmount: input.solarConfig?.budgetAmount ?? existing?.solarConfig.budgetAmount ?? null,
+      isFarmerProvided:
+        input.solarConfig?.isFarmerProvided ?? existing?.solarConfig.isFarmerProvided ?? false,
       updatedAt: now,
     },
     pumpConfig: {
+      hasPump: input.pumpConfig?.hasPump ?? existing?.pumpConfig.hasPump ?? true,
+      pumpType: input.pumpConfig?.pumpType ?? existing?.pumpConfig.pumpType ?? null,
+      powerKw: input.pumpConfig?.powerKw ?? existing?.pumpConfig.powerKw ?? null,
       flowRateM3Hr: input.pumpConfig?.flowRateM3Hr ?? existing?.pumpConfig.flowRateM3Hr ?? 20,
       staticHeadM: input.pumpConfig?.staticHeadM ?? existing?.pumpConfig.staticHeadM ?? 15,
       pipeLengthM: input.pumpConfig?.pipeLengthM ?? existing?.pumpConfig.pipeLengthM ?? 180,
@@ -293,7 +348,7 @@ export async function upsertFarm(input: UpsertFarmInput): Promise<FarmRecord> {
       operatingPressureHeadM:
         input.pumpConfig?.operatingPressureHeadM ??
         existing?.pumpConfig.operatingPressureHeadM ??
-        IRRIGATION_EFFICIENCY_DEFAULTS[irrMethod].typicalPressureHeadM,
+        (IRRIGATION_EFFICIENCY_DEFAULTS[irrMethod]?.typicalPressureHeadM ?? 15),
       totalDynamicHeadM:
         input.pumpConfig?.totalDynamicHeadM ?? existing?.pumpConfig.totalDynamicHeadM ?? 33.5,
       pumpEfficiencyPct:
@@ -302,13 +357,20 @@ export async function upsertFarm(input: UpsertFarmInput): Promise<FarmRecord> {
         input.pumpConfig?.motorEfficiencyPct ?? existing?.pumpConfig.motorEfficiencyPct ?? 88,
       operatingHoursDay:
         input.pumpConfig?.operatingHoursDay ?? existing?.pumpConfig.operatingHoursDay ?? 6,
+      isFarmerProvided:
+        input.pumpConfig?.isFarmerProvided ?? existing?.pumpConfig.isFarmerProvided ?? false,
       updatedAt: now,
     },
     irrigationConfig: {
-      cropCode: input.primaryCropCode ?? existing?.irrigationConfig.cropCode ?? "tomato",
+      cropCode:
+        input.primaryCropCode ??
+        input.crops?.[0]?.cropCode ??
+        existing?.irrigationConfig.cropCode ??
+        "tomato",
       irrigatedAreaHa: areaHectares,
       irrigationMethod: irrMethod,
-      applicationEfficiencyPct: IRRIGATION_EFFICIENCY_DEFAULTS[irrMethod].efficiencyPct,
+      applicationEfficiencyPct:
+        IRRIGATION_EFFICIENCY_DEFAULTS[irrMethod]?.efficiencyPct ?? 90,
       plantingMonth: input.plantingMonth ?? existing?.irrigationConfig.plantingMonth ?? 3,
     },
     createdAt: existing?.createdAt ?? now,
@@ -388,8 +450,13 @@ export async function upsertFarm(input: UpsertFarmInput): Promise<FarmRecord> {
   return nextRecord;
 }
 
-export async function deleteFarm(farmId: string): Promise<boolean> {
+export async function deleteFarm(farmId: string, ownerUserId?: string): Promise<boolean> {
   const db = readLocalDb();
+  const target = db.farms.find((f) => f.id === farmId);
+  if (!target) return false;
+  if (ownerUserId && target.userId !== ownerUserId) {
+    throw new Error("Forbidden: You do not own this agricultural property");
+  }
   const initialLen = db.farms.length;
   db.farms = db.farms.filter((f) => f.id !== farmId);
   delete db.analyses[farmId];
@@ -425,10 +492,303 @@ export function saveReport(report: FeasibilityReportPayload): void {
   writeLocalDb(db);
 }
 
-export function listReports(farmId?: string): FeasibilityReportPayload[] {
+export function listReports(farmId?: string, ownerUserId?: string): FeasibilityReportPayload[] {
   const db = readLocalDb();
-  if (!farmId) return db.reports;
-  return db.reports.filter((r) => r.farmId === farmId);
+  let list = db.reports;
+  if (ownerUserId) {
+    const ownedIds = new Set(
+      db.farms.filter((f) => f.userId === ownerUserId).map((f) => f.id)
+    );
+    list = list.filter((r) => ownedIds.has(r.farmId));
+  }
+  if (!farmId) return list;
+  return list.filter((r) => r.farmId === farmId);
+}
+
+// --- User Accounts, Farmer Profiles & Onboarding Progress ---
+
+export function findUserByEmail(email: string): UserAccountRecord | null {
+  const db = readLocalDb();
+  const normalized = email.trim().toLowerCase();
+  return db.users.find((u) => u.email.toLowerCase() === normalized) ?? null;
+}
+
+export function findUserById(userId: string): UserAccountRecord | null {
+  const db = readLocalDb();
+  return db.users.find((u) => u.id === userId) ?? null;
+}
+
+export function findUserByResetTokenHash(tokenHash: string): UserAccountRecord | null {
+  const db = readLocalDb();
+  return (
+    db.users.find(
+      (u) =>
+        u.resetTokenHash === tokenHash &&
+        u.resetTokenExpiresAt &&
+        new Date(u.resetTokenExpiresAt).getTime() > Date.now()
+    ) ?? null
+  );
+}
+
+export async function createUserAccount(input: {
+  email: string;
+  name: string;
+  passwordHash: string;
+  role?: "FARMER" | "AGRONOMIST" | "ADMIN";
+  authProvider?: "EMAIL" | "GOOGLE";
+  googleId?: string | null;
+  emailVerified?: boolean;
+}): Promise<UserAccountRecord> {
+  const db = readLocalDb();
+  const normalizedEmail = input.email.trim().toLowerCase();
+  if (db.users.some((u) => u.email.toLowerCase() === normalizedEmail)) {
+    throw new Error("DUPLICATE_EMAIL");
+  }
+  const now = new Date().toISOString();
+  const record: UserAccountRecord = {
+    id: `user_${Date.now()}_${Math.random().toString(36).slice(2, 7)}`,
+    email: normalizedEmail,
+    name: input.name.trim(),
+    passwordHash: input.passwordHash,
+    role: input.role ?? "FARMER",
+    authProvider: input.authProvider ?? "EMAIL",
+    googleId: input.googleId ?? null,
+    emailVerified: input.emailVerified ?? false,
+    resetTokenHash: null,
+    resetTokenExpiresAt: null,
+    createdAt: now,
+    updatedAt: now,
+  };
+  db.users.push(record);
+  writeLocalDb(db);
+
+  const prisma = getPrismaClient();
+  if (prisma) {
+    try {
+      await prisma.user.create({
+        data: {
+          id: record.id,
+          email: record.email,
+          name: record.name,
+          passwordHash: record.passwordHash,
+          role: record.role,
+          authProvider: record.authProvider,
+          googleId: record.googleId,
+          emailVerified: record.emailVerified,
+        },
+      });
+    } catch {
+      // Persisted in local fallback
+    }
+  }
+  return record;
+}
+
+export async function updateUserAccount(
+  userId: string,
+  updates: Partial<UserAccountRecord>
+): Promise<UserAccountRecord | null> {
+  const db = readLocalDb();
+  const idx = db.users.findIndex((u) => u.id === userId);
+  if (idx === -1) return null;
+  const updated: UserAccountRecord = {
+    ...db.users[idx],
+    ...updates,
+    updatedAt: new Date().toISOString(),
+  };
+  db.users[idx] = updated;
+  writeLocalDb(db);
+
+  const prisma = getPrismaClient();
+  if (prisma) {
+    try {
+      await prisma.user.update({
+        where: { id: userId },
+        data: {
+          name: updated.name,
+          passwordHash: updated.passwordHash,
+          authProvider: updated.authProvider,
+          googleId: updated.googleId,
+          emailVerified: updated.emailVerified,
+          resetTokenHash: updated.resetTokenHash,
+          resetTokenExpiresAt: updated.resetTokenExpiresAt
+            ? new Date(updated.resetTokenExpiresAt)
+            : null,
+        },
+      });
+    } catch {
+      // Local store updated
+    }
+  }
+  return updated;
+}
+
+export function getFarmerProfile(userId: string): FarmerProfileRecord | null {
+  const db = readLocalDb();
+  return db.farmerProfiles.find((p) => p.userId === userId) ?? null;
+}
+
+export async function upsertFarmerProfile(
+  userId: string,
+  input: Partial<Omit<FarmerProfileRecord, "id" | "userId" | "createdAt" | "updatedAt">> & {
+    email: string;
+    firstName: string;
+    lastName: string;
+  }
+): Promise<FarmerProfileRecord> {
+  const db = readLocalDb();
+  const now = new Date().toISOString();
+  const existingIdx = db.farmerProfiles.findIndex((p) => p.userId === userId);
+  const existing = existingIdx >= 0 ? db.farmerProfiles[existingIdx] : null;
+
+  const record: FarmerProfileRecord = {
+    id: existing?.id ?? `prof_${userId}`,
+    userId,
+    firstName: input.firstName.trim(),
+    lastName: input.lastName.trim(),
+    phone: input.phone ?? existing?.phone ?? null,
+    email: existing?.email ?? input.email.trim().toLowerCase(),
+    avatarUrl: input.avatarUrl ?? existing?.avatarUrl ?? null,
+    country: input.country ?? existing?.country ?? "Tunisia",
+    governorate: input.governorate ?? existing?.governorate ?? null,
+    delegation: input.delegation ?? existing?.delegation ?? null,
+    locality: input.locality ?? existing?.locality ?? null,
+    preferredLanguage: input.preferredLanguage ?? existing?.preferredLanguage ?? "en",
+    preferredUnits: input.preferredUnits ?? existing?.preferredUnits ?? "metric",
+    experienceLevel: input.experienceLevel ?? existing?.experienceLevel ?? "YEARS_2_5",
+    activityType: input.activityType ?? existing?.activityType ?? "SMALL_FAMILY_FARM",
+    createdAt: existing?.createdAt ?? now,
+    updatedAt: now,
+  };
+
+  if (existingIdx >= 0) {
+    db.farmerProfiles[existingIdx] = record;
+  } else {
+    db.farmerProfiles.push(record);
+  }
+  writeLocalDb(db);
+
+  const prisma = getPrismaClient();
+  if (prisma) {
+    try {
+      await prisma.farmerProfile.upsert({
+        where: { userId },
+        update: {
+          firstName: record.firstName,
+          lastName: record.lastName,
+          phone: record.phone,
+          avatarUrl: record.avatarUrl,
+          country: record.country,
+          governorate: record.governorate,
+          delegation: record.delegation,
+          locality: record.locality,
+          preferredLanguage: record.preferredLanguage,
+          preferredUnits: record.preferredUnits,
+          experienceLevel: record.experienceLevel,
+          activityType: record.activityType,
+        },
+        create: {
+          id: record.id,
+          userId,
+          firstName: record.firstName,
+          lastName: record.lastName,
+          phone: record.phone,
+          avatarUrl: record.avatarUrl,
+          country: record.country,
+          governorate: record.governorate,
+          delegation: record.delegation,
+          locality: record.locality,
+          preferredLanguage: record.preferredLanguage,
+          preferredUnits: record.preferredUnits,
+          experienceLevel: record.experienceLevel,
+          activityType: record.activityType,
+        },
+      });
+    } catch {
+      // Local store persisted
+    }
+  }
+
+  return record;
+}
+
+export function getOnboardingProgress(userId: string): OnboardingProgressRecord {
+  const db = readLocalDb();
+  const existing = db.onboardingProgress.find((o) => o.userId === userId);
+  if (existing) return existing;
+  const now = new Date().toISOString();
+  const created: OnboardingProgressRecord = {
+    id: `onb_${userId}`,
+    userId,
+    activeFarmId: null,
+    currentStep: 1,
+    completedSteps: [],
+    isCompleted: false,
+    completedAt: null,
+    updatedAt: now,
+  };
+  db.onboardingProgress.push(created);
+  writeLocalDb(db);
+  return created;
+}
+
+export async function upsertOnboardingProgress(
+  userId: string,
+  updates: Partial<Omit<OnboardingProgressRecord, "id" | "userId">>
+): Promise<OnboardingProgressRecord> {
+  const db = readLocalDb();
+  const now = new Date().toISOString();
+  const idx = db.onboardingProgress.findIndex((o) => o.userId === userId);
+  const existing = idx >= 0 ? db.onboardingProgress[idx] : getOnboardingProgress(userId);
+  const mergedSteps = Array.from(
+    new Set([
+      ...existing.completedSteps,
+      ...(updates.completedSteps ?? []),
+    ])
+  ).sort((a, b) => a - b);
+
+  const next: OnboardingProgressRecord = {
+    ...existing,
+    ...updates,
+    completedSteps: updates.completedSteps ? mergedSteps : existing.completedSteps,
+    updatedAt: now,
+  };
+
+  if (idx >= 0) {
+    db.onboardingProgress[idx] = next;
+  } else {
+    db.onboardingProgress.push(next);
+  }
+  writeLocalDb(db);
+
+  const prisma = getPrismaClient();
+  if (prisma) {
+    try {
+      await prisma.onboardingProgress.upsert({
+        where: { userId },
+        update: {
+          activeFarmId: next.activeFarmId,
+          currentStep: next.currentStep,
+          completedSteps: next.completedSteps,
+          isCompleted: next.isCompleted,
+          completedAt: next.completedAt ? new Date(next.completedAt) : null,
+        },
+        create: {
+          id: next.id,
+          userId,
+          activeFarmId: next.activeFarmId,
+          currentStep: next.currentStep,
+          completedSteps: next.completedSteps,
+          isCompleted: next.isCompleted,
+          completedAt: next.completedAt ? new Date(next.completedAt) : null,
+        },
+      });
+    } catch {
+      // Local store persisted
+    }
+  }
+
+  return next;
 }
 
 export function appendConversationMessages(
@@ -477,7 +837,7 @@ export async function processSyncOperations(
   userId: string,
   operations: Array<{
     operationId: string;
-    entityType: "FARM" | "PIN" | "BOUNDARY" | "CONFIG" | "REPORT";
+    entityType: "FARM" | "PIN" | "BOUNDARY" | "CONFIG" | "REPORT" | "ONBOARDING";
     entityId: string;
     action: "CREATE" | "UPDATE" | "DELETE";
     payload?: unknown;
@@ -529,7 +889,7 @@ export async function processSyncOperations(
       }
 
       if (op.action === "DELETE") {
-        await deleteFarm(op.entityId);
+        await deleteFarm(op.entityId, userId);
       } else {
         const payload = op.payload as UpsertFarmInput;
         await upsertFarm({
@@ -538,6 +898,23 @@ export async function processSyncOperations(
           userId,
           updatedAt: op.clientTimestamp,
         });
+      }
+    } else if (op.entityType === "ONBOARDING" && op.action !== "DELETE") {
+      const payload = (op.payload ?? {}) as {
+        profile?: Partial<FarmerProfileRecord> & { firstName?: string; lastName?: string; email?: string };
+        progress?: Partial<OnboardingProgressRecord>;
+      };
+      const user = findUserById(userId);
+      if (payload.profile && (payload.profile.firstName || user)) {
+        await upsertFarmerProfile(userId, {
+          ...payload.profile,
+          email: payload.profile.email || user?.email || "",
+          firstName: payload.profile.firstName || user?.name.split(" ")[0] || "Farmer",
+          lastName: payload.profile.lastName || user?.name.split(" ").slice(1).join(" ") || "Account",
+        });
+      }
+      if (payload.progress) {
+        await upsertOnboardingProgress(userId, payload.progress);
       }
     } else if (op.entityType === "REPORT" && op.action !== "DELETE") {
       saveReport(op.payload as FeasibilityReportPayload);

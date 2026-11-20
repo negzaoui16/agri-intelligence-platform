@@ -79,12 +79,27 @@ Test suites included in `src/__tests__/`:
 - `fao56-calculator.test.ts` — Verifies Penman–Monteith $ET_o$, USDA-SCS effective rainfall, $ET_c$, root-zone $TAW$/$RAW$, and crop ranking.
 - `solar-irrigation-matcher.test.ts` — Verifies monthly energy balances, peak-month coverage, and storage sizing.
 - `offline-sync.test.ts` — Verifies offline operation queueing, idempotent replay deduplication, and server-newer timestamp conflict detection.
+- `auth-onboarding.test.ts` — Verifies email registration, duplicate rejection, Google OAuth flow, login/logout, password reset, per-farmer data ownership, 5-stage onboarding persistence/resume, crop area validation, and offline onboarding sync.
 - `api-integrations.test.ts` — Live HTTP verification against Open-Meteo, Copernicus DEM, JRC PVGIS v5.3, OpenStreetMap Overpass, HydroSHEDS, and FAO WaPOR v3.
 
 Run production typecheck and Next.js build:
 ```bash
 npm run build
 ```
+
+---
+
+## Authentication & Google OAuth Setup
+
+TerraPulse provides complete email/password authentication (`/login`, `/register`, `/forgot-password`, `/auth/callback`) with HMAC-SHA256 HTTP-only sessions, strict per-farmer data isolation, and a 5-stage guided farmer onboarding flow (`/onboarding`).
+
+To enable live Google OAuth 2.0 sign-in:
+1. Create an OAuth 2.0 Web Client in Google Cloud Console (`APIs & Services -> Credentials`).
+2. Add your Authorized Redirect URI:
+   - Local development: `http://localhost:3000/api/auth/oauth-callback`
+   - Production: `https://<your-domain>/api/auth/oauth-callback`
+3. Set `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET`, and `NEXT_PUBLIC_APP_URL` in `.env.local` (or your hosting provider's environment settings).
+*(When `GOOGLE_CLIENT_ID` is not set in local development, `/api/auth/google` routes to `/auth/callback?provider=google` for testing the OAuth callback handoff locally.)*
 
 ---
 

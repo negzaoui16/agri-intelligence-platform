@@ -77,41 +77,89 @@ enum SyncStatus {
 }
 
 model User {
-  id           String   @id @default(cuid())
-  email        String   @unique
-  name         String
-  passwordHash String
-  role         String   @default("FARMER")
-  createdAt    DateTime @default(now())
-  updatedAt    DateTime @updatedAt
+  id                  String    @id @default(cuid())
+  email               String    @unique
+  name                String
+  passwordHash        String
+  role                String    @default("FARMER")
+  authProvider        String    @default("EMAIL")
+  googleId            String?   @unique
+  emailVerified       Boolean   @default(false)
+  resetTokenHash      String?
+  resetTokenExpiresAt DateTime?
+  createdAt           DateTime  @default(now())
+  updatedAt           DateTime  @updatedAt
 
-  farms           Farm[]
-  conversations   AIConversation[]
-  syncOperations  SyncOperation[]
+  farmerProfile      FarmerProfile?
+  onboardingProgress OnboardingProgress?
+  farms              Farm[]
+  conversations      AIConversation[]
+  syncOperations     SyncOperation[]
+}
+
+model FarmerProfile {
+  id                String   @id @default(cuid())
+  userId            String   @unique
+  firstName         String
+  lastName          String
+  phone             String?
+  avatarUrl         String?
+  country           String   @default("Tunisia")
+  governorate       String?
+  delegation        String?
+  locality          String?
+  preferredLanguage String   @default("en")
+  preferredUnits    String   @default("metric")
+  experienceLevel   String   @default("YEARS_2_5")
+  activityType      String   @default("SMALL_FAMILY_FARM")
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model OnboardingProgress {
+  id             String    @id @default(cuid())
+  userId         String    @unique
+  activeFarmId   String?
+  currentStep    Int       @default(1)
+  completedSteps Json      @default("[]")
+  isCompleted    Boolean   @default(false)
+  completedAt    DateTime?
+  draftJson      Json?
+  updatedAt      DateTime  @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 }
 
 model Farm {
-  id              String   @id @default(cuid())
-  userId          String
-  name            String
-  description     String?
-  country         String?
-  region          String?
-  centerLat       Float
-  centerLon       Float
-  elevationM      Float?
-  areaHectares    Float    @default(1.0)
-  perimeterMeters Float    @default(400.0)
-  primaryCropCode String   @default("tomato")
-  plantingMonth   Int      @default(3)
-  createdAt       DateTime @default(now())
-  updatedAt       DateTime @updatedAt
+  id               String   @id @default(cuid())
+  userId           String
+  name             String
+  description      String?
+  country          String?
+  region           String?
+  governorate      String?
+  delegation       String?
+  locality         String?
+  centerLat        Float
+  centerLon        Float
+  elevationM       Float?
+  areaHectares     Float    @default(1.0)
+  perimeterMeters  Float    @default(400.0)
+  boundaryVerified Boolean  @default(true)
+  primaryCropCode  String   @default("tomato")
+  plantingMonth    Int      @default(3)
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
 
-  user                  User                   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  user                  User                    @relation(fields: [userId], references: [id], onDelete: Cascade)
   boundary              FarmBoundary?
   locations             FarmLocation[]
   soilProfile           SoilProfile?
   waterSources          WaterSource[]
+  waterConfigurations   WaterConfiguration[]
+  farmCrops             FarmCrop[]
   weatherObservations   WeatherObservation[]
   solarConfig           SolarConfiguration?
   solarAnalyses         SolarAnalysis[]
@@ -240,15 +288,24 @@ model WeatherObservation {
 }
 
 model SolarConfiguration {
-  id             String   @id @default(cuid())
-  farmId         String   @unique
-  capacityKwp    Float    @default(5.0)
-  tiltDeg        Float    @default(30.0)
-  azimuthDeg     Float    @default(0.0)
-  mountingType   String   @default("free")
-  systemLossPct  Float    @default(14.0)
-  optimizeAngles Boolean  @default(false)
-  updatedAt      DateTime @updatedAt
+  id                 String   @id @default(cuid())
+  farmId             String   @unique
+  solarStatus        String   @default("YES")
+  capacityKwp        Float    @default(5.0)
+  panelCount         Int?
+  panelWattageW      Float?
+  tiltDeg            Float    @default(30.0)
+  azimuthDeg         Float    @default(0.0)
+  mountingType       String   @default("free")
+  systemLossPct      Float    @default(14.0)
+  optimizeAngles     Boolean  @default(false)
+  hasBattery         Boolean  @default(false)
+  batteryCapacityKwh Float?
+  hasGridConnection  Boolean  @default(false)
+  wantsEstimate      String?
+  budgetAmount       Float?
+  isFarmerProvided   Boolean  @default(false)
+  updatedAt          DateTime @updatedAt
 
   farm     Farm            @relation(fields: [farmId], references: [id], onDelete: Cascade)
   analyses SolarAnalysis[]
@@ -276,6 +333,9 @@ model SolarAnalysis {
 model PumpConfiguration {
   id                     String   @id @default(cuid())
   farmId                 String   @unique
+  hasPump                Boolean  @default(true)
+  pumpType               String?
+  powerKw                Float?
   flowRateM3Hr           Float    @default(18.0)
   staticHeadM            Float    @default(15.0)
   pipeLengthM            Float    @default(150.0)
@@ -286,9 +346,51 @@ model PumpConfiguration {
   pumpEfficiencyPct      Float    @default(65.0)
   motorEfficiencyPct     Float    @default(88.0)
   operatingHoursDay      Float    @default(6.0)
+  isFarmerProvided       Boolean  @default(false)
   updatedAt              DateTime @updatedAt
 
   farm Farm @relation(fields: [farmId], references: [id], onDelete: Cascade)
+}
+
+model FarmCrop {
+  id               String   @id @default(cuid())
+  farmId           String
+  cropCode         String
+  cropName         String
+  cultivatedAreaHa Float
+  areaUnit         String   @default("ha")
+  plantingDate     String?
+  growthStage      String?
+  plotCount        Int      @default(1)
+  plantingDensity  String?
+  irrigationMethod String   @default("DRIP")
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+
+  farm Farm @relation(fields: [farmId], references: [id], onDelete: Cascade)
+
+  @@index([farmId])
+}
+
+model WaterConfiguration {
+  id                String                                @id @default(cuid())
+  farmId            String
+  sourceType        String
+  latitude          Float?
+  longitude         Float?
+  distanceMeters    Float?
+  availability      String?
+  wellDepthM        Float?
+  flowRateM3Hr      Float?
+  waterQualityNotes String?
+  isFarmerProvided  Boolean                               @default(true)
+  geom              Unsupported("geometry(Point, 4326)")?
+  createdAt         DateTime                              @default(now())
+
+  farm Farm @relation(fields: [farmId], references: [id], onDelete: Cascade)
+
+  @@index([farmId])
+  @@index([geom], type: Gist)
 }
 
 model IrrigationAnalysis {

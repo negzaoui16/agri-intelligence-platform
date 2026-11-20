@@ -2,6 +2,7 @@ import type {
   CropSpec,
   CropSuitabilityScore,
   CropWaterRequirementResult,
+  FarmCropRecord,
   IrrigationMethod,
   MonthlyClimateSummary,
   MonthlyIrrigationDemand,
@@ -253,7 +254,7 @@ export const CROP_DATABASE: CropSpec[] = [
   },
   {
     code: "date_palm",
-    name: "Date Palm",
+    name: "Dates (Date Palm)",
     scientificName: "Phoenix dactylifera",
     category: "Perennial Orchard",
     kcIni: 0.9,
@@ -271,11 +272,198 @@ export const CROP_DATABASE: CropSpec[] = [
     optimalTempMaxC: 42,
     droughtTolerance: "High",
     salinityToleranceDsm: 4.0,
+    growingSeason: "Perennial (Oasis)",
+    waterSensitivity: "Low",
+  },
+  {
+    code: "barley",
+    name: "Barley",
+    scientificName: "Hordeum vulgare",
+    category: "Cereal",
+    kcIni: 0.3,
+    kcMid: 1.15,
+    kcEnd: 0.25,
+    stageIniDays: 20,
+    stageDevDays: 35,
+    stageMidDays: 60,
+    stageLateDays: 35,
+    rootDepthMinM: 0.3,
+    rootDepthMaxM: 1.5,
+    depletionFractionP: 0.55,
+    yieldResponseKy: 1.0,
+    optimalTempMinC: 10,
+    optimalTempMaxC: 24,
+    droughtTolerance: "High",
+    salinityToleranceDsm: 8.0,
+    growingSeason: "Nov – May",
+    waterSensitivity: "Low",
+  },
+  {
+    code: "onion",
+    name: "Onion",
+    scientificName: "Allium cepa",
+    category: "Horticulture",
+    kcIni: 0.7,
+    kcMid: 1.05,
+    kcEnd: 0.75,
+    stageIniDays: 20,
+    stageDevDays: 35,
+    stageMidDays: 70,
+    stageLateDays: 45,
+    rootDepthMinM: 0.2,
+    rootDepthMaxM: 0.5,
+    depletionFractionP: 0.3,
+    yieldResponseKy: 1.1,
+    optimalTempMinC: 13,
+    optimalTempMaxC: 27,
+    droughtTolerance: "Low",
+    salinityToleranceDsm: 1.2,
+    growingSeason: "Oct – Jun / Spring",
+    waterSensitivity: "High",
+  },
+  {
+    code: "pepper",
+    name: "Pepper",
+    scientificName: "Capsicum annuum",
+    category: "Horticulture",
+    kcIni: 0.6,
+    kcMid: 1.05,
+    kcEnd: 0.9,
+    stageIniDays: 30,
+    stageDevDays: 35,
+    stageMidDays: 40,
+    stageLateDays: 20,
+    rootDepthMinM: 0.3,
+    rootDepthMaxM: 0.8,
+    depletionFractionP: 0.3,
+    yieldResponseKy: 1.1,
+    optimalTempMinC: 18,
+    optimalTempMaxC: 30,
+    droughtTolerance: "Low",
+    salinityToleranceDsm: 1.5,
+    growingSeason: "Mar – Sep",
+    waterSensitivity: "High",
+  },
+  {
+    code: "watermelon",
+    name: "Watermelon",
+    scientificName: "Citrullus lanatus",
+    category: "Cucurbit",
+    kcIni: 0.4,
+    kcMid: 1.0,
+    kcEnd: 0.75,
+    stageIniDays: 20,
+    stageDevDays: 30,
+    stageMidDays: 30,
+    stageLateDays: 30,
+    rootDepthMinM: 0.4,
+    rootDepthMaxM: 1.2,
+    depletionFractionP: 0.4,
+    yieldResponseKy: 1.1,
+    optimalTempMinC: 20,
+    optimalTempMaxC: 35,
+    droughtTolerance: "Moderate",
+    salinityToleranceDsm: 2.0,
+    growingSeason: "Mar – Aug",
+    waterSensitivity: "Moderate",
+  },
+  {
+    code: "melon",
+    name: "Melon",
+    scientificName: "Cucumis melo",
+    category: "Cucurbit",
+    kcIni: 0.5,
+    kcMid: 1.05,
+    kcEnd: 0.75,
+    stageIniDays: 25,
+    stageDevDays: 35,
+    stageMidDays: 40,
+    stageLateDays: 20,
+    rootDepthMinM: 0.4,
+    rootDepthMaxM: 1.1,
+    depletionFractionP: 0.45,
+    yieldResponseKy: 1.05,
+    optimalTempMinC: 20,
+    optimalTempMaxC: 34,
+    droughtTolerance: "Moderate",
+    salinityToleranceDsm: 2.2,
+    growingSeason: "Mar – Aug",
+    waterSensitivity: "Moderate",
+  },
+  {
+    code: "grapes",
+    name: "Grapes (Vineyard)",
+    scientificName: "Vitis vinifera",
+    category: "Perennial Orchard",
+    kcIni: 0.3,
+    kcMid: 0.85,
+    kcEnd: 0.45,
+    stageIniDays: 30,
+    stageDevDays: 60,
+    stageMidDays: 90,
+    stageLateDays: 60,
+    rootDepthMinM: 0.8,
+    rootDepthMaxM: 1.8,
+    depletionFractionP: 0.45,
+    yieldResponseKy: 0.85,
+    optimalTempMinC: 15,
+    optimalTempMaxC: 33,
+    droughtTolerance: "High",
+    salinityToleranceDsm: 1.5,
+    growingSeason: "Mar – Oct",
+    waterSensitivity: "Low",
+  },
+  {
+    code: "almond",
+    name: "Almond",
+    scientificName: "Prunus dulcis",
+    category: "Perennial Orchard",
+    kcIni: 0.4,
+    kcMid: 0.9,
+    kcEnd: 0.65,
+    stageIniDays: 40,
+    stageDevDays: 60,
+    stageMidDays: 100,
+    stageLateDays: 60,
+    rootDepthMinM: 0.9,
+    rootDepthMaxM: 1.8,
+    depletionFractionP: 0.5,
+    yieldResponseKy: 0.9,
+    optimalTempMinC: 14,
+    optimalTempMaxC: 33,
+    droughtTolerance: "High",
+    salinityToleranceDsm: 1.5,
+    growingSeason: "Feb – Sep",
+    waterSensitivity: "Moderate",
+  },
+  {
+    code: "custom",
+    name: "Other / Custom Crop",
+    scientificName: "Species unspecified",
+    category: "Custom",
+    kcIni: 0.5,
+    kcMid: 1.0,
+    kcEnd: 0.7,
+    stageIniDays: 30,
+    stageDevDays: 40,
+    stageMidDays: 50,
+    stageLateDays: 30,
+    rootDepthMinM: 0.3,
+    rootDepthMaxM: 1.0,
+    depletionFractionP: 0.45,
+    yieldResponseKy: 1.0,
+    optimalTempMinC: 15,
+    optimalTempMaxC: 32,
+    droughtTolerance: "Moderate",
+    salinityToleranceDsm: 2.0,
+    growingSeason: "Variable",
+    waterSensitivity: "Moderate",
   },
 ];
 
 export function getCropSpec(cropCode: string): CropSpec {
-  return CROP_DATABASE.find((c) => c.code === cropCode) ?? CROP_DATABASE[0];
+  const normalized = cropCode === "dates" ? "date_palm" : cropCode;
+  return CROP_DATABASE.find((c) => c.code === normalized) ?? CROP_DATABASE[0];
 }
 
 export interface PenmanMonteithInput {
@@ -521,7 +709,7 @@ export function rankCropSuitability(
   const summerMaxAvg = Math.max(...monthlyClimate.map((m) => m.tempMaxAvgC));
   const winterMinAvg = Math.min(...monthlyClimate.map((m) => m.tempMinAvgC));
 
-  return CROP_DATABASE.map((crop) => {
+  return CROP_DATABASE.filter((c) => c.code !== "custom").map((crop) => {
     const req = calculateCropWaterRequirements({
       cropCode: crop.code,
       irrigatedAreaHa: 1,
@@ -568,4 +756,93 @@ export function rankCropSuitability(
       waterDemandNote: `Estimated ${Math.round(m3PerHa).toLocaleString()} m³/ha/yr under 90% drip efficiency (${crop.droughtTolerance} drought tolerance).`,
     };
   }).sort((a, b) => b.score - a.score);
+}
+
+/**
+ * Computes area-weighted FAO-56 irrigation requirements across multiple crops on a single farm.
+ */
+export function calculateMultiCropWaterRequirements(params: {
+  farmCrops: FarmCropRecord[];
+  monthlyClimate: MonthlyClimateSummary[];
+  soilProfile?: SoilProfileData;
+  pumpFlowRateM3Hr?: number;
+}): CropWaterRequirementResult | null {
+  if (!params.farmCrops || params.farmCrops.length === 0) return null;
+
+  const perCropResults = params.farmCrops.map((fc) => {
+    const plantingMonth =
+      fc.plantingDate && /^\d{4}-\d{2}/.test(fc.plantingDate)
+        ? Math.min(12, Math.max(1, Number(fc.plantingDate.slice(5, 7))))
+        : 3;
+    return calculateCropWaterRequirements({
+      cropCode: fc.cropCode,
+      irrigatedAreaHa: Math.max(0.01, fc.cultivatedAreaHa),
+      irrigationMethod: fc.irrigationMethod,
+      plantingMonth,
+      monthlyClimate: params.monthlyClimate,
+      soilProfile: params.soilProfile,
+      pumpFlowRateM3Hr: params.pumpFlowRateM3Hr,
+    });
+  });
+
+  if (perCropResults.length === 1) return perCropResults[0];
+
+  const totalAreaHa = perCropResults.reduce((s, r) => s + r.irrigatedAreaHa, 0);
+  const flowM3Hr = Math.max(1, params.pumpFlowRateM3Hr ?? 20);
+
+  const monthly: MonthlyIrrigationDemand[] = perCropResults[0].monthly.map((m, idx) => {
+    const grossVolumeM3 = perCropResults.reduce(
+      (s, r) => s + (r.monthly[idx]?.grossVolumeM3 ?? 0),
+      0
+    );
+    const weightedEtcMm =
+      perCropResults.reduce(
+        (s, r) => s + (r.monthly[idx]?.etcMm ?? 0) * r.irrigatedAreaHa,
+        0
+      ) / Math.max(0.01, totalAreaHa);
+    const weightedNetMm =
+      perCropResults.reduce(
+        (s, r) => s + (r.monthly[idx]?.netIrrigationMm ?? 0) * r.irrigatedAreaHa,
+        0
+      ) / Math.max(0.01, totalAreaHa);
+    const weightedGrossMm =
+      perCropResults.reduce(
+        (s, r) => s + (r.monthly[idx]?.grossIrrigationMm ?? 0) * r.irrigatedAreaHa,
+        0
+      ) / Math.max(0.01, totalAreaHa);
+    const days = DAYS_IN_MONTH[m.monthIndex - 1] ?? 30;
+    const dailyPeakM3 = Number((grossVolumeM3 / days).toFixed(1));
+    return {
+      monthIndex: m.monthIndex,
+      monthName: m.monthName,
+      et0Mm: m.et0Mm,
+      kc: Number((weightedEtcMm / Math.max(1, m.et0Mm)).toFixed(2)),
+      etcMm: Number(weightedEtcMm.toFixed(1)),
+      precipMm: m.precipMm,
+      effectiveRainMm: m.effectiveRainMm,
+      netIrrigationMm: Number(weightedNetMm.toFixed(1)),
+      grossIrrigationMm: Number(weightedGrossMm.toFixed(1)),
+      grossVolumeM3: Number(grossVolumeM3.toFixed(0)),
+      dailyPeakM3,
+      requiredPumpHoursPerDay: Number(Math.min(24, dailyPeakM3 / flowM3Hr).toFixed(2)),
+    };
+  });
+
+  const peakMonth = monthly.reduce((best, cur) =>
+    cur.dailyPeakM3 > best.dailyPeakM3 ? cur : best
+  );
+
+  return {
+    ...perCropResults[0],
+    irrigatedAreaHa: Number(totalAreaHa.toFixed(2)),
+    annualEtcMm: Number(monthly.reduce((s, m) => s + m.etcMm, 0).toFixed(1)),
+    annualNetIrrigationMm: Number(monthly.reduce((s, m) => s + m.netIrrigationMm, 0).toFixed(1)),
+    annualGrossIrrigationMm: Number(monthly.reduce((s, m) => s + m.grossIrrigationMm, 0).toFixed(1)),
+    annualGrossVolumeM3: Number(monthly.reduce((s, m) => s + m.grossVolumeM3, 0).toFixed(0)),
+    peakMonthName: peakMonth.monthName,
+    peakDailyWaterM3: peakMonth.dailyPeakM3,
+    monthly,
+    methodology:
+      "Multi-Crop Area-Weighted FAO-56 Crop Evapotranspiration & Soil Water Balance",
+  };
 }

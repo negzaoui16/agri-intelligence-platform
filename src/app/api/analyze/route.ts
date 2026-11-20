@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { apiError, withApiRateLimit } from "@/lib/api/http";
-import { getActiveSessionUser } from "@/lib/auth/session";
+import { getSessionState } from "@/lib/auth/session";
 import {
   getFarmById,
   saveAnalysisBundle,
@@ -13,17 +13,19 @@ export async function POST(request: Request) {
   const limited = withApiRateLimit(request, "analyze", 20);
   if (limited) return limited;
 
+  const state = await getSessionState();
+  if (!state.user) return apiError("Authentication required", 401);
+
   try {
     const body = await request.json();
     if (body.farmId) {
-      const farm = await getFarmById(String(body.farmId));
+      const farm = await getFarmById(String(body.farmId), state.user.id);
       if (!farm) return apiError("Farm not found", 404);
       const analysis = await runCompleteFarmAnalysis(farm);
       // Persist updated elevation back onto farm record
-      const user = await getActiveSessionUser();
       await upsertFarm({
         id: farm.id,
-        userId: user.id,
+        userId: state.user.id,
         name: farm.name,
         centerLat: farm.centerLat,
         centerLon: farm.centerLon,
@@ -41,10 +43,9 @@ export async function POST(request: Request) {
       return apiError("Provide a valid farmId or latitude/longitude", 400);
     }
 
-    const user = await getActiveSessionUser();
     const adHocFarm = await upsertFarm({
       id: `adhoc_${Date.now()}`,
-      userId: user.id,
+      userId: state.user.id,
       name: body.name || `Field Site (${coords.data.latitude.toFixed(3)}, ${coords.data.longitude.toFixed(3)})`,
       centerLat: coords.data.latitude,
       centerLon: coords.data.longitude,

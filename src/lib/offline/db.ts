@@ -2,13 +2,23 @@ import Dexie, { type Table } from "dexie";
 import type {
   AIChatMessageRecord,
   CompleteFarmAnalysisBundle,
+  FarmerProfileRecord,
   FarmRecord,
   FeasibilityReportPayload,
+  OnboardingProgressRecord,
   SyncQueueItem,
 } from "@/types/agri";
 
 export interface OfflineFarmRow extends FarmRecord {
   syncStatus: "SYNCED" | "PENDING" | "CONFLICT";
+}
+
+export interface OfflineOnboardingRow {
+  userId: string;
+  profile?: FarmerProfileRecord | null;
+  progress?: OnboardingProgressRecord | null;
+  farm?: FarmRecord | null;
+  updatedAt: string;
 }
 
 export interface OfflineAnalysisRow {
@@ -38,6 +48,7 @@ class AgriOfflineDB extends Dexie {
   conversations!: Table<OfflineConversationRow, string>;
   syncQueue!: Table<SyncQueueItem, number>;
   settings!: Table<OfflineSettingRow, string>;
+  onboarding!: Table<OfflineOnboardingRow, string>;
 
   constructor() {
     super("terrapulse_agri_db_v1");
@@ -48,6 +59,15 @@ class AgriOfflineDB extends Dexie {
       conversations: "id, farmId, updatedAt",
       syncQueue: "++seq, operationId, entityType, entityId, action, clientTimestamp, status",
       settings: "key",
+    });
+    this.version(2).stores({
+      farms: "id, name, country, region, updatedAt, syncStatus",
+      analyses: "id, farmId, type, retrievedAt",
+      reports: "id, farmId, createdAt",
+      conversations: "id, farmId, updatedAt",
+      syncQueue: "++seq, operationId, entityType, entityId, action, clientTimestamp, status",
+      settings: "key",
+      onboarding: "userId, updatedAt",
     });
   }
 }

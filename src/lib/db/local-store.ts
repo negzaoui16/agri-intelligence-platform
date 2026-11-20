@@ -1,10 +1,14 @@
 import fs from "node:fs";
 import path from "node:path";
+import { hashPassword } from "@/lib/auth/session";
 import type {
   AIChatMessageRecord,
   CompleteFarmAnalysisBundle,
+  FarmerProfileRecord,
   FarmRecord,
   FeasibilityReportPayload,
+  OnboardingProgressRecord,
+  UserAccountRecord,
 } from "@/types/agri";
 import { IRRIGATION_EFFICIENCY_DEFAULTS, SOIL_TEXTURE_DEFAULTS } from "./defaults";
 
@@ -20,6 +24,9 @@ export interface SyncLogEntry {
 }
 
 export interface LocalDbSnapshot {
+  users: UserAccountRecord[];
+  farmerProfiles: FarmerProfileRecord[];
+  onboardingProgress: OnboardingProgressRecord[];
   farms: FarmRecord[];
   analyses: Record<string, CompleteFarmAnalysisBundle>;
   reports: FeasibilityReportPayload[];
@@ -215,12 +222,75 @@ function createSeedData(): LocalDbSnapshot {
     updatedAt: now,
   };
 
+  const demoUser: UserAccountRecord = {
+    id: "user_demo_agronomist",
+    email: "agronomist@terrapulse.agri",
+    name: "Field Agronomist",
+    passwordHash: hashPassword("TerraPulse2026!"),
+    role: "AGRONOMIST",
+    authProvider: "EMAIL",
+    emailVerified: true,
+    createdAt: now,
+    updatedAt: now,
+  };
+
+  const demoProfile: FarmerProfileRecord = {
+    id: "profile_demo_agronomist",
+    userId: "user_demo_agronomist",
+    firstName: "Field",
+    lastName: "Agronomist",
+    phone: "+216 71 000 000",
+    email: "agronomist@terrapulse.agri",
+    country: "Tunisia",
+    governorate: "Nabeul",
+    delegation: "Korba",
+    locality: "Cap Bon",
+    preferredLanguage: "en",
+    preferredUnits: "metric",
+    experienceLevel: "MORE_THAN_10_YEARS",
+    activityType: "COMMERCIAL_AGRICULTURE",
+    createdAt: now,
+    updatedAt: now,
+  };
+
+  const demoOnboarding: OnboardingProgressRecord = {
+    id: "onb_demo_agronomist",
+    userId: "user_demo_agronomist",
+    activeFarmId: "farm_mitidja_01",
+    currentStep: 6,
+    completedSteps: [1, 2, 3, 4, 5],
+    isCompleted: true,
+    completedAt: now,
+    updatedAt: now,
+  };
+
   return {
+    users: [demoUser],
+    farmerProfiles: [demoProfile],
+    onboardingProgress: [demoOnboarding],
     farms: [mitidja, guadalquivir],
     analyses: {},
     reports: [],
     conversations: [],
     syncLog: [],
+  };
+}
+
+function normalizeSnapshot(raw: Partial<LocalDbSnapshot>): LocalDbSnapshot {
+  const seed = createSeedData();
+  return {
+    users: Array.isArray(raw.users) && raw.users.length > 0 ? raw.users : seed.users,
+    farmerProfiles: Array.isArray(raw.farmerProfiles) && raw.farmerProfiles.length > 0
+      ? raw.farmerProfiles
+      : seed.farmerProfiles,
+    onboardingProgress: Array.isArray(raw.onboardingProgress) && raw.onboardingProgress.length > 0
+      ? raw.onboardingProgress
+      : seed.onboardingProgress,
+    farms: Array.isArray(raw.farms) ? raw.farms : seed.farms,
+    analyses: raw.analyses ?? {},
+    reports: Array.isArray(raw.reports) ? raw.reports : [],
+    conversations: Array.isArray(raw.conversations) ? raw.conversations : [],
+    syncLog: Array.isArray(raw.syncLog) ? raw.syncLog : [],
   };
 }
 
@@ -238,7 +308,7 @@ export function readLocalDb(): LocalDbSnapshot {
       return seeded;
     }
     const raw = fs.readFileSync(DB_FILE, "utf8");
-    const parsed = JSON.parse(raw) as LocalDbSnapshot;
+    const parsed = normalizeSnapshot(JSON.parse(raw) as Partial<LocalDbSnapshot>);
     inMemoryFallback = parsed;
     return parsed;
   } catch {

@@ -33,7 +33,16 @@ const farmProfileSchema = z.object({
   cropCode: z.string(),
   plantingMonth: z.coerce.number().int().min(1).max(12),
   soilTexture: z.enum(["SANDY", "SANDY_LOAM", "LOAM", "SILT_LOAM", "CLAY_LOAM", "CLAY"]),
-  irrigationMethod: z.enum(["DRIP", "SUBSURFACE_DRIP", "SPRINKLER", "CENTER_PIVOT", "FURROW"]),
+  irrigationMethod: z.enum([
+    "DRIP",
+    "SUBSURFACE_DRIP",
+    "SPRINKLER",
+    "CENTER_PIVOT",
+    "FURROW",
+    "MANUAL",
+    "NONE",
+    "OTHER",
+  ]),
   capacityKwp: z.coerce.number().min(0.2).max(5000),
   tiltDeg: z.coerce.number().min(0).max(90),
   azimuthDeg: z.coerce.number().min(-180).max(180),
@@ -362,7 +371,10 @@ export default function FarmsPage() {
                     <option value="SUBSURFACE_DRIP">Subsurface Drip (94% eff.)</option>
                     <option value="CENTER_PIVOT">Center Pivot (82% eff.)</option>
                     <option value="SPRINKLER">Sprinkler (75% eff.)</option>
-                    <option value="FURROW">Furrow (60% eff.)</option>
+                    <option value="FURROW">Furrow / Gravity Flood (60% eff.)</option>
+                    <option value="MANUAL">Manual Watering (65% eff.)</option>
+                    <option value="NONE">Rainfed / None (55% eff.)</option>
+                    <option value="OTHER">Other System (70% eff.)</option>
                   </Select>
                 </div>
               </div>

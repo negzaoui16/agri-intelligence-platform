@@ -1,4 +1,4 @@
-import type { SoilProfileData, SoilTextureClass } from "@/types/agri";
+import type { IrrigationMethod, SoilProfileData, SoilTextureClass } from "@/types/agri";
 
 export const SOIL_TEXTURE_DEFAULTS: Record<
   SoilTextureClass,
@@ -61,12 +61,42 @@ export const SOIL_TEXTURE_DEFAULTS: Record<
 };
 
 export const IRRIGATION_EFFICIENCY_DEFAULTS: Record<
-  "DRIP" | "SUBSURFACE_DRIP" | "SPRINKLER" | "CENTER_PIVOT" | "FURROW",
+  IrrigationMethod,
   { efficiencyPct: number; typicalPressureHeadM: number; label: string }
 > = {
-  DRIP: { efficiencyPct: 90, typicalPressureHeadM: 15, label: "Surface Drip" },
+  DRIP: { efficiencyPct: 90, typicalPressureHeadM: 15, label: "Drip Irrigation" },
   SUBSURFACE_DRIP: { efficiencyPct: 94, typicalPressureHeadM: 16, label: "Subsurface Drip" },
-  SPRINKLER: { efficiencyPct: 75, typicalPressureHeadM: 30, label: "Solid-Set Sprinkler" },
+  SPRINKLER: { efficiencyPct: 75, typicalPressureHeadM: 30, label: "Sprinkler Irrigation" },
   CENTER_PIVOT: { efficiencyPct: 82, typicalPressureHeadM: 25, label: "Center Pivot" },
-  FURROW: { efficiencyPct: 60, typicalPressureHeadM: 4, label: "Gravity Furrow" },
+  FURROW: { efficiencyPct: 60, typicalPressureHeadM: 4, label: "Surface / Furrow Irrigation" },
+  MANUAL: { efficiencyPct: 55, typicalPressureHeadM: 2, label: "Manual Irrigation" },
+  NONE: { efficiencyPct: 100, typicalPressureHeadM: 0, label: "Rainfed / No Irrigation" },
+  OTHER: { efficiencyPct: 70, typicalPressureHeadM: 10, label: "Other Irrigation" },
 };
+
+export const TUNISIA_GOVERNORATES = [
+  "Tunis",
+  "Ariana",
+  "Ben Arous",
+  "Manouba",
+  "Nabeul",
+  "Zaghouan",
+  "Bizerte",
+  "Beja",
+  "Jendouba",
+  "Kef",
+  "Siliana",
+  "Sousse",
+  "Monastir",
+  "Mahdia",
+  "Sfax",
+  "Kairouan",
+  "Kasserine",
+  "Sidi Bouzid",
+  "Gabes",
+  "Medenine",
+  "Tataouine",
+  "Gafsa",
+  "Tozeur",
+  "Kebili",
+] as const;

@@ -2,7 +2,7 @@
 
 import * as React from "react";
 import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import { useTheme } from "next-themes";
 import {
   Bot,
@@ -11,6 +11,7 @@ import {
   Droplets,
   FileText,
   LayoutDashboard,
+  LogOut,
   Map as MapIcon,
   Menu,
   Moon,
@@ -18,17 +19,27 @@ import {
   Sprout,
   Sun,
   Tractor,
+  UserCheck,
   Wifi,
   WifiOff,
   X,
   AlertTriangle,
 } from "lucide-react";
 import { Badge, Button, Select } from "@/components/ui/primitives";
+import { useAuthSession } from "@/hooks/useAuth";
 import { useFarms, useSyncController } from "@/hooks/useFarms";
 import { getSyncConflicts } from "@/lib/offline/sync-engine";
 import { useAppStore } from "@/lib/store/app-store";
 import { cn } from "@/lib/utils";
 import type { SyncQueueItem } from "@/types/agri";
+
+const STANDALONE_ROUTES = new Set([
+  "/login",
+  "/register",
+  "/forgot-password",
+  "/auth/callback",
+  "/onboarding",
+]);
 
 const NAV_ITEMS = [
   { href: "/", label: "Dashboard", shortLabel: "Home", icon: LayoutDashboard },
@@ -50,9 +61,45 @@ interface BeforeInstallPromptEvent extends Event {
 
 export function AppShell({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
+  const router = useRouter();
   const { theme, setTheme } = useTheme();
+  const {
+    user,
+    farmerProfile,
+    onboardingProgress,
+    isAuthenticated,
+    isExpired,
+    isLoading: authLoading,
+    logout,
+  } = useAuthSession();
   const { farms, activeFarm, setActiveFarmId } = useFarms();
   const { syncNow, resolveConflict } = useSyncController();
+
+  const isStandalone = STANDALONE_ROUTES.has(pathname);
+
+  React.useEffect(() => {
+    if (authLoading || pathname === "/offline") return;
+    if (!isAuthenticated && !isStandalone) {
+      router.replace(isExpired ? "/login?reason=expired" : "/login");
+      return;
+    }
+    if (
+      isAuthenticated &&
+      onboardingProgress &&
+      !onboardingProgress.isCompleted &&
+      !isStandalone
+    ) {
+      router.replace("/onboarding");
+    }
+  }, [
+    authLoading,
+    isAuthenticated,
+    isExpired,
+    isStandalone,
+    onboardingProgress,
+    pathname,
+    router,
+  ]);
 
   const isOnline = useAppStore((s) => s.isOnline);
   const pendingSyncCount = useAppStore((s) => s.pendingSyncCount);
@@ -94,6 +141,10 @@ export function AppShell({ children }: { children: React.ReactNode }) {
       setSyncing(false);
     }
   };
+
+  if (isStandalone) {
+    return <>{children}</>;
+  }
 
   return (
     <div className="min-h-screen flex flex-col lg:flex-row bg-background text-foreground">
@@ -187,6 +238,27 @@ export function AppShell({ children }: { children: React.ReactNode }) {
               </Button>
             )}
           </div>
+
+          {user && (
+            <div className="pt-2 border-t border-border flex items-center justify-between gap-2 text-xs">
+              <div className="min-w-0">
+                <p className="font-semibold truncate">
+                  {farmerProfile ? `${farmerProfile.firstName} ${farmerProfile.lastName}` : user.name}
+                </p>
+                <p className="text-[10px] text-muted-foreground truncate">{user.email}</p>
+              </div>
+              <div className="flex items-center gap-1 shrink-0">
+                <Link href="/onboarding" title="Edit Profile & Onboarding">
+                  <Button size="sm" variant="ghost" aria-label="Edit Onboarding">
+                    <UserCheck className="h-3.5 w-3.5" />
+                  </Button>
+                </Link>
+                <Button size="sm" variant="ghost" onClick={logout} title="Sign Out" aria-label="Sign out">
+                  <LogOut className="h-3.5 w-3.5 text-red-600" />
+                </Button>
+              </div>
+            </div>
+          )}
         </div>
       </aside>
 
@@ -289,6 +361,34 @@ export function AppShell({ children }: { children: React.ReactNode }) {
                 );
               })}
             </div>
+            {user && (
+              <div className="pt-3 border-t border-border space-y-2 text-xs">
+                <div>
+                  <p className="font-semibold truncate">
+                    {farmerProfile ? `${farmerProfile.firstName} ${farmerProfile.lastName}` : user.name}
+                  </p>
+                  <p className="text-[11px] text-muted-foreground truncate">{user.email}</p>
+                </div>
+                <div className="grid grid-cols-2 gap-2">
+                  <Link href="/onboarding" onClick={() => setMobileMenuOpen(false)}>
+                    <Button size="sm" variant="outline" className="w-full">
+                      Edit Profile
+                    </Button>
+                  </Link>
+                  <Button
+                    size="sm"
+                    variant="danger"
+                    className="w-full"
+                    onClick={() => {
+                      setMobileMenuOpen(false);
+                      logout();
+                    }}
+                  >
+                    Sign Out
+                  </Button>
+                </div>
+              </div>
+            )}
           </div>
         </div>
       )}

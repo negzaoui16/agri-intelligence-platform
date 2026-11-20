@@ -26,6 +26,7 @@ import {
   useRefreshFarmAnalysis,
   useReports,
 } from "@/hooks/useFarms";
+import { useAuthSession } from "@/hooks/useAuth";
 import { useAppStore } from "@/lib/store/app-store";
 import { formatDistance, formatNumber, formatTimestamp } from "@/lib/utils";
 import {
@@ -41,6 +42,7 @@ import {
 } from "lucide-react";
 
 export default function DashboardPage() {
+  const { user, farmerProfile } = useAuthSession();
   const { farms, activeFarm, setActiveFarmId, isLoading: farmsLoading } = useFarms();
   const { data: analysis, isLoading: analysisLoading } = useFarmAnalysis(activeFarm);
   const refreshMutation = useRefreshFarmAnalysis();
@@ -49,6 +51,8 @@ export default function DashboardPage() {
   const pendingSyncCount = useAppStore((s) => s.pendingSyncCount);
 
   const totalAreaHa = farms.reduce((sum, f) => sum + (f.areaHectares || 0), 0);
+  const displayFirstName =
+    farmerProfile?.firstName || user?.name?.split(" ")[0] || "Farmer";
 
   if (!farmsLoading && farms.length === 0) {
     return (
@@ -77,17 +81,22 @@ export default function DashboardPage() {
 
   return (
     <div className="space-y-5">
-      {/* Header Row */}
+      {/* Personalized Header Row */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
         <div>
           <h1 className="text-xl sm:text-2xl font-bold tracking-tight">
-            Agricultural Decision Dashboard
+            Welcome, {displayFirstName}
           </h1>
           <p className="text-xs sm:text-sm text-muted-foreground">
-            Real-time meteorology, hydrography, FAO-56 crop water balance & PVGIS solar feasibility.
+            {farmerProfile?.governorate ? `${farmerProfile.governorate}, ${farmerProfile.country}` : "Agricultural Intelligence Workspace"} • Live weather, water proximity, FAO-56 irrigation & PVGIS solar feasibility.
           </p>
         </div>
         <div className="flex flex-wrap gap-2">
+          <Link href="/onboarding">
+            <Button size="sm" variant="outline">
+              Edit Setup
+            </Button>
+          </Link>
           <Link href="/map">
             <Button size="sm" variant="outline">
               <MapIcon className="h-3.5 w-3.5" />
@@ -104,7 +113,7 @@ export default function DashboardPage() {
               <RefreshCw
                 className={`h-3.5 w-3.5 ${refreshMutation.isPending ? "animate-spin" : ""}`}
               />
-              {refreshMutation.isPending ? "Analyzing..." : "Run Live Analysis"}
+              {refreshMutation.isPending ? "Analyzing..." : "Analyze my farm"}
             </Button>
           )}
         </div>
@@ -170,8 +179,19 @@ export default function DashboardPage() {
             <div>
               <div className="flex flex-wrap items-center gap-2">
                 <CardTitle className="text-lg">{activeFarm.name}</CardTitle>
-                <Badge variant="green">{activeFarm.irrigationConfig.cropCode.toUpperCase()}</Badge>
+                {activeFarm.crops && activeFarm.crops.length > 0 ? (
+                  activeFarm.crops.map((c) => (
+                    <Badge key={c.id} variant="green">
+                      {c.cropName} ({c.cultivatedAreaHa} ha)
+                    </Badge>
+                  ))
+                ) : (
+                  <Badge variant="green">{activeFarm.irrigationConfig.cropCode.toUpperCase()}</Badge>
+                )}
                 <Badge variant="neutral">{activeFarm.soilProfile.textureClass}</Badge>
+                {activeFarm.boundaryVerified === false && (
+                  <Badge variant="amber">Pin-Only Location</Badge>
+                )}
               </div>
               <CardDescription className="mt-1">
                 {activeFarm.centerLat.toFixed(5)}°, {activeFarm.centerLon.toFixed(5)}° •{" "}
@@ -238,9 +258,17 @@ export default function DashboardPage() {
                     </p>
                   )}
                   <p className="text-xs text-muted-foreground">
-                    Pump Load: <strong>{analysis.pump.electricalPowerKw} kW</strong> • Peak{" "}
-                    <strong>{analysis.irrigation.peakDailyWaterM3} m³/day</strong> (unverified water availability)
+                    Pump Load: <strong>{analysis.pump.electricalPowerKw} kW</strong>{" "}
+                    <span className="text-[10px]">
+                      ({activeFarm.pumpConfig.isFarmerProvided ? "Farmer specs" : "Estimated"})
+                    </span>{" "}
+                    • Peak <strong>{analysis.irrigation.peakDailyWaterM3} m³/day</strong>
                   </p>
+                  {activeFarm.farmerWaterSources && activeFarm.farmerWaterSources.length > 0 && (
+                    <p className="text-[11px] text-sky-700 dark:text-sky-300">
+                      Farmer-reported: {activeFarm.farmerWaterSources.map((w) => w.sourceType).join(", ")}
+                    </p>
+                  )}
                 </div>
 
                 {/* Solar Potential */}

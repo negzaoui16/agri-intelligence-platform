@@ -33,7 +33,115 @@ export type IrrigationMethod =
   | "SUBSURFACE_DRIP"
   | "SPRINKLER"
   | "CENTER_PIVOT"
-  | "FURROW";
+  | "FURROW"
+  | "MANUAL"
+  | "NONE"
+  | "OTHER";
+
+export type FarmerExperienceLevel =
+  | "BEGINNER"
+  | "LESS_THAN_2_YEARS"
+  | "YEARS_2_5"
+  | "YEARS_5_10"
+  | "MORE_THAN_10_YEARS";
+
+export type FarmerActivityType =
+  | "SMALL_FAMILY_FARM"
+  | "COMMERCIAL_AGRICULTURE"
+  | "AGRICULTURAL_COOPERATIVE"
+  | "AGRICULTURAL_LANDOWNER"
+  | "OTHER";
+
+export type FarmerWaterSourceType =
+  | "WELL"
+  | "BOREHOLE"
+  | "RIVER"
+  | "LAKE"
+  | "RESERVOIR"
+  | "RAINWATER_COLLECTION"
+  | "PUBLIC_NETWORK"
+  | "OTHER"
+  | "UNKNOWN";
+
+export type SolarOwnershipStatus =
+  | "YES"
+  | "NO"
+  | "PLANNING"
+  | "NOT_SURE";
+
+export interface UserAccountRecord {
+  id: string;
+  email: string;
+  name: string;
+  passwordHash: string;
+  role: "FARMER" | "AGRONOMIST" | "ADMIN";
+  authProvider: "EMAIL" | "GOOGLE";
+  googleId?: string | null;
+  emailVerified: boolean;
+  resetTokenHash?: string | null;
+  resetTokenExpiresAt?: string | null;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface FarmerProfileRecord {
+  id: string;
+  userId: string;
+  firstName: string;
+  lastName: string;
+  phone?: string | null;
+  email: string;
+  avatarUrl?: string | null;
+  country: string;
+  governorate?: string | null;
+  delegation?: string | null;
+  locality?: string | null;
+  preferredLanguage: "en" | "fr" | "ar";
+  preferredUnits: "metric" | "sqm";
+  experienceLevel: FarmerExperienceLevel;
+  activityType: FarmerActivityType;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface OnboardingProgressRecord {
+  id: string;
+  userId: string;
+  activeFarmId?: string | null;
+  currentStep: number;
+  completedSteps: number[];
+  isCompleted: boolean;
+  completedAt?: string | null;
+  updatedAt: string;
+}
+
+export interface FarmCropRecord {
+  id: string;
+  farmId: string;
+  cropCode: string;
+  cropName: string;
+  cultivatedAreaHa: number;
+  areaUnit: "ha" | "m2";
+  plantingDate?: string | null;
+  growthStage?: string | null;
+  plotCount: number;
+  plantingDensity?: string | null;
+  irrigationMethod: IrrigationMethod;
+}
+
+export interface FarmerWaterSourceRecord {
+  id: string;
+  farmId: string;
+  sourceType: FarmerWaterSourceType;
+  latitude?: number | null;
+  longitude?: number | null;
+  distanceMeters?: number | null;
+  availability?: string | null;
+  wellDepthM?: number | null;
+  flowRateM3Hr?: number | null;
+  waterQualityNotes?: string | null;
+  isFarmerProvided: boolean;
+}
 
 export type WaterSourceType =
   | "RIVER"
@@ -83,16 +191,28 @@ export interface SoilProfileData {
 }
 
 export interface SolarConfigurationData {
+  solarStatus?: SolarOwnershipStatus;
   capacityKwp: number;
+  panelCount?: number | null;
+  panelWattageW?: number | null;
   tiltDeg: number;
   azimuthDeg: number;
   mountingType: "free" | "building";
   systemLossPct: number;
   optimizeAngles: boolean;
+  hasBattery?: boolean;
+  batteryCapacityKwh?: number | null;
+  hasGridConnection?: boolean;
+  wantsEstimate?: "YES" | "NO" | "NOT_SURE";
+  budgetAmount?: number | null;
+  isFarmerProvided?: boolean;
   updatedAt: string;
 }
 
 export interface PumpConfigurationData {
+  hasPump?: boolean;
+  pumpType?: string | null;
+  powerKw?: number | null;
   flowRateM3Hr: number;
   staticHeadM: number;
   pipeLengthM: number;
@@ -104,6 +224,7 @@ export interface PumpConfigurationData {
   pumpEfficiencyPct: number;
   motorEfficiencyPct: number;
   operatingHoursDay: number;
+  isFarmerProvided?: boolean;
   updatedAt: string;
 }
 
@@ -407,6 +528,8 @@ export interface CropSpec {
   optimalTempMaxC: number;
   droughtTolerance: "Low" | "Moderate" | "High";
   salinityToleranceDsm: number;
+  growingSeason?: string;
+  waterSensitivity?: "Low" | "Moderate" | "High";
 }
 
 export interface MonthlyIrrigationDemand {
@@ -488,13 +611,20 @@ export interface FarmRecord {
   description?: string | null;
   country?: string | null;
   region?: string | null;
+  governorate?: string | null;
+  delegation?: string | null;
+  locality?: string | null;
   centerLat: number;
   centerLon: number;
   elevationM?: number | null;
   areaHectares: number;
   perimeterMeters: number;
   boundary?: GeoPolygon | null;
+  boundaryVerified?: boolean;
   pins: FarmPin[];
+  crops?: FarmCropRecord[];
+  allowCropOverlap?: boolean;
+  farmerWaterSources?: FarmerWaterSourceRecord[];
   soilProfile: SoilProfileData;
   solarConfig: SolarConfigurationData;
   pumpConfig: PumpConfigurationData;
@@ -609,7 +739,7 @@ export interface AIChatMessageRecord {
 export interface SyncQueueItem {
   seq?: number;
   operationId: string;
-  entityType: "FARM" | "PIN" | "BOUNDARY" | "CONFIG" | "REPORT";
+  entityType: "FARM" | "PIN" | "BOUNDARY" | "CONFIG" | "REPORT" | "ONBOARDING";
   entityId: string;
   action: "CREATE" | "UPDATE" | "DELETE";
   payload: unknown;

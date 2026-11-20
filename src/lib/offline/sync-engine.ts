@@ -1,10 +1,12 @@
 import type {
   CompleteFarmAnalysisBundle,
+  FarmerProfileRecord,
   FarmRecord,
   FeasibilityReportPayload,
+  OnboardingProgressRecord,
   SyncQueueItem,
 } from "@/types/agri";
-import { offlineDb, type OfflineFarmRow } from "./db";
+import { offlineDb, type OfflineFarmRow, type OfflineOnboardingRow } from "./db";
 
 function generateUuid(): string {
   if (typeof crypto !== "undefined" && typeof crypto.randomUUID === "function") {
@@ -259,4 +261,64 @@ export async function resolveConflictItem(
     });
     await flushSyncQueue();
   }
+}
+
+export async function saveOnboardingOffline(params: {
+  userId: string;
+  profile?: FarmerProfileRecord | null;
+  progress?: OnboardingProgressRecord | null;
+  farm?: FarmRecord | null;
+  queueSync?: boolean;
+}): Promise<void> {
+  if (!offlineDb) return;
+  const now = new Date().toISOString();
+  await offlineDb.onboarding.put({
+    userId: params.userId,
+    profile: params.profile ?? null,
+    progress: params.progress ?? null,
+    farm: params.farm ?? null,
+    updatedAt: now,
+  });
+
+  if (params.queueSync) {
+    await offlineDb.syncQueue.add({
+      operationId: generateUuid(),
+      entityType: "ONBOARDING",
+      entityId: params.userId,
+      action: "UPDATE",
+      payload: {
+        profile: params.profile,
+        progress: params.progress,
+      },
+      clientTimestamp: now,
+      status: "PENDING",
+    });
+    if (params.farm) {
+      await offlineDb.farms.put({ ...params.farm, syncStatus: "PENDING" });
+      await offlineDb.syncQueue.add({
+        operationId: generateUuid(),
+        entityType: "FARM",
+        entityId: params.farm.id,
+        action: "UPDATE",
+        payload: params.farm,
+        clientTimestamp: now,
+        status: "PENDING",
+      });
+    }
+  }
+}
+
+export async function getOfflineOnboarding(
+  userId: string
+): Promise<OfflineOnboardingRow | null> {
+  if (!offlineDb) return null;
+  return (await offlineDb.onboarding.get(userId)) ?? null;
+}
+
+export async function clearUserLocalCacheOnLogout(): Promise<void> {
+  if (!offlineDb) return;
+  await offlineDb.farms.clear();
+  await offlineDb.analyses.clear();
+  await offlineDb.reports.clear();
+  await offlineDb.onboarding.clear();
 }

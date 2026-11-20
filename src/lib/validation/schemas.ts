@@ -71,7 +71,16 @@ export const createFarmSchema = z.object({
     .enum(["SANDY", "SANDY_LOAM", "LOAM", "SILT_LOAM", "CLAY_LOAM", "CLAY"])
     .default("LOAM"),
   irrigationMethod: z
-    .enum(["DRIP", "SUBSURFACE_DRIP", "SPRINKLER", "CENTER_PIVOT", "FURROW"])
+    .enum([
+      "DRIP",
+      "SUBSURFACE_DRIP",
+      "SPRINKLER",
+      "CENTER_PIVOT",
+      "FURROW",
+      "MANUAL",
+      "NONE",
+      "OTHER",
+    ])
     .default("DRIP"),
 });
 
@@ -80,7 +89,7 @@ export const syncOperationRequestSchema = z.object({
     .array(
       z.object({
         operationId: z.string().min(4).max(128),
-        entityType: z.enum(["FARM", "PIN", "BOUNDARY", "CONFIG", "REPORT"]),
+        entityType: z.enum(["FARM", "PIN", "BOUNDARY", "CONFIG", "REPORT", "ONBOARDING"]),
         entityId: z.string().min(1).max(128),
         action: z.enum(["CREATE", "UPDATE", "DELETE"]),
         payload: z.unknown(),
@@ -88,6 +97,100 @@ export const syncOperationRequestSchema = z.object({
       })
     )
     .max(100),
+});
+
+export const strongPasswordSchema = z
+  .string()
+  .min(8, "Password must be at least 8 characters")
+  .max(128)
+  .regex(/[A-Z]/, "Password must include at least one uppercase letter")
+  .regex(/[a-z]/, "Password must include at least one lowercase letter")
+  .regex(/[0-9]/, "Password must include at least one number");
+
+export const registerRequestSchema = z.object({
+  firstName: z.string().trim().min(2, "First name must be at least 2 characters").max(80),
+  lastName: z.string().trim().min(2, "Last name must be at least 2 characters").max(80),
+  email: z.string().trim().email("Enter a valid email address"),
+  password: strongPasswordSchema,
+});
+
+export const emailLoginRequestSchema = z.object({
+  email: z.string().trim().email("Enter a valid email address"),
+  password: z.string().min(1, "Password is required"),
+});
+
+export const forgotPasswordSchema = z.object({
+  email: z.string().trim().email("Enter a valid email address"),
+});
+
+export const resetPasswordSchema = z.object({
+  token: z.string().min(4, "Reset code is required"),
+  newPassword: strongPasswordSchema,
+});
+
+export const farmerProfileStageSchema = z.object({
+  firstName: z.string().trim().min(1, "First name is required").max(80),
+  lastName: z.string().trim().min(1, "Last name is required").max(80),
+  phone: z.string().trim().max(40).nullable().optional(),
+  avatarUrl: z.string().max(500).nullable().optional(),
+  country: z.string().trim().min(2).max(80).default("Tunisia"),
+  governorate: z.string().trim().max(80).nullable().optional(),
+  delegation: z.string().trim().max(80).nullable().optional(),
+  locality: z.string().trim().max(120).nullable().optional(),
+  preferredLanguage: z.enum(["en", "fr", "ar"]).default("en"),
+  preferredUnits: z.enum(["metric", "sqm"]).default("metric"),
+  experienceLevel: z.enum([
+    "BEGINNER",
+    "LESS_THAN_2_YEARS",
+    "YEARS_2_5",
+    "YEARS_5_10",
+    "MORE_THAN_10_YEARS",
+  ]),
+  activityType: z.enum([
+    "SMALL_FAMILY_FARM",
+    "COMMERCIAL_AGRICULTURE",
+    "AGRICULTURAL_COOPERATIVE",
+    "AGRICULTURAL_LANDOWNER",
+    "OTHER",
+  ]),
+});
+
+export const farmCropInputSchema = z.object({
+  id: z.string().optional(),
+  cropCode: z.string().min(1).max(60),
+  cropName: z.string().min(1).max(120),
+  cultivatedAreaHa: z.coerce.number().positive("Crop area must be > 0").max(100000),
+  areaUnit: z.enum(["ha", "m2"]).default("ha"),
+  plantingDate: z.string().max(40).nullable().optional(),
+  growthStage: z.string().max(60).nullable().optional(),
+  plotCount: z.coerce.number().int().min(1).max(1000).default(1),
+  plantingDensity: z.string().max(80).nullable().optional(),
+  irrigationMethod: z
+    .enum(["DRIP", "SUBSURFACE_DRIP", "SPRINKLER", "CENTER_PIVOT", "FURROW", "MANUAL", "NONE", "OTHER"])
+    .default("DRIP"),
+});
+
+export const farmerWaterSourceSchema = z.object({
+  id: z.string().optional(),
+  sourceType: z.enum([
+    "WELL",
+    "BOREHOLE",
+    "RIVER",
+    "LAKE",
+    "RESERVOIR",
+    "RAINWATER_COLLECTION",
+    "PUBLIC_NETWORK",
+    "OTHER",
+    "UNKNOWN",
+  ]),
+  latitude: z.coerce.number().min(-90).max(90).nullable().optional(),
+  longitude: z.coerce.number().min(-180).max(180).nullable().optional(),
+  distanceMeters: z.coerce.number().min(0).max(100000).nullable().optional(),
+  availability: z.string().max(100).nullable().optional(),
+  wellDepthM: z.coerce.number().min(0).max(2000).nullable().optional(),
+  flowRateM3Hr: z.coerce.number().min(0).max(5000).nullable().optional(),
+  waterQualityNotes: z.string().max(300).nullable().optional(),
+  isFarmerProvided: z.boolean().default(true),
 });
 
 export const aiChatRequestSchema = z.object({

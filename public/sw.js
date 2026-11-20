@@ -1,4 +1,4 @@
-const CACHE_NAME = "terrapulse-agri-shell-v1";
+const CACHE_NAME = "terrapulse-agri-shell-v2";
 const APP_ROUTES = [
   "/",
   "/map",
@@ -8,6 +8,10 @@ const APP_ROUTES = [
   "/solar",
   "/assistant",
   "/reports",
+  "/onboarding",
+  "/login",
+  "/register",
+  "/forgot-password",
   "/offline",
   "/icons/icon-192.png",
   "/icons/icon-512.png",
