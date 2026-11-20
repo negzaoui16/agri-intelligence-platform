@@ -9,7 +9,10 @@ export default defineConfig({
     testTimeout: 30000,
     // Prisma reads .env on import; keep tests on the local JSON store so they can
     // never register users or reset data in the real (Supabase) database.
-    env: { DATABASE_URL: "" },
+    env: { DATABASE_URL: "", LOCAL_DATA_DIR: ".data-test" },
+    // Test files share one local JSON store and reset it; running them in parallel makes them
+    // overwrite each other's data (flaky auth/sync tests). Run files one at a time.
+    fileParallelism: false,
   },
   resolve: {
     alias: {
