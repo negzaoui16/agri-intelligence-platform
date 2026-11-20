@@ -17,6 +17,50 @@ import type {
 import { IRRIGATION_EFFICIENCY_DEFAULTS, SOIL_TEXTURE_DEFAULTS } from "./defaults";
 import { readLocalDb, writeLocalDb } from "./local-store";
 import { getPrismaClient } from "./prisma";
+import {
+  DatabaseWriteError,
+  isUniqueViolation,
+  pgAppendConversation,
+  pgGetConversation,
+  pgGetFarm,
+  pgListFarms,
+  pgListReports,
+  pgSaveFarm,
+  pgSaveProfile,
+  pgSaveProgress,
+  pgSaveReport,
+  pgSaveUser,
+  profileRowToRecord,
+  progressRowToRecord,
+  userRowToRecord,
+} from "./pg-store";
+
+/** Runs a Postgres write and rethrows failures with context instead of silently losing data. */
+async function dbWrite<T>(operation: string, fn: () => Promise<T>): Promise<T> {
+  try {
+    return await fn();
+  } catch (err) {
+    if (err instanceof Error && err.message === "DUPLICATE_EMAIL") throw err;
+    console.error(`[db] ${operation} failed`, err);
+    throw new DatabaseWriteError(operation);
+  }
+}
+
+/**
+ * Farms reference their owner. Make sure the owner's account row exists in Postgres,
+ * created from the real account record (never a placeholder email).
+ */
+async function ensureUserRow(userId: string): Promise<void> {
+  const prisma = getPrismaClient();
+  if (!prisma) return;
+  const exists = await prisma.user.findUnique({ where: { id: userId }, select: { id: true } });
+  if (exists) return;
+  const local = readLocalDb().users.find((u) => u.id === userId);
+  if (!local) {
+    throw new Error(`No account record for user ${userId}; cannot save farm data for an unknown owner`);
+  }
+  await pgSaveUser(prisma, local);
+}
 
 export function computePolygonMetrics(boundary?: GeoPolygon | null): {
   areaHectares: number;
@@ -49,126 +93,7 @@ export function computePolygonMetrics(boundary?: GeoPolygon | null): {
 
 export async function listFarms(userId: string): Promise<FarmRecord[]> {
   const prisma = getPrismaClient();
-  if (prisma) {
-    try {
-      const rows = await prisma.farm.findMany({
-        where: { userId },
-        include: {
-          boundary: true,
-          locations: true,
-          soilProfile: true,
-          solarConfig: true,
-          pumpConfig: true,
-          irrigationAnalyses: { orderBy: { retrievedAt: "desc" }, take: 1 },
-        },
-        orderBy: { updatedAt: "desc" },
-      });
-      return rows.map((row) => ({
-        id: row.id,
-        userId: row.userId,
-        name: row.name,
-        description: row.description,
-        country: row.country,
-        region: row.region,
-        centerLat: row.centerLat,
-        centerLon: row.centerLon,
-        elevationM: row.elevationM,
-        areaHectares: row.areaHectares,
-        perimeterMeters: row.perimeterMeters,
-        boundary: (row.boundary?.geojson as unknown as GeoPolygon) ?? null,
-        pins: row.locations.map((p) => ({
-          id: p.id,
-          farmId: p.farmId,
-          label: p.label,
-          role: p.role,
-          latitude: p.latitude,
-          longitude: p.longitude,
-          elevationM: p.elevationM,
-          notes: p.notes,
-          createdAt: p.createdAt.toISOString(),
-        })),
-        soilProfile: row.soilProfile
-          ? {
-              textureClass: row.soilProfile.textureClass,
-              fieldCapacityMmM: row.soilProfile.fieldCapacityMmM,
-              wiltingPointMmM: row.soilProfile.wiltingPointMmM,
-              tawMmM: row.soilProfile.tawMmM,
-              infiltrationRateMmHr: row.soilProfile.infiltrationRateMmHr,
-              organicMatterPct: row.soilProfile.organicMatterPct,
-              ph: row.soilProfile.ph,
-              source: row.soilProfile.source,
-              updatedAt: row.soilProfile.updatedAt.toISOString(),
-            }
-          : {
-              ...SOIL_TEXTURE_DEFAULTS.LOAM,
-              source: "Default Loam Profile",
-              updatedAt: row.updatedAt.toISOString(),
-            },
-        solarConfig: row.solarConfig
-          ? {
-              capacityKwp: row.solarConfig.capacityKwp,
-              tiltDeg: row.solarConfig.tiltDeg,
-              azimuthDeg: row.solarConfig.azimuthDeg,
-              mountingType:
-                row.solarConfig.mountingType === "building" ? "building" : "free",
-              systemLossPct: row.solarConfig.systemLossPct,
-              optimizeAngles: row.solarConfig.optimizeAngles,
-              updatedAt: row.solarConfig.updatedAt.toISOString(),
-            }
-          : {
-              capacityKwp: 5,
-              tiltDeg: 30,
-              azimuthDeg: 0,
-              mountingType: "free",
-              systemLossPct: 14,
-              optimizeAngles: false,
-              updatedAt: row.updatedAt.toISOString(),
-            },
-        pumpConfig: row.pumpConfig
-          ? {
-              flowRateM3Hr: row.pumpConfig.flowRateM3Hr,
-              staticHeadM: row.pumpConfig.staticHeadM,
-              pipeLengthM: row.pumpConfig.pipeLengthM,
-              pipeDiameterMm: row.pumpConfig.pipeDiameterMm,
-              pipeMaterialC: 140,
-              frictionLossM: row.pumpConfig.frictionLossM,
-              operatingPressureHeadM: row.pumpConfig.operatingPressureHeadM,
-              totalDynamicHeadM: row.pumpConfig.totalDynamicHeadM,
-              pumpEfficiencyPct: row.pumpConfig.pumpEfficiencyPct,
-              motorEfficiencyPct: row.pumpConfig.motorEfficiencyPct,
-              operatingHoursDay: row.pumpConfig.operatingHoursDay,
-              updatedAt: row.pumpConfig.updatedAt.toISOString(),
-            }
-          : {
-              flowRateM3Hr: 18,
-              staticHeadM: 15,
-              pipeLengthM: 150,
-              pipeDiameterMm: 75,
-              pipeMaterialC: 140,
-              frictionLossM: 4.2,
-              operatingPressureHeadM: 15,
-              totalDynamicHeadM: 34.2,
-              pumpEfficiencyPct: 65,
-              motorEfficiencyPct: 88,
-              operatingHoursDay: 6,
-              updatedAt: row.updatedAt.toISOString(),
-            },
-        irrigationConfig: {
-          cropCode: row.primaryCropCode,
-          irrigatedAreaHa: row.areaHectares,
-          irrigationMethod: row.irrigationAnalyses[0]?.irrigationMethod ?? "DRIP",
-          applicationEfficiencyPct:
-            row.irrigationAnalyses[0]?.applicationEfficiencyPct ?? 90,
-          plantingMonth: row.plantingMonth,
-        },
-        createdAt: row.createdAt.toISOString(),
-        updatedAt: row.updatedAt.toISOString(),
-      }));
-    } catch {
-      // Fall back to local persistent JSON store
-    }
-  }
-
+  if (prisma) return pgListFarms(prisma, userId);
   const db = readLocalDb();
   return db.farms.filter((f) => f.userId === userId);
 }
@@ -177,22 +102,12 @@ export async function getFarmById(
   farmId: string,
   ownerUserId?: string
 ): Promise<FarmRecord | null> {
-  const db = readLocalDb();
-  const localMatch = db.farms.find((f) => f.id === farmId) ?? null;
-  if (localMatch && ownerUserId && localMatch.userId !== ownerUserId) {
-    return null;
-  }
   const prisma = getPrismaClient();
-  if (!prisma) return localMatch;
-  try {
-    const row = await prisma.farm.findUnique({ where: { id: farmId } });
-    if (!row) return localMatch;
-    if (ownerUserId && row.userId !== ownerUserId) return null;
-    const all = await listFarms(row.userId);
-    return all.find((f) => f.id === farmId) ?? localMatch;
-  } catch {
-    return localMatch;
-  }
+  const farm = prisma
+    ? await pgGetFarm(prisma, farmId)
+    : readLocalDb().farms.find((f) => f.id === farmId) ?? null;
+  if (farm && ownerUserId && farm.userId !== ownerUserId) return null;
+  return farm;
 }
 
 export interface UpsertFarmInput {
@@ -226,9 +141,10 @@ export interface UpsertFarmInput {
 }
 
 export async function upsertFarm(input: UpsertFarmInput): Promise<FarmRecord> {
-  const db = readLocalDb();
   const now = input.updatedAt ?? new Date().toISOString();
-  const existing = input.id ? db.farms.find((f) => f.id === input.id) : undefined;
+  // Merge from the same store reads come from (Postgres when connected), so a partial
+  // update never resets fields the local file doesn't know about.
+  const existing = input.id ? (await getFarmById(input.id)) ?? undefined : undefined;
   if (existing && existing.userId !== input.userId) {
     throw new Error("Forbidden: You do not own this agricultural property");
   }
@@ -377,102 +293,53 @@ export async function upsertFarm(input: UpsertFarmInput): Promise<FarmRecord> {
     updatedAt: now,
   };
 
-  if (existing) {
+  const prisma = getPrismaClient();
+  if (prisma) {
+    return dbWrite(`save farm ${farmId}`, async () => {
+      await ensureUserRow(input.userId);
+      return pgSaveFarm(prisma, nextRecord);
+    });
+  }
+
+  const db = readLocalDb();
+  if (db.farms.some((f) => f.id === farmId)) {
     db.farms = db.farms.map((f) => (f.id === farmId ? nextRecord : f));
   } else {
     db.farms.unshift(nextRecord);
   }
   writeLocalDb(db);
-
-  // Sync to PostGIS if DATABASE_URL is connected
-  const prisma = getPrismaClient();
-  if (prisma) {
-    try {
-      await prisma.user.upsert({
-        where: { id: input.userId },
-        update: {},
-        create: {
-          id: input.userId,
-          email: "agronomist@terrapulse.agri",
-          name: "Field Agronomist",
-          passwordHash: "demo",
-        },
-      });
-      await prisma.farm.upsert({
-        where: { id: farmId },
-        update: {
-          name: nextRecord.name,
-          description: nextRecord.description,
-          country: nextRecord.country,
-          region: nextRecord.region,
-          centerLat: nextRecord.centerLat,
-          centerLon: nextRecord.centerLon,
-          elevationM: nextRecord.elevationM,
-          areaHectares: nextRecord.areaHectares,
-          perimeterMeters: nextRecord.perimeterMeters,
-          primaryCropCode: nextRecord.irrigationConfig.cropCode,
-          plantingMonth: nextRecord.irrigationConfig.plantingMonth,
-        },
-        create: {
-          id: farmId,
-          userId: input.userId,
-          name: nextRecord.name,
-          description: nextRecord.description,
-          country: nextRecord.country,
-          region: nextRecord.region,
-          centerLat: nextRecord.centerLat,
-          centerLon: nextRecord.centerLon,
-          elevationM: nextRecord.elevationM,
-          areaHectares: nextRecord.areaHectares,
-          perimeterMeters: nextRecord.perimeterMeters,
-          primaryCropCode: nextRecord.irrigationConfig.cropCode,
-          plantingMonth: nextRecord.irrigationConfig.plantingMonth,
-        },
-      });
-      if (boundary) {
-        const geojsonStr = JSON.stringify(boundary);
-        await prisma.$executeRaw`
-          INSERT INTO "FarmBoundary" ("id", "farmId", "geojson", "areaHectares", "perimeterMeters", "geom", "updatedAt")
-          VALUES (${`bnd_${farmId}`}, ${farmId}, ${geojsonStr}::jsonb, ${areaHectares}, ${perimeterMeters}, ST_SetSRID(ST_GeomFromGeoJSON(${geojsonStr}), 4326), NOW())
-          ON CONFLICT ("farmId") DO UPDATE SET
-            "geojson" = EXCLUDED."geojson",
-            "areaHectares" = EXCLUDED."areaHectares",
-            "perimeterMeters" = EXCLUDED."perimeterMeters",
-            "geom" = EXCLUDED."geom",
-            "updatedAt" = NOW()
-        `;
-      }
-    } catch {
-      // Local store already persisted safely
-    }
-  }
-
   return nextRecord;
 }
 
 export async function deleteFarm(farmId: string, ownerUserId?: string): Promise<boolean> {
+  const prisma = getPrismaClient();
+  if (prisma) {
+    const target = await prisma.farm.findUnique({ where: { id: farmId }, select: { userId: true } });
+    if (!target) return false;
+    if (ownerUserId && target.userId !== ownerUserId) {
+      throw new Error("Forbidden: You do not own this agricultural property");
+    }
+    // Cascades to boundary, pins, soil, solar, pump, crops, water sources and reports
+    await dbWrite(`delete farm ${farmId}`, () => prisma.farm.delete({ where: { id: farmId } }));
+    const db = readLocalDb();
+    if (db.analyses[farmId]) {
+      delete db.analyses[farmId];
+      writeLocalDb(db);
+    }
+    return true;
+  }
+
   const db = readLocalDb();
   const target = db.farms.find((f) => f.id === farmId);
   if (!target) return false;
   if (ownerUserId && target.userId !== ownerUserId) {
     throw new Error("Forbidden: You do not own this agricultural property");
   }
-  const initialLen = db.farms.length;
   db.farms = db.farms.filter((f) => f.id !== farmId);
   delete db.analyses[farmId];
   db.reports = db.reports.filter((r) => r.farmId !== farmId);
   writeLocalDb(db);
-
-  const prisma = getPrismaClient();
-  if (prisma) {
-    try {
-      await prisma.farm.delete({ where: { id: farmId } });
-    } catch {
-      // Ignore if not in Postgres
-    }
-  }
-
-  return db.farms.length < initialLen;
+  return true;
 }
 
 export function saveAnalysisBundle(bundle: CompleteFarmAnalysisBundle): void {
@@ -486,13 +353,23 @@ export function getAnalysisBundle(farmId: string): CompleteFarmAnalysisBundle | 
   return db.analyses[farmId] ?? null;
 }
 
-export function saveReport(report: FeasibilityReportPayload): void {
+export async function saveReport(report: FeasibilityReportPayload): Promise<void> {
+  const prisma = getPrismaClient();
+  if (prisma) {
+    await dbWrite(`save report ${report.id}`, () => pgSaveReport(prisma, report));
+    return;
+  }
   const db = readLocalDb();
   db.reports = [report, ...db.reports.filter((r) => r.id !== report.id)].slice(0, 50);
   writeLocalDb(db);
 }
 
-export function listReports(farmId?: string, ownerUserId?: string): FeasibilityReportPayload[] {
+export async function listReports(
+  farmId?: string,
+  ownerUserId?: string
+): Promise<FeasibilityReportPayload[]> {
+  const prisma = getPrismaClient();
+  if (prisma) return pgListReports(prisma, { farmId, ownerUserId });
   const db = readLocalDb();
   let list = db.reports;
   if (ownerUserId) {
@@ -507,18 +384,39 @@ export function listReports(farmId?: string, ownerUserId?: string): FeasibilityR
 
 // --- User Accounts, Farmer Profiles & Onboarding Progress ---
 
-export function findUserByEmail(email: string): UserAccountRecord | null {
-  const db = readLocalDb();
+export async function findUserByEmail(email: string): Promise<UserAccountRecord | null> {
   const normalized = email.trim().toLowerCase();
+  const prisma = getPrismaClient();
+  if (prisma) {
+    const row = await prisma.user.findFirst({
+      where: { email: { equals: normalized, mode: "insensitive" } },
+    });
+    return row ? userRowToRecord(row) : null;
+  }
+  const db = readLocalDb();
   return db.users.find((u) => u.email.toLowerCase() === normalized) ?? null;
 }
 
-export function findUserById(userId: string): UserAccountRecord | null {
+export async function findUserById(userId: string): Promise<UserAccountRecord | null> {
+  const prisma = getPrismaClient();
+  if (prisma) {
+    const row = await prisma.user.findUnique({ where: { id: userId } });
+    return row ? userRowToRecord(row) : null;
+  }
   const db = readLocalDb();
   return db.users.find((u) => u.id === userId) ?? null;
 }
 
-export function findUserByResetTokenHash(tokenHash: string): UserAccountRecord | null {
+export async function findUserByResetTokenHash(
+  tokenHash: string
+): Promise<UserAccountRecord | null> {
+  const prisma = getPrismaClient();
+  if (prisma) {
+    const row = await prisma.user.findFirst({
+      where: { resetTokenHash: tokenHash, resetTokenExpiresAt: { gt: new Date() } },
+    });
+    return row ? userRowToRecord(row) : null;
+  }
   const db = readLocalDb();
   return (
     db.users.find(
@@ -539,9 +437,8 @@ export async function createUserAccount(input: {
   googleId?: string | null;
   emailVerified?: boolean;
 }): Promise<UserAccountRecord> {
-  const db = readLocalDb();
   const normalizedEmail = input.email.trim().toLowerCase();
-  if (db.users.some((u) => u.email.toLowerCase() === normalizedEmail)) {
+  if (await findUserByEmail(normalizedEmail)) {
     throw new Error("DUPLICATE_EMAIL");
   }
   const now = new Date().toISOString();
@@ -559,28 +456,24 @@ export async function createUserAccount(input: {
     createdAt: now,
     updatedAt: now,
   };
-  db.users.push(record);
-  writeLocalDb(db);
 
   const prisma = getPrismaClient();
   if (prisma) {
-    try {
-      await prisma.user.create({
-        data: {
-          id: record.id,
-          email: record.email,
-          name: record.name,
-          passwordHash: record.passwordHash,
-          role: record.role,
-          authProvider: record.authProvider,
-          googleId: record.googleId,
-          emailVerified: record.emailVerified,
-        },
-      });
-    } catch {
-      // Persisted in local fallback
-    }
+    await dbWrite(`create user ${record.email}`, async () => {
+      try {
+        await pgSaveUser(prisma, record);
+      } catch (err) {
+        // Two registrations racing for the same email
+        if (isUniqueViolation(err, "email")) throw new Error("DUPLICATE_EMAIL");
+        throw err;
+      }
+    });
+    return record;
   }
+
+  const db = readLocalDb();
+  db.users.push(record);
+  writeLocalDb(db);
   return record;
 }
 
@@ -588,42 +481,38 @@ export async function updateUserAccount(
   userId: string,
   updates: Partial<UserAccountRecord>
 ): Promise<UserAccountRecord | null> {
-  const db = readLocalDb();
-  const idx = db.users.findIndex((u) => u.id === userId);
-  if (idx === -1) return null;
+  const current = await findUserById(userId);
+  if (!current) return null;
   const updated: UserAccountRecord = {
-    ...db.users[idx],
+    ...current,
     ...updates,
+    id: current.id,
     updatedAt: new Date().toISOString(),
   };
-  db.users[idx] = updated;
-  writeLocalDb(db);
 
   const prisma = getPrismaClient();
   if (prisma) {
-    try {
-      await prisma.user.update({
-        where: { id: userId },
-        data: {
-          name: updated.name,
-          passwordHash: updated.passwordHash,
-          authProvider: updated.authProvider,
-          googleId: updated.googleId,
-          emailVerified: updated.emailVerified,
-          resetTokenHash: updated.resetTokenHash,
-          resetTokenExpiresAt: updated.resetTokenExpiresAt
-            ? new Date(updated.resetTokenExpiresAt)
-            : null,
-        },
-      });
-    } catch {
-      // Local store updated
-    }
+    await dbWrite(`update user ${userId}`, () => pgSaveUser(prisma, updated));
+    return updated;
   }
+
+  const db = readLocalDb();
+  const idx = db.users.findIndex((u) => u.id === userId);
+  if (idx === -1) return null;
+  db.users[idx] = updated;
+  writeLocalDb(db);
   return updated;
 }
 
-export function getFarmerProfile(userId: string): FarmerProfileRecord | null {
+export async function getFarmerProfile(userId: string): Promise<FarmerProfileRecord | null> {
+  const prisma = getPrismaClient();
+  if (prisma) {
+    const row = await prisma.farmerProfile.findUnique({
+      where: { userId },
+      include: { user: true },
+    });
+    return row ? profileRowToRecord(row) : null;
+  }
   const db = readLocalDb();
   return db.farmerProfiles.find((p) => p.userId === userId) ?? null;
 }
@@ -636,10 +525,8 @@ export async function upsertFarmerProfile(
     lastName: string;
   }
 ): Promise<FarmerProfileRecord> {
-  const db = readLocalDb();
   const now = new Date().toISOString();
-  const existingIdx = db.farmerProfiles.findIndex((p) => p.userId === userId);
-  const existing = existingIdx >= 0 ? db.farmerProfiles[existingIdx] : null;
+  const existing = await getFarmerProfile(userId);
 
   const record: FarmerProfileRecord = {
     id: existing?.id ?? `prof_${userId}`,
@@ -661,63 +548,28 @@ export async function upsertFarmerProfile(
     updatedAt: now,
   };
 
+  const prisma = getPrismaClient();
+  if (prisma) {
+    await dbWrite(`save farmer profile ${userId}`, async () => {
+      await ensureUserRow(userId);
+      await pgSaveProfile(prisma, record);
+    });
+    return record;
+  }
+
+  const db = readLocalDb();
+  const existingIdx = db.farmerProfiles.findIndex((p) => p.userId === userId);
   if (existingIdx >= 0) {
     db.farmerProfiles[existingIdx] = record;
   } else {
     db.farmerProfiles.push(record);
   }
   writeLocalDb(db);
-
-  const prisma = getPrismaClient();
-  if (prisma) {
-    try {
-      await prisma.farmerProfile.upsert({
-        where: { userId },
-        update: {
-          firstName: record.firstName,
-          lastName: record.lastName,
-          phone: record.phone,
-          avatarUrl: record.avatarUrl,
-          country: record.country,
-          governorate: record.governorate,
-          delegation: record.delegation,
-          locality: record.locality,
-          preferredLanguage: record.preferredLanguage,
-          preferredUnits: record.preferredUnits,
-          experienceLevel: record.experienceLevel,
-          activityType: record.activityType,
-        },
-        create: {
-          id: record.id,
-          userId,
-          firstName: record.firstName,
-          lastName: record.lastName,
-          phone: record.phone,
-          avatarUrl: record.avatarUrl,
-          country: record.country,
-          governorate: record.governorate,
-          delegation: record.delegation,
-          locality: record.locality,
-          preferredLanguage: record.preferredLanguage,
-          preferredUnits: record.preferredUnits,
-          experienceLevel: record.experienceLevel,
-          activityType: record.activityType,
-        },
-      });
-    } catch {
-      // Local store persisted
-    }
-  }
-
   return record;
 }
 
-export function getOnboardingProgress(userId: string): OnboardingProgressRecord {
-  const db = readLocalDb();
-  const existing = db.onboardingProgress.find((o) => o.userId === userId);
-  if (existing) return existing;
-  const now = new Date().toISOString();
-  const created: OnboardingProgressRecord = {
+function defaultOnboardingProgress(userId: string): OnboardingProgressRecord {
+  return {
     id: `onb_${userId}`,
     userId,
     activeFarmId: null,
@@ -725,8 +577,21 @@ export function getOnboardingProgress(userId: string): OnboardingProgressRecord 
     completedSteps: [],
     isCompleted: false,
     completedAt: null,
-    updatedAt: now,
+    updatedAt: new Date().toISOString(),
   };
+}
+
+export async function getOnboardingProgress(userId: string): Promise<OnboardingProgressRecord> {
+  const prisma = getPrismaClient();
+  if (prisma) {
+    // Not persisted on read: the row is written by the first upsertOnboardingProgress
+    const row = await prisma.onboardingProgress.findUnique({ where: { userId } });
+    return row ? progressRowToRecord(row) : defaultOnboardingProgress(userId);
+  }
+  const db = readLocalDb();
+  const existing = db.onboardingProgress.find((o) => o.userId === userId);
+  if (existing) return existing;
+  const created = defaultOnboardingProgress(userId);
   db.onboardingProgress.push(created);
   writeLocalDb(db);
   return created;
@@ -736,10 +601,8 @@ export async function upsertOnboardingProgress(
   userId: string,
   updates: Partial<Omit<OnboardingProgressRecord, "id" | "userId">>
 ): Promise<OnboardingProgressRecord> {
-  const db = readLocalDb();
   const now = new Date().toISOString();
-  const idx = db.onboardingProgress.findIndex((o) => o.userId === userId);
-  const existing = idx >= 0 ? db.onboardingProgress[idx] : getOnboardingProgress(userId);
+  const existing = await getOnboardingProgress(userId);
   const mergedSteps = Array.from(
     new Set([
       ...existing.completedSteps,
@@ -754,50 +617,43 @@ export async function upsertOnboardingProgress(
     updatedAt: now,
   };
 
+  const prisma = getPrismaClient();
+  if (prisma) {
+    await dbWrite(`save onboarding progress ${userId}`, async () => {
+      await ensureUserRow(userId);
+      await pgSaveProgress(prisma, next);
+    });
+    return next;
+  }
+
+  const db = readLocalDb();
+  const idx = db.onboardingProgress.findIndex((o) => o.userId === userId);
   if (idx >= 0) {
     db.onboardingProgress[idx] = next;
   } else {
     db.onboardingProgress.push(next);
   }
   writeLocalDb(db);
-
-  const prisma = getPrismaClient();
-  if (prisma) {
-    try {
-      await prisma.onboardingProgress.upsert({
-        where: { userId },
-        update: {
-          activeFarmId: next.activeFarmId,
-          currentStep: next.currentStep,
-          completedSteps: next.completedSteps,
-          isCompleted: next.isCompleted,
-          completedAt: next.completedAt ? new Date(next.completedAt) : null,
-        },
-        create: {
-          id: next.id,
-          userId,
-          activeFarmId: next.activeFarmId,
-          currentStep: next.currentStep,
-          completedSteps: next.completedSteps,
-          isCompleted: next.isCompleted,
-          completedAt: next.completedAt ? new Date(next.completedAt) : null,
-        },
-      });
-    } catch {
-      // Local store persisted
-    }
-  }
-
   return next;
 }
 
-export function appendConversationMessages(
+export async function appendConversationMessages(
   userId: string,
   farmId: string | undefined,
   messages: AIChatMessageRecord[]
-): void {
+): Promise<void> {
+  const prisma = getPrismaClient();
+  if (prisma) {
+    await dbWrite(`save AI conversation for ${userId}`, async () => {
+      await ensureUserRow(userId);
+      await pgAppendConversation(prisma, userId, farmId, messages);
+    });
+    return;
+  }
+
   const db = readLocalDb();
-  const convId = farmId ? `conv_${farmId}` : "conv_general";
+  // Conversations are private per user (the general thread used to be shared by everyone)
+  const convId = farmId ? `conv_${userId}_${farmId}` : `conv_${userId}_general`;
   const existing = db.conversations.find((c) => c.id === convId);
   const now = new Date().toISOString();
   if (existing) {
@@ -817,9 +673,14 @@ export function appendConversationMessages(
   writeLocalDb(db);
 }
 
-export function getConversationMessages(farmId?: string): AIChatMessageRecord[] {
+export async function getConversationMessages(
+  userId: string,
+  farmId?: string
+): Promise<AIChatMessageRecord[]> {
+  const prisma = getPrismaClient();
+  if (prisma) return pgGetConversation(prisma, userId, farmId);
   const db = readLocalDb();
-  const convId = farmId ? `conv_${farmId}` : "conv_general";
+  const convId = farmId ? `conv_${userId}_${farmId}` : `conv_${userId}_general`;
   return db.conversations.find((c) => c.id === convId)?.messages ?? [];
 }
 
@@ -833,6 +694,64 @@ export interface SyncProcessOutcome {
   serverTimestamp: string;
 }
 
+type SyncLogRecord = {
+  operationId: string;
+  userId: string;
+  entityType: string;
+  entityId: string;
+  action: "CREATE" | "UPDATE" | "DELETE";
+  clientTimestamp: string;
+  serverTimestamp: string;
+  status: "APPLIED" | "CONFLICT" | "REJECTED";
+};
+
+async function findSyncLogEntry(operationId: string): Promise<SyncLogRecord | null> {
+  const prisma = getPrismaClient();
+  if (prisma) {
+    const row = await prisma.syncOperation.findUnique({ where: { operationId } });
+    return row
+      ? {
+          operationId: row.operationId,
+          userId: row.userId,
+          entityType: row.entityType,
+          entityId: row.entityId,
+          action: row.action,
+          clientTimestamp: row.clientTimestamp.toISOString(),
+          serverTimestamp: row.serverTimestamp.toISOString(),
+          status: row.status,
+        }
+      : null;
+  }
+  return readLocalDb().syncLog.find((entry) => entry.operationId === operationId) ?? null;
+}
+
+async function recordSyncLogEntry(entry: SyncLogRecord, payload: unknown): Promise<void> {
+  const prisma = getPrismaClient();
+  if (prisma) {
+    await dbWrite(`record sync operation ${entry.operationId}`, async () => {
+      await ensureUserRow(entry.userId);
+      await prisma.syncOperation.create({
+        data: {
+          id: `sync_${entry.operationId}`,
+          operationId: entry.operationId,
+          userId: entry.userId,
+          entityType: entry.entityType,
+          entityId: entry.entityId,
+          action: entry.action,
+          payloadJson: (payload ?? {}) as object,
+          clientTimestamp: new Date(entry.clientTimestamp),
+          serverTimestamp: new Date(entry.serverTimestamp),
+          status: entry.status,
+        },
+      });
+    });
+    return;
+  }
+  const db = readLocalDb();
+  db.syncLog.push(entry);
+  writeLocalDb(db);
+}
+
 export async function processSyncOperations(
   userId: string,
   operations: Array<{
@@ -844,12 +763,11 @@ export async function processSyncOperations(
     clientTimestamp: string;
   }>
 ): Promise<SyncProcessOutcome[]> {
-  const db = readLocalDb();
   const results: SyncProcessOutcome[] = [];
   const serverTimestamp = new Date().toISOString();
 
   for (const op of operations) {
-    const duplicate = db.syncLog.find((entry) => entry.operationId === op.operationId);
+    const duplicate = await findSyncLogEntry(op.operationId);
     if (duplicate) {
       results.push({
         operationId: op.operationId,
@@ -862,20 +780,33 @@ export async function processSyncOperations(
       continue;
     }
 
+    const logEntry = (status: SyncLogRecord["status"]): SyncLogRecord => ({
+      operationId: op.operationId,
+      userId,
+      entityType: op.entityType,
+      entityId: op.entityId,
+      action: op.action,
+      clientTimestamp: op.clientTimestamp,
+      serverTimestamp,
+      status,
+    });
+
     if (op.entityType === "FARM") {
-      const existing = db.farms.find((f) => f.id === op.entityId);
-      if (existing && new Date(existing.updatedAt).getTime() > new Date(op.clientTimestamp).getTime()) {
-        db.syncLog.push({
+      const existing = await getFarmById(op.entityId);
+      if (existing && existing.userId !== userId) {
+        await recordSyncLogEntry(logEntry("REJECTED"), op.payload);
+        results.push({
           operationId: op.operationId,
-          userId,
           entityType: op.entityType,
           entityId: op.entityId,
-          action: op.action,
-          clientTimestamp: op.clientTimestamp,
+          status: "REJECTED",
+          reason: "Forbidden: You do not own this agricultural property",
           serverTimestamp,
-          status: "CONFLICT",
         });
-        writeLocalDb(db);
+        continue;
+      }
+      if (existing && new Date(existing.updatedAt).getTime() > new Date(op.clientTimestamp).getTime()) {
+        await recordSyncLogEntry(logEntry("CONFLICT"), op.payload);
         results.push({
           operationId: op.operationId,
           entityType: op.entityType,
@@ -904,7 +835,7 @@ export async function processSyncOperations(
         profile?: Partial<FarmerProfileRecord> & { firstName?: string; lastName?: string; email?: string };
         progress?: Partial<OnboardingProgressRecord>;
       };
-      const user = findUserById(userId);
+      const user = await findUserById(userId);
       if (payload.profile && (payload.profile.firstName || user)) {
         await upsertFarmerProfile(userId, {
           ...payload.profile,
@@ -917,22 +848,24 @@ export async function processSyncOperations(
         await upsertOnboardingProgress(userId, payload.progress);
       }
     } else if (op.entityType === "REPORT" && op.action !== "DELETE") {
-      saveReport(op.payload as FeasibilityReportPayload);
+      const report = op.payload as FeasibilityReportPayload;
+      const ownedFarm = report?.farmId ? await getFarmById(report.farmId, userId) : null;
+      if (!ownedFarm) {
+        await recordSyncLogEntry(logEntry("REJECTED"), op.payload);
+        results.push({
+          operationId: op.operationId,
+          entityType: op.entityType,
+          entityId: op.entityId,
+          status: "REJECTED",
+          reason: "Report must belong to one of your farms",
+          serverTimestamp,
+        });
+        continue;
+      }
+      await saveReport(report);
     }
 
-    const latestDb = readLocalDb();
-    latestDb.syncLog.push({
-      operationId: op.operationId,
-      userId,
-      entityType: op.entityType,
-      entityId: op.entityId,
-      action: op.action,
-      clientTimestamp: op.clientTimestamp,
-      serverTimestamp,
-      status: "APPLIED",
-    });
-    writeLocalDb(latestDb);
-
+    await recordSyncLogEntry(logEntry("APPLIED"), op.payload);
     results.push({
       operationId: op.operationId,
       entityType: op.entityType,

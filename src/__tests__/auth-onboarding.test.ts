@@ -175,10 +175,10 @@ describe("Authentication, Authorization & 5-Stage Farmer Onboarding", () => {
     await upsertOnboardingProgress(uid, { currentStep: 2, completedSteps: [1] });
 
     // Resume check
-    const resumed = getOnboardingProgress(uid);
+    const resumed = await getOnboardingProgress(uid);
     expect(resumed.currentStep).toBe(2);
     expect(resumed.completedSteps).toEqual([1]);
-    expect(getFarmerProfile(uid)?.governorate).toBe("Kairouan");
+    expect((await getFarmerProfile(uid))?.governorate).toBe("Kairouan");
 
     // Stage 2: Farm + Boundary (no duplicate on retry/update)
     const farm = await upsertFarm({
@@ -366,7 +366,7 @@ describe("Authentication, Authorization & 5-Stage Farmer Onboarding", () => {
     ]);
 
     expect(syncRes[0].status).toBe("APPLIED");
-    expect(getFarmerProfile(reg.user.id)?.governorate).toBe("Gabes");
-    expect(getOnboardingProgress(reg.user.id).currentStep).toBe(2);
+    expect((await getFarmerProfile(reg.user.id))?.governorate).toBe("Gabes");
+    expect((await getOnboardingProgress(reg.user.id)).currentStep).toBe(2);
   });
 });
