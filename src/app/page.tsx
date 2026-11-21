@@ -20,6 +20,7 @@ import {
   useRefreshFarmAnalysis,
 } from "@/hooks/useFarms";
 import { selectFarmerMetrics } from "@/lib/services/farmer-metrics";
+import { localizeWeatherCondition } from "@/lib/i18n/translations";
 import { cn } from "@/lib/utils";
 
 export default function HomePage() {
@@ -132,12 +133,27 @@ export default function HomePage() {
     });
   }
 
-  const weatherSummaryPlain = m.weatherSummary || "Partly cloudy";
-  const weatherConditionsLine = [
-    m.todayPrecipMm < 1 ? "No rain" : `${Math.round(m.todayPrecipMm)} mm rain`,
-    m.hasFrostAlert ? t.frostAlert : t.noFrost,
-    m.hasWindAlert ? t.windAlert : "Light wind",
-  ].join(" · ");
+  const weatherSummaryPlain = localizeWeatherCondition(m.weatherSummary, lang);
+  const weatherConditionsLine =
+    m.todayPrecipMm < 1 && !m.hasFrostAlert && !m.hasWindAlert
+      ? t.noRainNoFrostLightWind
+      : [
+          m.todayPrecipMm < 1
+            ? lang === "ar"
+              ? "لا مطر"
+              : lang === "fr"
+                ? "Pas de pluie"
+                : "No rain"
+            : `${Math.round(m.todayPrecipMm)} mm`,
+          m.hasFrostAlert ? t.frostAlert : t.noFrost,
+          m.hasWindAlert
+            ? t.windAlert
+            : lang === "ar"
+              ? "رياح خفيفة"
+              : lang === "fr"
+                ? "Vent léger"
+                : "Light wind",
+        ].join(" · ");
 
   return (
     <div className="flex flex-col gap-4 lg:gap-5">

@@ -66,6 +66,26 @@ export function localizeCropLabel(cropName: string, cropCode: string, lang: AppL
   return cropName;
 }
 
+export function localizeWeatherCondition(
+  summary: string | null | undefined,
+  lang: AppLanguage
+): string {
+  const s = (summary || "Partly cloudy").toLowerCase();
+  if (s.includes("clear") || s.includes("sunny")) {
+    return lang === "ar" ? "صافي ومشمس" : lang === "fr" ? "Ciel dégagé" : summary || "Mainly clear";
+  }
+  if (s.includes("overcast")) {
+    return lang === "ar" ? "غائم كلياً" : lang === "fr" ? "Couvert" : summary || "Overcast";
+  }
+  if (s.includes("rain") || s.includes("shower") || s.includes("drizzle")) {
+    return lang === "ar" ? "ممطر" : lang === "fr" ? "Pluie" : summary || "Rain";
+  }
+  if (s.includes("fog")) {
+    return lang === "ar" ? "ضباب" : lang === "fr" ? "Brouillard" : summary || "Fog";
+  }
+  return lang === "ar" ? "غائم جزئياً" : lang === "fr" ? "Partiellement nuageux" : summary || "Partly cloudy";
+}
+
 export interface TranslationStrings {
   // Brand & Navigation
   appName: string;
