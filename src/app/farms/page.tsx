@@ -10,6 +10,7 @@ import {
   type WizardSubmitPayload,
 } from "@/components/farmer/ThreeStepFarmWizard";
 import { useLanguage } from "@/components/i18n/LanguageProvider";
+import { FARM_UI_STRINGS } from "@/lib/i18n/farm-ui-strings";
 import { useDeleteFarm, useFarms, useSaveFarm } from "@/hooks/useFarms";
 import {
   IRRIGATION_EFFICIENCY_DEFAULTS,
@@ -121,7 +122,7 @@ function buildFarmRecordFromDraft(
 
 export default function FarmsPage() {
   const router = useRouter();
-  const { t, fmt } = useLanguage();
+  const { t, fmt, lang } = useLanguage();
   const { farms, activeFarm, setActiveFarmId } = useFarms();
   const saveFarm = useSaveFarm();
   const deleteFarm = useDeleteFarm();
@@ -197,7 +198,7 @@ export default function FarmsPage() {
               className="min-h-[48px] px-4 rounded-full border-[1.5px] border-[var(--tp-bd-B8B1A0)] bg-[var(--tp-bg-FFFFFF)] text-[15px] font-bold text-[var(--tp-fg-17251C)] no-underline inline-flex items-center gap-2"
             >
               <MapIcon className="w-4 h-4" aria-hidden="true" />
-              <span>Full map</span>
+              <span>{FARM_UI_STRINGS[lang].fullMap}</span>
             </Link>
           </>
         }

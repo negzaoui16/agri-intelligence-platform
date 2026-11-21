@@ -5,6 +5,9 @@ import * as turf from "@turf/turf";
 import maplibregl from "maplibre-gl";
 import "maplibre-gl/dist/maplibre-gl.css";
 import { Badge, Button, Card } from "@/components/ui/primitives";
+import { useLanguage } from "@/components/i18n/LanguageProvider";
+import { FARM_UI_STRINGS, fillTemplate } from "@/lib/i18n/farm-ui-strings";
+import { localizeWaterSource } from "@/lib/i18n/translations";
 import type {
   FarmPin,
   FarmRecord,
@@ -113,6 +116,25 @@ export function InteractiveFarmMap(props: InteractiveFarmMapProps) {
   const mapRef = React.useRef<maplibregl.Map | null>(null);
   const markersRef = React.useRef<maplibregl.Marker[]>([]);
   const [draftVertices, setDraftVertices] = React.useState<[number, number][]>([]);
+  const { lang } = useLanguage();
+  const f = FARM_UI_STRINGS[lang];
+
+  // Popup text comes from OpenStreetMap; build it with text nodes so a place name can never run as HTML.
+  const buildWaterPopup = (ws: WaterSourceFeature): HTMLElement => {
+    const place = localizeWaterSource(ws.name, ws.sourceType, lang);
+    const box = document.createElement("div");
+    box.style.cssText = "font-size:13px;color:#17251C;line-height:1.4;max-width:220px";
+    const title = document.createElement("strong");
+    title.textContent = place.title;
+    const kind = document.createElement("div");
+    kind.textContent = place.kind;
+    const dist = document.createElement("div");
+    dist.textContent = fillTemplate(f.popupDistance, { m: Math.round(ws.distanceFromCentroidM) });
+    const note = document.createElement("em");
+    note.textContent = f.popupNotChecked;
+    box.append(title, kind, dist, note);
+    return box;
+  };
   const [webglError, setWebglError] = React.useState(false);
   const [mapReady, setMapReady] = React.useState(false);
 
@@ -438,11 +460,7 @@ export function InteractiveFarmMap(props: InteractiveFarmMapProps) {
           "width:14px;height:14px;border-radius:9999px;background:#0284c7;border:2px solid #e0f2fe;box-shadow:0 1px 4px rgba(0,0,0,.35);cursor:pointer;";
         const wm = new maplibregl.Marker({ element: wEl })
           .setLngLat([ws.longitude, ws.latitude])
-          .setPopup(
-            new maplibregl.Popup({ offset: 12 }).setHTML(
-              `<div style="font-size:12px;color:#111"><strong>${ws.name}</strong><br/>Type: ${ws.sourceType}<br/>Distance: ${ws.distanceFromCentroidM} m<br/>Elev Diff: ${ws.elevationDiffFromFarmM ?? "N/A"} m<br/><em>Unverified availability</em></div>`
-            )
-          )
+          .setPopup(new maplibregl.Popup({ offset: 12 }).setDOMContent(buildWaterPopup(ws)))
           .addTo(map);
       markersRef.current.push(wm);
       }
@@ -458,6 +476,7 @@ export function InteractiveFarmMap(props: InteractiveFarmMapProps) {
     props.centerLat,
     props.centerLon,
     draftVertices,
+    lang,
   ]);
 
   const handleLocateGps = () => {
@@ -494,12 +513,7 @@ export function InteractiveFarmMap(props: InteractiveFarmMapProps) {
             }
           }}
         >
-          <p className="text-sm font-semibold mb-1">
-            Interactive 2D Coordinate Grid (WebGL Fallback Mode)
-          </p>
-          <p className="text-xs text-muted-foreground mb-3">
-            Center: {props.centerLat.toFixed(5)}°, {props.centerLon.toFixed(5)}° • Click anywhere on canvas to {props.mode === "DROP_PIN" ? "drop a pin" : props.mode === "DRAW_BOUNDARY" ? "add boundary vertex" : "inspect coordinates"}.
-          </p>
+          <p className="text-sm font-semibold mb-3">{f.mapFallbackHint}</p>
           <div className="flex flex-wrap gap-2 justify-center">
             {props.pins.map((p) => (
               <Badge key={p.id} variant="green">
@@ -518,19 +532,19 @@ export function InteractiveFarmMap(props: InteractiveFarmMapProps) {
           size="sm"
           variant={props.mode === "INSPECT" ? "primary" : "secondary"}
           onClick={() => props.onModeChange("INSPECT")}
-          title="Pan and inspect coordinates"
+          title={f.toolMove}
         >
           <Crosshair className="h-3.5 w-3.5" />
-          <span className="hidden sm:inline">Inspect</span>
+          <span className="hidden sm:inline">{f.toolMove}</span>
         </Button>
         <Button
           size="sm"
           variant={props.mode === "DROP_PIN" ? "primary" : "secondary"}
           onClick={() => props.onModeChange("DROP_PIN")}
-          title="Tap map to drop GPS pin"
+          title={f.toolMark}
         >
           <MapPin className="h-3.5 w-3.5" />
-          <span>Drop Pin</span>
+          <span>{f.toolMark}</span>
         </Button>
         <Button
           size="sm"
@@ -539,14 +553,14 @@ export function InteractiveFarmMap(props: InteractiveFarmMapProps) {
             setDraftVertices([]);
             props.onModeChange("DRAW_BOUNDARY");
           }}
-          title="Tap corners to draw field boundary"
+          title={f.toolDraw}
         >
           <PenTool className="h-3.5 w-3.5" />
-          <span>Draw Boundary</span>
+          <span>{f.toolDraw}</span>
         </Button>
-        <Button size="sm" variant="secondary" onClick={handleLocateGps} title="Use Device GPS">
+        <Button size="sm" variant="secondary" onClick={handleLocateGps} title={f.toolMyLocation}>
           <Crosshair className="h-3.5 w-3.5 text-sky-600" />
-          <span className="hidden sm:inline">GPS</span>
+          <span className="hidden sm:inline">{f.toolMyLocation}</span>
         </Button>
       </div>
 
@@ -563,7 +577,7 @@ export function InteractiveFarmMap(props: InteractiveFarmMapProps) {
                 : "text-muted-foreground hover:bg-muted"
             }`}
           >
-            {id === "osm" ? "Street" : id === "satellite" ? "Satellite" : "Terrain"}
+            {id === "osm" ? f.layerStreet : id === "satellite" ? f.layerSatellite : f.layerHills}
           </button>
         ))}
       </div>
@@ -572,7 +586,7 @@ export function InteractiveFarmMap(props: InteractiveFarmMapProps) {
       {props.mode === "DRAW_BOUNDARY" && (
         <Card className="absolute bottom-14 left-3 z-10 p-2.5 flex flex-wrap items-center gap-2 bg-card/95 backdrop-blur-xs">
           <span className="text-xs font-medium">
-            Drawing Boundary: {draftVertices.length} point(s)
+            {fillTemplate(f.drawingCorners, { n: draftVertices.length })}
           </span>
           {draftVertices.length > 0 && (
             <Button
@@ -581,7 +595,7 @@ export function InteractiveFarmMap(props: InteractiveFarmMapProps) {
               onClick={() => setDraftVertices((v) => v.slice(0, -1))}
             >
               <RotateCcw className="h-3 w-3" />
-              Undo
+              {f.undo}
             </Button>
           )}
           {draftVertices.length >= 3 && (
@@ -591,7 +605,7 @@ export function InteractiveFarmMap(props: InteractiveFarmMapProps) {
               onClick={() => commitDraftPolygon(draftVertices)}
             >
               <Check className="h-3 w-3" />
-              Finish Polygon
+              {f.finish}
             </Button>
           )}
         </Card>
@@ -603,10 +617,10 @@ export function InteractiveFarmMap(props: InteractiveFarmMapProps) {
             size="sm"
             variant="secondary"
             onClick={() => props.onBoundaryChange(null, 1, 400)}
-            title="Delete current field boundary"
+            title={f.removeFieldEdges}
           >
             <Trash2 className="h-3.5 w-3.5 text-red-600" />
-            Clear Boundary
+            {f.removeFieldEdges}
           </Button>
         </div>
       )}
@@ -615,7 +629,7 @@ export function InteractiveFarmMap(props: InteractiveFarmMapProps) {
       {props.showWaterOverlay && (
         <div className="hidden md:flex absolute top-3 right-14 z-10 bg-card/90 border border-border rounded-lg px-2.5 py-1 text-[11px] items-center gap-1.5">
           <Droplets className="h-3.5 w-3.5 text-sky-600" />
-          <span>{props.waterSources?.length ?? 0} mapped water features</span>
+          <span>{fillTemplate(f.waterPlacesOnMap, { n: props.waterSources?.length ?? 0 })}</span>
         </div>
       )}
     </div>
