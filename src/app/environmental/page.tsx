@@ -1,345 +1,193 @@
 "use client";
 
 import * as React from "react";
-import {
-  Bar,
-  CartesianGrid,
-  ComposedChart,
-  Line,
-  ResponsiveContainer,
-  Tooltip,
-  XAxis,
-  YAxis,
-} from "recharts";
-import { DataFreshnessBadge } from "@/components/ui/DataFreshnessBadge";
-import {
-  Badge,
-  Button,
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-  Input,
-} from "@/components/ui/primitives";
-import { useFarmAnalysis, useFarms, useRefreshFarmAnalysis } from "@/hooks/useFarms";
-import { evaluateWeatherAlerts } from "@/lib/services/open-meteo";
-import { useAppStore } from "@/lib/store/app-store";
-import { AlertTriangle, CloudRain, Mountain, RefreshCw, Satellite } from "lucide-react";
+import Link from "next/link";
+import { Loader2 } from "lucide-react";
+import { FarmerPageHeader } from "@/components/farmer/FarmerUI";
+import { useLanguage } from "@/components/i18n/LanguageProvider";
+import { useFarmAnalysis, useFarms } from "@/hooks/useFarms";
+import { selectFarmerMetrics } from "@/lib/services/farmer-metrics";
+import { cn } from "@/lib/utils";
 
-export default function EnvironmentalPage() {
-  const { activeFarm } = useFarms();
-  const { data: analysis, isLoading } = useFarmAnalysis(activeFarm);
-  const refresh = useRefreshFarmAnalysis();
-  const isOnline = useAppStore((s) => s.isOnline);
-  const thresholds = useAppStore((s) => s.alertThresholds);
-  const setThresholds = useAppStore((s) => s.setAlertThresholds);
+function formatShortDay(dateStr: string, index: number, todayLabel: string, lang: string): string {
+  if (index === 0) return todayLabel;
+  const d = new Date(`${dateStr}T12:00:00`);
+  if (Number.isNaN(d.getTime())) return dateStr;
+  return d.toLocaleDateString(lang === "ar" ? "ar-TN" : lang === "fr" ? "fr-FR" : "en-US", {
+    weekday: "short",
+  });
+}
 
-  const dynamicAlerts = React.useMemo(() => {
-    if (!analysis?.weather.daily) return [];
-    return evaluateWeatherAlerts(analysis.weather.daily, thresholds);
-  }, [analysis?.weather.daily, thresholds]);
+function plainDayWeather(precipMm: number, et0Mm: number | null): string {
+  if (precipMm >= 5) return "Rain expected";
+  if (precipMm >= 1) return "A few drops";
+  if (et0Mm !== null && et0Mm >= 5) return "Sunny · Hot";
+  return "Sunny · No rain";
+}
 
-  if (!activeFarm) {
-    return <p className="text-sm text-muted-foreground">Select or create a farm first.</p>;
+export default function WeatherPage() {
+  const { lang, t, fmt } = useLanguage();
+  const { activeFarm, isLoading: farmsLoading } = useFarms();
+  const { data: analysis, isLoading: analysisLoading } = useFarmAnalysis(activeFarm);
+
+  if (farmsLoading || analysisLoading) {
+    return (
+      <div className="flex flex-col gap-4">
+        <FarmerPageHeader mobileLabel={t.navWeather} title={t.weatherQuestionTitle} />
+        <div className="bg-white border-[1.5px] border-[#E4DFD2] rounded-[20px] p-8 flex items-center gap-3 text-[17px] text-[#4A5A4F]">
+          <Loader2 className="w-6 h-6 animate-spin text-[#2E6B3A]" />
+          <span>Checking live 7-day forecast and rain…</span>
+        </div>
+      </div>
+    );
   }
 
-  return (
-    <div className="space-y-5">
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-        <div>
-          <h1 className="text-xl sm:text-2xl font-bold tracking-tight">
-            Environmental, Climate & FAO WaPOR Analysis
-          </h1>
-          <p className="text-xs sm:text-sm text-muted-foreground">
-            Open-Meteo forecast & ERA5 archive, Copernicus DEM terrain, and FAO WaPOR v3 remote sensing.
-          </p>
-        </div>
-        <Button
-          size="sm"
-          variant="outline"
-          disabled={!isOnline || refresh.isPending}
-          onClick={() => refresh.mutate(activeFarm.id)}
-        >
-          <RefreshCw className={`h-3.5 w-3.5 ${refresh.isPending ? "animate-spin" : ""}`} />
-          Refresh Datasets
-        </Button>
+  if (!activeFarm || !analysis) {
+    return (
+      <div className="flex flex-col gap-4">
+        <FarmerPageHeader mobileLabel={t.navWeather} title={t.weatherQuestionTitle} />
+        <section className="bg-white border-[1.5px] border-[#E4DFD2] rounded-[20px] p-6 flex flex-col gap-3">
+          <p className="m-0 text-[18px] text-[#17251C]">{t.stepAddFarmPrompt}</p>
+          <Link
+            href="/farms?new=1"
+            className="min-h-[48px] px-6 rounded-full bg-[#2E6B3A] text-white font-bold text-[17px] inline-flex items-center w-fit"
+          >
+            {t.addFarmTitle}
+          </Link>
+        </section>
       </div>
+    );
+  }
 
-      {analysis && (
-        <DataFreshnessBadge
-          retrievedAt={analysis.weather.citation.retrievedAt}
-          provenance="OBSERVED"
-          isOffline={!isOnline}
-          providerLabel="Open-Meteo + Copernicus DEM + FAO WaPOR v3"
-        />
-      )}
+  const m = selectFarmerMetrics(activeFarm, analysis);
+  const next4Days = analysis.weather.daily.slice(0, 4);
 
-      {isLoading && !analysis ? (
-        <Card>
-          <CardContent className="p-8 text-center text-sm text-muted-foreground">
-            Loading environmental & satellite datasets for {activeFarm.name}...
-          </CardContent>
-        </Card>
-      ) : analysis ? (
-        <>
-          {/* Current Weather & Terrain KPIs */}
-          <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
-            <Card>
-              <CardHeader className="pb-2">
-                <CardDescription>Current Weather</CardDescription>
-                <CardTitle className="text-2xl">{analysis.weather.current.temperatureC}°C</CardTitle>
-              </CardHeader>
-              <CardContent className="text-xs text-muted-foreground">
-                {analysis.weather.current.weatherSummary} • RH {analysis.weather.current.relativeHumidityPct}% • Wind{" "}
-                {analysis.weather.current.windSpeedKmh} km/h
-              </CardContent>
-            </Card>
+  return (
+    <div className="flex flex-col gap-4 lg:gap-5 max-w-4xl">
+      <FarmerPageHeader mobileLabel={t.navWeather} title={t.weatherQuestionTitle} />
 
-            <Card>
-              <CardHeader className="pb-2">
-                <CardDescription>Annual Rainfall (365d)</CardDescription>
-                <CardTitle className="text-2xl text-sky-600 dark:text-sky-400">
-                  {analysis.climate.annualPrecipMm} mm
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="text-xs text-muted-foreground">
-                Reference ET₀: {analysis.climate.annualEt0Mm} mm/yr
-              </CardContent>
-            </Card>
+      {/* Direct Answer Card matching Weather.dc.html */}
+      <section
+        className={
+          m.shouldWaterToday
+            ? "bg-[#E3EFE2] border-2 border-[#7FB083] rounded-[20px] px-5 py-4 lg:px-6 lg:py-5 flex flex-col gap-2"
+            : "bg-[#E6EEF9] border-2 border-[#94B4DF] rounded-[20px] px-5 py-4 lg:px-6 lg:py-5 flex flex-col gap-2"
+        }
+      >
+        <p
+          className={
+            m.shouldWaterToday
+              ? "m-0 text-[22px] lg:text-[26px] font-bold text-[#1F4D28]"
+              : "m-0 text-[22px] lg:text-[26px] font-bold text-[#123766]"
+          }
+        >
+          {m.shouldWaterToday ? t.yesWaterAsNormal : t.skipRainComing}
+        </p>
+        <p className="m-0 text-[16px] lg:text-[17px] leading-[1.45] text-[#22392A]">
+          {m.shouldWaterToday
+            ? fmt(t.soilLosesMmDay, { mm: m.todayEt0Mm })
+            : fmt(t.rainComingTodayDetail, { mm: Math.round(m.todayPrecipMm) })}
+        </p>
+      </section>
 
-            <Card>
-              <CardHeader className="pb-2">
-                <CardDescription>UNEP Aridity Index</CardDescription>
-                <CardTitle className="text-2xl">{analysis.climate.aridityIndex}</CardTitle>
-              </CardHeader>
-              <CardContent className="text-xs">
-                <Badge variant={analysis.climate.aridityIndex < 0.2 ? "amber" : "green"}>
-                  {analysis.climate.aridityClass}
-                </Badge>
-              </CardContent>
-            </Card>
-
-            <Card>
-              <CardHeader className="pb-2">
-                <CardDescription>Elevation & Slope</CardDescription>
-                <CardTitle className="text-2xl">{analysis.elevation.farmElevationM} m</CardTitle>
-              </CardHeader>
-              <CardContent className="text-xs text-muted-foreground">
-                Slope {analysis.elevation.estimatedSlopePct}% ({analysis.elevation.slopeAspect}) • Relief{" "}
-                {analysis.elevation.fieldReliefM} m
-              </CardContent>
-            </Card>
+      {/* Next 4 Days Forecast */}
+      <section className="bg-white border-[1.5px] border-[#E4DFD2] rounded-[20px] px-5 py-3 flex flex-col">
+        <h2 className="my-2 text-[19px] lg:text-[21px] font-bold text-[#17251C]">
+          {t.next4Days}
+        </h2>
+        {next4Days.map((day, idx) => (
+          <div
+            key={day.date}
+            className="grid grid-cols-[76px_1fr_auto] items-center gap-3 py-3 border-b-[1.5px] border-[#EFEBE1] last:border-b-0"
+          >
+            <b className="text-[17px] text-[#17251C]">
+              {formatShortDay(day.date, idx, t.todayLabel, lang)}
+            </b>
+            <span className="text-[16px] text-[#4A5A4F]">
+              {idx === 0 && m.weatherSummary
+                ? `${m.weatherSummary} · ${day.precipMm < 1 ? "No rain" : `${Math.round(day.precipMm)} mm`}`
+                : plainDayWeather(day.precipMm, day.et0Mm)}
+            </span>
+            <span className="text-[17px] whitespace-nowrap">
+              <b>{Math.round(day.tempMaxC)}°</b> / {Math.round(day.tempMinC)}°
+            </span>
           </div>
+        ))}
+      </section>
 
-          {/* 12-Month Historical Climate Chart */}
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <CloudRain className="h-4 w-4 text-sky-600" />
-                12-Month Historical Climate Profile ({analysis.climate.periodStart} to {analysis.climate.periodEnd})
-              </CardTitle>
-              <CardDescription>
-                Monthly precipitation vs. FAO-56 ET₀ (mm) and mean temperature (°C) • Annual GDD (base 10°C):{" "}
-                {analysis.climate.annualGddBase10}
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="h-72">
-              <ResponsiveContainer width="100%" height="100%">
-                <ComposedChart data={analysis.climate.monthly}>
-                  <CartesianGrid strokeDasharray="3 3" opacity={0.25} />
-                  <XAxis dataKey="monthName" fontSize={11} />
-                  <YAxis yAxisId="left" fontSize={11} unit=" mm" />
-                  <YAxis yAxisId="right" orientation="right" fontSize={11} unit="°C" />
-                  <Tooltip />
-                  <Bar yAxisId="left" dataKey="precipSumMm" name="Rainfall (mm)" fill="#0284c7" radius={[4, 4, 0, 0]} />
-                  <Bar yAxisId="left" dataKey="et0SumMm" name="ET₀ Demand (mm)" fill="#d97706" radius={[4, 4, 0, 0]} />
-                  <Line yAxisId="right" type="monotone" dataKey="tempMeanAvgC" name="Mean Temp (°C)" stroke="#14532d" strokeWidth={2} />
-                </ComposedChart>
-              </ResponsiveContainer>
-            </CardContent>
-          </Card>
+      {/* Plain-Word Warnings Card */}
+      <section className="bg-white border-[1.5px] border-[#E4DFD2] rounded-[20px] p-5 flex flex-col gap-3">
+        <h2 className="m-0 text-[19px] lg:text-[21px] font-bold text-[#17251C]">
+          {t.warningsTitle}
+        </h2>
+        <div className="flex flex-wrap gap-2">
+          <span
+            className={cn(
+              "min-h-[36px] px-3.5 rounded-full text-[15px] font-bold inline-flex items-center",
+              m.hasFrostAlert
+                ? "bg-[#FCEFD9] text-[#8A4B00]"
+                : "bg-[#E3EFE2] text-[#1F4D28]"
+            )}
+          >
+            {m.hasFrostAlert ? t.frostAlert : t.noFrost}
+          </span>
+          <span
+            className={cn(
+              "min-h-[36px] px-3.5 rounded-full text-[15px] font-bold inline-flex items-center",
+              m.hasHeatAlert
+                ? "bg-[#FCEFD9] text-[#8A4B00]"
+                : "bg-[#E3EFE2] text-[#1F4D28]"
+            )}
+          >
+            {m.hasHeatAlert ? t.heatAlert : t.noHeatWave}
+          </span>
+          <span
+            className={cn(
+              "min-h-[36px] px-3.5 rounded-full text-[15px] font-bold inline-flex items-center",
+              m.hasWindAlert
+                ? "bg-[#FCEFD9] text-[#8A4B00]"
+                : "bg-[#E3EFE2] text-[#1F4D28]"
+            )}
+          >
+            {m.hasWindAlert ? t.windAlert : t.noStrongWind}
+          </span>
+        </div>
+        <p className="m-0 text-[15px] text-[#4A5A4F]">{t.alertNoticeHint}</p>
+      </section>
 
-          {/* Seasonal Breakdown + Configurable Alerts */}
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-            <Card>
-              <CardHeader>
-                <CardTitle>Seasonal Water Balance & 7-Day Forecast</CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <div className="overflow-x-auto">
-                  <table className="w-full text-xs">
-                    <thead>
-                      <tr className="border-b border-border text-left text-muted-foreground">
-                        <th className="py-2">Season</th>
-                        <th className="py-2">Rain</th>
-                        <th className="py-2">ET₀</th>
-                        <th className="py-2">Mean T</th>
-                        <th className="py-2">Deficit</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {analysis.climate.seasons.map((s) => (
-                        <tr key={s.season} className="border-b border-border/50">
-                          <td className="py-2 font-medium">
-                            {s.season} <span className="text-muted-foreground">({s.months})</span>
-                          </td>
-                          <td className="py-2">{s.precipSumMm} mm</td>
-                          <td className="py-2">{s.et0SumMm} mm</td>
-                          <td className="py-2">{s.tempMeanAvgC}°C</td>
-                          <td className="py-2 font-semibold text-amber-700 dark:text-amber-400">
-                            {s.moistureDeficitMm} mm
-                          </td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
+      {/* Last Year Plain Rain Note */}
+      <p className="m-0 text-[16px] leading-[1.5] text-[#4A5A4F] px-1">
+        <b className="text-[#17251C]">{t.lastYearLabel}</b>{" "}
+        {fmt(t.lastYearRainSummary, {
+          annual: m.annualPrecipMm ?? 0,
+          summer: m.summerPrecipMm ?? 0,
+        })}
+      </p>
 
-                <div>
-                  <p className="text-xs font-semibold mb-2">7-Day Daily Forecast</p>
-                  <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 text-[11px]">
-                    {analysis.weather.daily.slice(0, 4).map((d) => (
-                      <div key={d.date} className="p-2 rounded-lg bg-muted">
-                        <p className="font-semibold">{d.date.slice(5)}</p>
-                        <p>{d.tempMinC}° / {d.tempMaxC}°C</p>
-                        <p className="text-sky-700 dark:text-sky-300">Rain: {d.precipMm} mm</p>
-                        <p className="text-amber-700 dark:text-amber-300">ET₀: {d.et0Mm ?? "—"} mm</p>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <AlertTriangle className="h-4 w-4 text-amber-600" />
-                  Configurable Weather Threshold Alerts ({dynamicAlerts.length})
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-3">
-                <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 text-xs">
-                  <div>
-                    <label className="text-muted-foreground">Frost ≤ (°C)</label>
-                    <Input
-                      type="number"
-                      value={thresholds.frostMinTempC}
-                      onChange={(e) => setThresholds({ frostMinTempC: Number(e.target.value) })}
-                      className="mt-1 h-8 text-xs"
-                    />
-                  </div>
-                  <div>
-                    <label className="text-muted-foreground">Heat ≥ (°C)</label>
-                    <Input
-                      type="number"
-                      value={thresholds.heatMaxTempC}
-                      onChange={(e) => setThresholds({ heatMaxTempC: Number(e.target.value) })}
-                      className="mt-1 h-8 text-xs"
-                    />
-                  </div>
-                  <div>
-                    <label className="text-muted-foreground">Wind ≥ (km/h)</label>
-                    <Input
-                      type="number"
-                      value={thresholds.highWindKmh}
-                      onChange={(e) => setThresholds({ highWindKmh: Number(e.target.value) })}
-                      className="mt-1 h-8 text-xs"
-                    />
-                  </div>
-                </div>
-
-                {dynamicAlerts.length === 0 ? (
-                  <p className="text-xs text-emerald-700 dark:text-emerald-400 p-3 rounded-lg bg-emerald-50/70 dark:bg-emerald-950/30">
-                    No 7-day forecast days breach the configured agronomic alert thresholds.
-                  </p>
-                ) : (
-                  <div className="space-y-2 max-h-44 overflow-y-auto">
-                    {dynamicAlerts.map((a) => (
-                      <div
-                        key={a.id}
-                        className="p-2.5 rounded-lg border border-amber-200 dark:border-amber-800 bg-amber-50/60 dark:bg-amber-950/30 text-xs"
-                      >
-                        <div className="flex items-center justify-between">
-                          <span className="font-semibold">{a.title}</span>
-                          <Badge variant={a.severity === "CRITICAL" ? "red" : "amber"}>{a.date}</Badge>
-                        </div>
-                        <p className="text-muted-foreground mt-0.5">{a.description}</p>
-                      </div>
-                    ))}
-                  </div>
-                )}
-              </CardContent>
-            </Card>
-          </div>
-
-          {/* FAO WaPOR v3 + Elevation Points */}
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
-            <Card className="lg:col-span-2">
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <Satellite className="h-4 w-4 text-emerald-700" />
-                  FAO WaPOR v3 Remote Sensing Water Productivity
-                </CardTitle>
-                <CardDescription>
-                  Retrieved from FAO GISMGR v2 COG rasters • {analysis.wapor.limitations}
-                </CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-2">
-                <div className="grid grid-cols-2 sm:grid-cols-3 gap-2.5">
-                  {analysis.wapor.layers.map((layer) => (
-                    <div key={layer.mapsetCode} className="p-3 rounded-lg border border-border text-xs">
-                      <div className="flex items-center justify-between gap-1">
-                        <span className="font-mono font-semibold text-[11px]">{layer.mapsetCode}</span>
-                        <Badge variant={layer.value !== null ? "blue" : "neutral"}>
-                          {layer.year}
-                        </Badge>
-                      </div>
-                      <p className="text-[11px] text-muted-foreground mt-1 line-clamp-2">
-                        {layer.caption}
-                      </p>
-                      <p className="text-base font-bold mt-1.5">
-                        {layer.value !== null ? `${layer.value} ${layer.unit}` : "Not available"}
-                      </p>
-                      <p className="text-[10px] text-muted-foreground mt-0.5">
-                        Res: {layer.spatialResolution}
-                      </p>
-                    </div>
-                  ))}
-                </div>
-                {analysis.wapor.relativeEvapotranspiration !== null && (
-                  <p className="text-xs text-muted-foreground pt-1">
-                    Relative Evapotranspiration (AETI / RET):{" "}
-                    <strong>{analysis.wapor.relativeEvapotranspiration}</strong> (values near 1.0 indicate well-watered vegetation; low values indicate dryland/fallow cover).
-                  </p>
-                )}
-              </CardContent>
-            </Card>
-
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <Mountain className="h-4 w-4 text-emerald-700" />
-                  DEM Elevation Samples
-                </CardTitle>
-                <CardDescription>90 m Copernicus DEM profile</CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-1.5 text-xs">
-                {analysis.elevation.samplePoints.map((pt, idx) => (
-                  <div
-                    key={`${pt.label}_${idx}`}
-                    className="flex items-center justify-between py-1.5 border-b border-border/50"
-                  >
-                    <span className="text-muted-foreground">{pt.label}</span>
-                    <span className="font-mono font-semibold">{pt.elevationM} m</span>
-                  </div>
-                ))}
-              </CardContent>
-            </Card>
-          </div>
-        </>
-      ) : null}
+      {/* Collapsed Technical Details (WaPOR, ET0, Aridity Index, DEM) */}
+      <details className="bg-white border-[1.5px] border-[#E4DFD2] rounded-[18px] px-5 py-1">
+        <summary className="min-h-[56px] flex items-center cursor-pointer text-[17px] font-bold text-[#1D4F91]">
+          {t.forYourEngineerTitle}
+        </summary>
+        <div className="pb-5 pt-1 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2.5 text-[15px] text-[#22392A]">
+          <span>Reference ET₀: {analysis.climate.annualEt0Mm} mm/yr (Open-Meteo ERA5)</span>
+          <span>Aridity index: {analysis.climate.aridityIndex} ({analysis.climate.aridityClass})</span>
+          <span>Elevation: {analysis.elevation.farmElevationM} m · Slope: {analysis.elevation.estimatedSlopePct}% (Copernicus DEM)</span>
+          <span>
+            FAO WaPOR v3 actual ET:{" "}
+            {analysis.wapor.actualEvapotranspirationMmYr !== null
+              ? `${analysis.wapor.actualEvapotranspirationMmYr} mm/yr`
+              : "N/A"}
+          </span>
+          <span>
+            WaPOR biomass:{" "}
+            {analysis.wapor.totalBiomassProductionKgHa !== null
+              ? `${analysis.wapor.totalBiomassProductionKgHa} kg/ha/yr`
+              : "N/A"}
+          </span>
+          <span>Sources: Open-Meteo Forecast & ERA5, FAO WaPOR v3, Copernicus DEM</span>
+        </div>
+      </details>
     </div>
   );
 }

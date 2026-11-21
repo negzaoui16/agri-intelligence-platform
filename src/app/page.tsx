@@ -1,405 +1,491 @@
 "use client";
 
+import * as React from "react";
 import Link from "next/link";
 import {
-  Bar,
-  BarChart,
-  CartesianGrid,
-  ResponsiveContainer,
-  Tooltip,
-  XAxis,
-  YAxis,
-} from "recharts";
-import { DataFreshnessBadge } from "@/components/ui/DataFreshnessBadge";
-import {
-  Badge,
-  Button,
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/primitives";
+  AlertTriangle,
+  ArrowRight,
+  CheckCircle2,
+  Cloud,
+  Droplet,
+  Loader2,
+  RefreshCw,
+  Sun,
+} from "lucide-react";
+import { useLanguage } from "@/components/i18n/LanguageProvider";
+import { useAuthSession } from "@/hooks/useAuth";
 import {
   useFarmAnalysis,
   useFarms,
   useRefreshFarmAnalysis,
-  useReports,
 } from "@/hooks/useFarms";
-import { useAuthSession } from "@/hooks/useAuth";
-import { useAppStore } from "@/lib/store/app-store";
-import { formatDistance, formatNumber, formatTimestamp } from "@/lib/utils";
-import {
-  AlertTriangle,
-  Bot,
-  CloudRain,
-  Droplets,
-  FileText,
-  Map as MapIcon,
-  RefreshCw,
-  Sun,
-  Tractor,
-} from "lucide-react";
+import { selectFarmerMetrics } from "@/lib/services/farmer-metrics";
+import { cn } from "@/lib/utils";
 
-export default function DashboardPage() {
-  const { user, farmerProfile } = useAuthSession();
-  const { farms, activeFarm, setActiveFarmId, isLoading: farmsLoading } = useFarms();
-  const { data: analysis, isLoading: analysisLoading } = useFarmAnalysis(activeFarm);
-  const refreshMutation = useRefreshFarmAnalysis();
-  const { data: reports = [] } = useReports();
-  const isOnline = useAppStore((s) => s.isOnline);
-  const pendingSyncCount = useAppStore((s) => s.pendingSyncCount);
+export default function HomePage() {
+  const { lang, setLang, isRtl, t, fmt, monthLabel, cropLabel } = useLanguage();
+  const { farmerProfile, user } = useAuthSession();
+  const { farms, activeFarm, isLoading: farmsLoading } = useFarms();
+  const {
+    data: analysis,
+    isLoading: analysisLoading,
+  } = useFarmAnalysis(activeFarm);
+  const refreshAnalysis = useRefreshFarmAnalysis();
 
-  const totalAreaHa = farms.reduce((sum, f) => sum + (f.areaHectares || 0), 0);
-  const displayFirstName =
-    farmerProfile?.firstName || user?.name?.split(" ")[0] || "Farmer";
+  const [checkedSteps, setCheckedSteps] = React.useState<Record<string, boolean>>({});
 
-  if (!farmsLoading && farms.length === 0) {
+  React.useEffect(() => {
+    if (!activeFarm) return;
+    try {
+      const raw = localStorage.getItem(`terrapulse_steps_${activeFarm.id}`);
+      if (raw) setCheckedSteps(JSON.parse(raw));
+      else setCheckedSteps({});
+    } catch {
+      setCheckedSteps({});
+    }
+  }, [activeFarm]);
+
+  const toggleStep = (stepKey: string) => {
+    if (!activeFarm) return;
+    setCheckedSteps((prev) => {
+      const next = { ...prev, [stepKey]: !prev[stepKey] };
+      try {
+        localStorage.setItem(`terrapulse_steps_${activeFarm.id}`, JSON.stringify(next));
+      } catch {
+        // ignore storage restrictions
+      }
+      return next;
+    });
+  };
+
+  const firstName =
+    farmerProfile?.firstName?.trim() ||
+    (user && !user.email.includes("demo") ? user.name.split(" ")[0] : "");
+
+  if (farmsLoading) {
     return (
-      <div className="max-w-xl mx-auto py-12 text-center space-y-4">
-        <div className="mx-auto h-14 w-14 rounded-2xl bg-emerald-100 dark:bg-emerald-950 flex items-center justify-center text-[#14532d] dark:text-emerald-400">
-          <Tractor className="h-7 w-7" />
-        </div>
-        <h1 className="text-2xl font-bold">Create Your First Agricultural Property</h1>
-        <p className="text-sm text-muted-foreground">
-          Drop GPS pins or draw your field boundary on the interactive map to evaluate weather, nearby water sources, pump hydraulics, and solar PV potential.
-        </p>
-        <div className="flex justify-center gap-3">
-          <Link href="/map">
-            <Button variant="primary">
-              <MapIcon className="h-4 w-4" />
-              Open Interactive Map
-            </Button>
-          </Link>
-          <Link href="/farms">
-            <Button variant="outline">Configure Manually</Button>
-          </Link>
-        </div>
+      <div className="min-h-[60vh] flex items-center justify-center gap-3 text-[18px] text-[#4A5A4F]">
+        <Loader2 className="w-6 h-6 animate-spin text-[#2E6B3A]" />
+        <span>{t.yourFarmToday}…</span>
       </div>
     );
   }
 
-  return (
-    <div className="space-y-5">
-      {/* Personalized Header Row */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-        <div>
-          <h1 className="text-xl sm:text-2xl font-bold tracking-tight">
-            Welcome, {displayFirstName}
-          </h1>
-          <p className="text-xs sm:text-sm text-muted-foreground">
-            {farmerProfile?.governorate ? `${farmerProfile.governorate}, ${farmerProfile.country}` : "Agricultural Intelligence Workspace"} • Live weather, water proximity, FAO-56 irrigation & PVGIS solar feasibility.
+  if (!activeFarm || farms.length === 0) {
+    return (
+      <div className="max-w-xl mx-auto py-8 flex flex-col gap-5">
+        <div className="flex items-center justify-between gap-3">
+          <div>
+            <p className="text-[16px] text-[#4A5A4F] m-0">
+              {firstName ? `${t.goodMorning}, ${firstName}` : t.goodMorning}
+            </p>
+            <h1 className="text-[30px] font-bold text-[#17251C] m-0">
+              {t.yourFarmToday}
+            </h1>
+          </div>
+          <MobileLanguageButton lang={lang} setLang={setLang} label={t.changeLanguageLabel} />
+        </div>
+
+        <section className="bg-white border-[1.5px] border-[#E4DFD2] rounded-[22px] p-6 flex flex-col gap-4">
+          <h2 className="text-[22px] font-bold m-0 text-[#17251C]">{t.addFarmTitle}</h2>
+          <p className="text-[17px] leading-[1.45] text-[#4A5A4F] m-0">
+            {t.stepAddFarmPrompt}
           </p>
-        </div>
-        <div className="flex flex-wrap gap-2">
-          <Link href="/onboarding">
-            <Button size="sm" variant="outline">
-              Edit Setup
-            </Button>
+          <Link
+            href="/farms?new=1"
+            className="min-h-[56px] px-7 rounded-full bg-[#2E6B3A] text-white text-[17px] font-bold inline-flex items-center justify-center gap-2 w-fit"
+          >
+            <span>{t.addFarmTitle}</span>
+            <ArrowRight className={cn("w-5 h-5", isRtl && "rotate-180")} aria-hidden="true" />
           </Link>
-          <Link href="/map">
-            <Button size="sm" variant="outline">
-              <MapIcon className="h-3.5 w-3.5" />
-              Open Map Studio
-            </Button>
-          </Link>
-          {activeFarm && (
-            <Button
-              size="sm"
-              variant="primary"
-              disabled={!isOnline || refreshMutation.isPending}
-              onClick={() => refreshMutation.mutate(activeFarm.id)}
-            >
-              <RefreshCw
-                className={`h-3.5 w-3.5 ${refreshMutation.isPending ? "animate-spin" : ""}`}
-              />
-              {refreshMutation.isPending ? "Analyzing..." : "Analyze my farm"}
-            </Button>
-          )}
+        </section>
+      </div>
+    );
+  }
+
+  const m = selectFarmerMetrics(activeFarm, analysis);
+  const localizedPeakMonth = monthLabel(m.peakMonthName);
+  const localizedCrop = cropLabel(m.cropName, m.cropCode);
+  const demandBarPct =
+    m.peakDailyDemandM3 && m.peakDailyDemandM3 > 0
+      ? Math.min(100, Math.max(8, Math.round((m.pumpDailySupplyM3 / m.peakDailyDemandM3) * 100)))
+      : 100;
+
+  // Next step checklist items in plain farmer wording
+  const nextSteps: Array<{ key: string; text: string }> = [];
+  if (m.nearestSourceDistanceM !== null) {
+    nextSteps.push({
+      key: "visit_water",
+      text: fmt(t.stepVisitWaterPoint, { distance: m.nearestSourceDistanceM }),
+    });
+  }
+  if (m.isWaterShort || m.isSolarShortInSummer) {
+    nextSteps.push({
+      key: "plan_summer",
+      text: t.stepPlanSummerWater,
+    });
+  }
+  if (nextSteps.length === 0) {
+    nextSteps.push({
+      key: "check_report",
+      text: t.checkSoilTest,
+    });
+  }
+
+  const weatherSummaryPlain = m.weatherSummary || "Partly cloudy";
+  const weatherConditionsLine = [
+    m.todayPrecipMm < 1 ? "No rain" : `${Math.round(m.todayPrecipMm)} mm rain`,
+    m.hasFrostAlert ? t.frostAlert : t.noFrost,
+    m.hasWindAlert ? t.windAlert : "Light wind",
+  ].join(" · ");
+
+  return (
+    <div className="flex flex-col gap-4 lg:gap-5">
+      {/* Mobile Header matching Main.dc.html / HomeArabic.dc.html */}
+      <header className="flex lg:hidden items-center justify-between gap-3">
+        <div className="flex flex-col gap-0.5 min-w-0">
+          <span className="text-[15px] text-[#4A5A4F]">
+            {firstName ? `${t.goodMorning}, ${firstName}` : t.goodMorning}
+          </span>
+          <span className="text-[22px] font-bold text-[#17251C] truncate">
+            {activeFarm.name}
+          </span>
+          <span className="text-[15px] text-[#4A5A4F] truncate">
+            {Number(activeFarm.areaHectares.toFixed(1))} {t.hectaresFull} · {localizedCrop}
+          </span>
         </div>
-      </div>
+        <MobileLanguageButton lang={lang} setLang={setLang} label={t.changeLanguageLabel} />
+      </header>
 
-      {/* Portfolio KPI Cards */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
-        <Card>
-          <CardHeader className="pb-2">
-            <CardDescription>Registered Properties</CardDescription>
-            <CardTitle className="text-2xl">{farms.length}</CardTitle>
-          </CardHeader>
-          <CardContent className="text-[11px] text-muted-foreground">
-            {pendingSyncCount > 0 ? `${pendingSyncCount} offline change(s) queued` : "All records synced"}
-          </CardContent>
-        </Card>
+      {/* Desktop Header matching DeskHome.dc.html */}
+      <header className="hidden lg:flex flex-wrap items-end justify-between gap-3">
+        <div className="flex flex-col gap-1">
+          <span className="text-[17px] text-[#4A5A4F]">
+            {firstName ? `${t.goodMorning}, ${firstName}` : t.goodMorning}
+          </span>
+          <h1 className="m-0 text-[34px] font-bold text-[#17251C] leading-[1.15]">
+            {t.yourFarmToday}
+          </h1>
+        </div>
+        <div className="flex items-center gap-3">
+          <span className="text-[15px] text-[#4A5A4F]">
+            {analysisLoading ? "Checking live weather and sun…" : t.liveDataLabel}
+          </span>
+          <button
+            type="button"
+            onClick={() => refreshAnalysis.mutate(activeFarm.id)}
+            disabled={refreshAnalysis.isPending}
+            aria-label="Refresh farm data"
+            className="min-h-[44px] px-4 rounded-full border-[1.5px] border-[#C9C3B3] bg-white text-[15px] font-bold text-[#17251C] inline-flex items-center gap-2 hover:bg-[#F6F4EE]"
+          >
+            <RefreshCw
+              className={cn("w-4 h-4", refreshAnalysis.isPending && "animate-spin")}
+              aria-hidden="true"
+            />
+            <span>Refresh</span>
+          </button>
+        </div>
+      </header>
 
-        <Card>
-          <CardHeader className="pb-2">
-            <CardDescription>Total Registered Area</CardDescription>
-            <CardTitle className="text-2xl">{totalAreaHa.toFixed(1)} ha</CardTitle>
-          </CardHeader>
-          <CardContent className="text-[11px] text-muted-foreground">
-            Active parcel: {activeFarm ? `${activeFarm.areaHectares.toFixed(2)} ha` : "—"}
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader className="pb-2">
-            <CardDescription>Solar Pump Coverage</CardDescription>
-            <CardTitle className="text-2xl text-amber-600 dark:text-amber-400">
-              {analysis ? `${analysis.solarVsPump.annualCoveragePct}%` : "—"}
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="text-[11px] text-muted-foreground">
-            {analysis
-              ? `${analysis.solar.capacityKwp} kWp PVGIS (${analysis.solarVsPump.worstMonthCoveragePct}% in ${analysis.solarVsPump.worstMonthName})`
-              : "Run analysis to compute"}
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader className="pb-2">
-            <CardDescription>Water & Weather Alerts</CardDescription>
-            <CardTitle className="text-2xl text-sky-600 dark:text-sky-400">
-              {analysis
-                ? `${analysis.weather.alerts.length} alerts`
-                : "—"}
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="text-[11px] text-muted-foreground">
-            {analysis?.climate
-              ? `${analysis.climate.aridityClass} (AI ${analysis.climate.aridityIndex})`
-              : "Climate status pending"}
-          </CardContent>
-        </Card>
-      </div>
-
-      {/* Active Property Hero + Freshness */}
-      {activeFarm && (
-        <Card>
-          <CardHeader className="flex flex-col md:flex-row md:items-center justify-between gap-2 pb-3">
-            <div>
-              <div className="flex flex-wrap items-center gap-2">
-                <CardTitle className="text-lg">{activeFarm.name}</CardTitle>
-                {activeFarm.crops && activeFarm.crops.length > 0 ? (
-                  activeFarm.crops.map((c) => (
-                    <Badge key={c.id} variant="green">
-                      {c.cropName} ({c.cultivatedAreaHa} ha)
-                    </Badge>
-                  ))
-                ) : (
-                  <Badge variant="green">{activeFarm.irrigationConfig.cropCode.toUpperCase()}</Badge>
-                )}
-                <Badge variant="neutral">{activeFarm.soilProfile.textureClass}</Badge>
-                {activeFarm.boundaryVerified === false && (
-                  <Badge variant="amber">Pin-Only Location</Badge>
-                )}
-              </div>
-              <CardDescription className="mt-1">
-                {activeFarm.centerLat.toFixed(5)}°, {activeFarm.centerLon.toFixed(5)}° •{" "}
-                {activeFarm.region || activeFarm.country || "Custom Coordinates"} •{" "}
-                {activeFarm.pins.length} GPS pin(s)
-              </CardDescription>
+      {/* Top Row: Primary Problem Card + Today Weather Card */}
+      <div className="flex flex-col lg:flex-row gap-4 lg:gap-5 items-stretch">
+        {m.primaryProblem === "WATER_SHORT" && m.peakDailyDemandM3 !== null ? (
+          <section className="flex-[2_1_480px] min-w-0 bg-[#FCEFD9] border-2 border-[#E2B66B] rounded-[20px] lg:rounded-[22px] p-[18px] lg:px-[26px] lg:py-6 flex flex-col gap-3 lg:gap-3.5">
+            <div className="flex items-center gap-2.5">
+              <AlertTriangle className="w-7 h-7 text-[#8A4B00] shrink-0" strokeWidth={2.2} aria-hidden="true" />
+              <span className="text-[15px] font-bold text-[#8A4B00] tracking-[0.03em]">
+                {t.needsAttention}
+              </span>
             </div>
-            {analysis && (
-              <DataFreshnessBadge
-                retrievedAt={analysis.generatedAt}
-                isOffline={!isOnline}
-                provenance="OBSERVED"
-              />
-            )}
-          </CardHeader>
-          <CardContent>
-            {analysisLoading && !analysis ? (
-              <div className="py-8 text-center text-sm text-muted-foreground">
-                Querying Open-Meteo, Copernicus DEM, JRC PVGIS, HydroSHEDS & FAO WaPOR v3...
-              </div>
-            ) : analysis ? (
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4 pt-2 border-t border-border">
-                {/* Weather Overview */}
-                <div className="space-y-1.5">
-                  <div className="flex items-center gap-1.5 text-xs font-semibold text-emerald-800 dark:text-emerald-300">
-                    <CloudRain className="h-4 w-4" />
-                    Weather & Climate (Open-Meteo)
-                  </div>
-                  <p className="text-xl font-bold">
-                    {analysis.weather.current.temperatureC}°C{" "}
-                    <span className="text-xs font-normal text-muted-foreground">
-                      • {analysis.weather.current.weatherSummary}
-                    </span>
-                  </p>
-                  <p className="text-xs text-muted-foreground">
-                    365d Rain: <strong>{analysis.climate.annualPrecipMm} mm</strong> vs. ET₀{" "}
-                    <strong>{analysis.climate.annualEt0Mm} mm</strong>
-                  </p>
-                  <p className="text-xs text-muted-foreground">
-                    Elevation: <strong>{analysis.elevation.farmElevationM} m ASL</strong> • Slope{" "}
-                    <strong>{analysis.elevation.estimatedSlopePct}%</strong>
-                  </p>
-                </div>
 
-                {/* Water Risk Indicator */}
-                <div className="space-y-1.5">
-                  <div className="flex items-center gap-1.5 text-xs font-semibold text-sky-700 dark:text-sky-300">
-                    <Droplets className="h-4 w-4" />
-                    Water & Pump Hydraulics
-                  </div>
-                  {analysis.waterSources.nearestSource ? (
-                    <>
-                      <p className="text-sm font-semibold truncate">
-                        {analysis.waterSources.nearestSource.name}
-                      </p>
-                      <p className="text-xs text-muted-foreground">
-                        {formatDistance(analysis.waterSources.nearestSource.distanceFromBoundaryM)} away ({analysis.waterSources.nearestSource.sourceType}) • ΔZ{" "}
-                        {formatNumber(analysis.waterSources.nearestSource.elevationDiffFromFarmM, 1)} m
-                      </p>
-                    </>
-                  ) : (
-                    <p className="text-xs text-amber-700 dark:text-amber-300">
-                      No mapped water source within 10 km
-                    </p>
-                  )}
-                  <p className="text-xs text-muted-foreground">
-                    Pump Load: <strong>{analysis.pump.electricalPowerKw} kW</strong>{" "}
-                    <span className="text-[10px]">
-                      ({activeFarm.pumpConfig.isFarmerProvided ? "Farmer specs" : "Estimated"})
-                    </span>{" "}
-                    • Peak <strong>{analysis.irrigation.peakDailyWaterM3} m³/day</strong>
-                  </p>
-                  {activeFarm.farmerWaterSources && activeFarm.farmerWaterSources.length > 0 && (
-                    <p className="text-[11px] text-sky-700 dark:text-sky-300">
-                      Farmer-reported: {activeFarm.farmerWaterSources.map((w) => w.sourceType).join(", ")}
-                    </p>
-                  )}
-                </div>
+            <h2 className="m-0 text-[26px] lg:text-[30px] font-bold leading-[1.2] text-[#17251C]">
+              {fmt(t.waterWillBeShortInMonth, { month: localizedPeakMonth })}
+            </h2>
 
-                {/* Solar Potential */}
-                <div className="space-y-1.5">
-                  <div className="flex items-center gap-1.5 text-xs font-semibold text-amber-700 dark:text-amber-300">
-                    <Sun className="h-4 w-4" />
-                    Solar PVGIS Potential (Modeled)
-                  </div>
-                  <p className="text-xl font-bold">
-                    {analysis.solar.annualKwh.toLocaleString()} kWh/yr
-                  </p>
-                  <p className="text-xs text-muted-foreground">
-                    {analysis.solar.dailyAvgKwh} kWh/day avg • {analysis.solar.specificYieldKwhPerKwp} kWh/kWp
-                  </p>
-                  <p className="text-xs text-muted-foreground">
-                    Pump Demand: <strong>{analysis.solarVsPump.annualPumpKwh.toLocaleString()} kWh/yr</strong>
-                  </p>
-                </div>
+            {/* Mobile plain comparison sentence */}
+            <p className="lg:hidden m-0 text-[17px] leading-[1.45] text-[#3B3020]">
+              {fmt(t.yourPumpGivesPerDay, {
+                supply: m.pumpDailySupplyM3,
+                demand: m.peakDailyDemandM3,
+                month: localizedPeakMonth,
+              })}
+            </p>
+
+            {/* Desktop dual metric comparison bars matching DeskHome.dc.html */}
+            <div className="hidden lg:grid grid-cols-2 gap-4">
+              <div className="flex flex-col gap-1.5">
+                <span className="text-[16px] text-[#3B3020]">{t.yourTreesNeed}</span>
+                <b className="text-[28px] leading-tight text-[#17251C]">
+                  {m.peakDailyDemandM3} <span className="text-[17px] font-normal">{t.m3ADay}</span>
+                </b>
+                <span className="h-[14px] rounded-[7px] bg-[#1D4F91] block" />
               </div>
-            ) : (
-              <p className="text-xs text-muted-foreground py-4">
-                Cached analysis unavailable offline. Connect to the internet to run live scientific engines for this parcel.
+              <div className="flex flex-col gap-1.5">
+                <span className="text-[16px] text-[#3B3020]">{t.yourPumpGives}</span>
+                <b className="text-[28px] leading-tight text-[#17251C]">
+                  {m.pumpDailySupplyM3} <span className="text-[17px] font-normal">{t.m3ADay}</span>
+                </b>
+                <span className="h-[14px] rounded-[7px] bg-white border-[1.5px] border-[#E2B66B] overflow-hidden block">
+                  <span
+                    className="block h-full bg-[#6F9BD1]"
+                    style={{ width: `${demandBarPct}%` }}
+                  />
+                </span>
+              </div>
+            </div>
+
+            <Link
+              href="/water"
+              className="self-start min-h-[48px] lg:min-h-[52px] inline-flex items-center gap-2 px-5 lg:px-6 rounded-full bg-[#17251C] text-white text-[17px] font-bold no-underline mt-1"
+            >
+              <span>{t.seeWhatToDo}</span>
+              <ArrowRight className={cn("w-5 h-5", isRtl && "rotate-180")} strokeWidth={2.4} aria-hidden="true" />
+            </Link>
+          </section>
+        ) : m.primaryProblem === "SOLAR_SHORT" ? (
+          <section className="flex-[2_1_480px] min-w-0 bg-[#FCEFD9] border-2 border-[#E2B66B] rounded-[20px] lg:rounded-[22px] p-[18px] lg:px-[26px] lg:py-6 flex flex-col gap-3">
+            <div className="flex items-center gap-2.5">
+              <AlertTriangle className="w-7 h-7 text-[#8A4B00] shrink-0" strokeWidth={2.2} aria-hidden="true" />
+              <span className="text-[15px] font-bold text-[#8A4B00]">{t.needsAttention}</span>
+            </div>
+            <h2 className="m-0 text-[26px] lg:text-[30px] font-bold leading-[1.2] text-[#17251C]">
+              {t.shortInSummer}
+            </h2>
+            <p className="m-0 text-[17px] leading-[1.45] text-[#3B3020]">
+              {fmt(t.treesDrinkMostWhenHot, { units: m.solarUnitsOutOf10 })}
+            </p>
+            <Link
+              href="/solar"
+              className="self-start min-h-[48px] px-6 rounded-full bg-[#17251C] text-white text-[17px] font-bold inline-flex items-center gap-2"
+            >
+              <span>{t.seeWhatToDo}</span>
+              <ArrowRight className={cn("w-5 h-5", isRtl && "rotate-180")} aria-hidden="true" />
+            </Link>
+          </section>
+        ) : (
+          <section className="flex-[2_1_480px] min-w-0 bg-[#E3EFE2] border-2 border-[#7FB083] rounded-[20px] lg:rounded-[22px] p-[18px] lg:px-[26px] lg:py-6 flex flex-col gap-3">
+            <div className="flex items-center gap-2.5">
+              <CheckCircle2 className="w-7 h-7 text-[#2E6B3A] shrink-0" strokeWidth={2.2} aria-hidden="true" />
+              <span className="text-[15px] font-bold text-[#1F4D28] uppercase">{t.statusAllGood}</span>
+            </div>
+            <h2 className="m-0 text-[26px] lg:text-[30px] font-bold leading-[1.2] text-[#17251C]">
+              {t.waterFineTitle}
+            </h2>
+            {m.peakDailyDemandM3 !== null && (
+              <p className="m-0 text-[17px] leading-[1.45] text-[#22392A]">
+                {fmt(t.yourPumpGivesPerDay, {
+                  supply: m.pumpDailySupplyM3,
+                  demand: m.peakDailyDemandM3,
+                  month: localizedPeakMonth,
+                })}
               </p>
             )}
-          </CardContent>
-        </Card>
-      )}
+            <Link
+              href="/reports"
+              className="self-start min-h-[48px] px-6 rounded-full bg-[#2E6B3A] text-white text-[17px] font-bold inline-flex items-center gap-2"
+            >
+              <span>{t.openReport}</span>
+              <ArrowRight className={cn("w-5 h-5", isRtl && "rotate-180")} aria-hidden="true" />
+            </Link>
+          </section>
+        )}
 
-      {/* Charts & Quick Actions */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
-        <Card className="lg:col-span-2">
-          <CardHeader>
-            <CardTitle>7-Day Rainfall vs. Reference Evapotranspiration (ET₀)</CardTitle>
-            <CardDescription>
-              Daily crop atmospheric demand (mm/day) compared to forecast rainfall
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="h-64">
-            {analysis?.weather.daily ? (
-              <ResponsiveContainer width="100%" height="100%">
-                <BarChart data={analysis.weather.daily}>
-                  <CartesianGrid strokeDasharray="3 3" opacity={0.25} />
-                  <XAxis dataKey="date" tickFormatter={(d) => String(d).slice(5)} fontSize={11} />
-                  <YAxis fontSize={11} unit=" mm" />
-                  <Tooltip />
-                  <Bar dataKey="precipMm" name="Forecast Rain (mm)" fill="#0284c7" radius={[4, 4, 0, 0]} />
-                  <Bar dataKey="et0Mm" name="FAO ET₀ (mm)" fill="#d97706" radius={[4, 4, 0, 0]} />
-                </BarChart>
-              </ResponsiveContainer>
-            ) : (
-              <div className="h-full flex items-center justify-center text-xs text-muted-foreground">
-                Forecast chart populates once analysis completes.
-              </div>
-            )}
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader>
-            <CardTitle>Recent Reports & Properties</CardTitle>
-            <CardDescription>Quick switch or export PDF</CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-3">
-            <div className="space-y-1.5">
-              {farms.slice(0, 3).map((f) => (
-                <button
-                  key={f.id}
-                  onClick={() => setActiveFarmId(f.id)}
-                  className={`w-full text-left p-2.5 rounded-lg border text-xs transition-colors cursor-pointer ${
-                    f.id === activeFarm?.id
-                      ? "border-[#14532d] bg-emerald-50/70 dark:bg-emerald-950/40"
-                      : "border-border hover:bg-muted"
-                  }`}
-                >
-                  <div className="font-semibold truncate">{f.name}</div>
-                  <div className="text-[11px] text-muted-foreground">
-                    {f.areaHectares.toFixed(1)} ha • {f.irrigationConfig.cropCode}
-                  </div>
-                </button>
-              ))}
+        {/* Today Weather Card */}
+        <section className="flex-[1_1_280px] min-w-0 bg-white border-[1.5px] border-[#E4DFD2] rounded-[20px] lg:rounded-[22px] p-4 lg:px-6 lg:py-[22px] flex flex-col gap-3">
+          <h2 className="m-0 text-[19px] lg:text-[20px] font-bold text-[#17251C]">
+            {t.todayTitle}
+          </h2>
+          <div className="flex items-center gap-3.5">
+            <Cloud className="hidden lg:block w-12 h-12 text-[#2E6B3A] shrink-0" strokeWidth={1.8} aria-hidden="true" />
+            <span className="text-[40px] lg:text-[48px] font-bold leading-none text-[#17251C]">
+              {m.currentTempC !== null ? `${m.currentTempC}°` : "—"}
+            </span>
+            <div className="lg:hidden flex flex-col gap-0.5">
+              <span className="text-[17px] text-[#17251C]">{weatherSummaryPlain}</span>
+              <span className="text-[15px] text-[#4A5A4F]">{weatherConditionsLine}</span>
             </div>
-
-            <div className="pt-2 border-t border-border space-y-2">
-              <p className="text-xs font-semibold">Saved Feasibility Reports ({reports.length})</p>
-              {reports.length === 0 ? (
-                <p className="text-[11px] text-muted-foreground">
-                  No reports generated yet. Generate one from the Reports tab.
-                </p>
-              ) : (
-                reports.slice(0, 2).map((r) => (
-                  <Link
-                    key={r.id}
-                    href="/reports"
-                    className="block p-2 rounded-lg bg-muted hover:bg-muted/80 text-xs"
-                  >
-                    <div className="flex items-center justify-between">
-                      <span className="font-medium truncate">{r.farmName}</span>
-                      <Badge variant="green">{r.overallScore}/100</Badge>
-                    </div>
-                    <span className="text-[10px] text-muted-foreground">
-                      {formatTimestamp(r.createdAt)}
-                    </span>
-                  </Link>
-                ))
-              )}
-
-              <div className="grid grid-cols-2 gap-2 pt-1">
-                <Link href="/assistant">
-                  <Button size="sm" variant="outline" className="w-full">
-                    <Bot className="h-3.5 w-3.5" />
-                    Ask AI
-                  </Button>
-                </Link>
-                <Link href="/reports">
-                  <Button size="sm" variant="primary" className="w-full">
-                    <FileText className="h-3.5 w-3.5" />
-                    Reports
-                  </Button>
-                </Link>
-              </div>
-            </div>
-
-            {analysis && analysis.weather.alerts.length > 0 && (
-              <div className="p-2.5 rounded-lg bg-amber-50 dark:bg-amber-950/50 border border-amber-200 dark:border-amber-800 text-[11px] flex items-start gap-2">
-                <AlertTriangle className="h-4 w-4 text-amber-600 shrink-0 mt-0.5" />
-                <span>{analysis.weather.alerts[0].description}</span>
-              </div>
-            )}
-          </CardContent>
-        </Card>
+          </div>
+          <span className="hidden lg:block text-[17px] text-[#17251C]">
+            {weatherSummaryPlain}
+            {m.todayMaxTempC !== null ? `, up to ${m.todayMaxTempC}°` : ""}
+          </span>
+          <span className="hidden lg:block text-[16px] text-[#4A5A4F]">
+            {weatherConditionsLine}
+          </span>
+          <span className="hidden lg:block mt-auto text-[16px] font-bold text-[#1F4D28]">
+            {m.shouldWaterToday ? t.waterAsNormalToday : t.holdWaterRainToday}
+          </span>
+        </section>
       </div>
+
+      {/* 3 Status Tiles: Water / Sun power / Weather */}
+      <div className="grid grid-cols-3 gap-2.5 lg:gap-4">
+        <Link
+          href="/water"
+          className="bg-white border-[1.5px] border-[#E4DFD2] rounded-[16px] lg:rounded-[18px] p-3.5 lg:px-5 lg:py-[18px] no-underline text-[#17251C] flex flex-col lg:flex-row gap-1.5 lg:gap-3.5 items-start hover:border-[#1D4F91]/50 transition-colors"
+        >
+          <Droplet className="w-[30px] h-[30px] lg:w-[34px] lg:h-[34px] text-[#1D4F91] shrink-0" strokeWidth={2} aria-hidden="true" />
+          <span className="flex flex-col gap-1 min-w-0">
+            <b className="text-[17px] lg:text-[19px] leading-tight">{t.navWater}</b>
+            <span
+              className={cn(
+                "text-[14px] lg:text-[16px] font-bold leading-snug",
+                m.waterStatus === "PROBLEM" ? "text-[#8A4B00]" : "text-[#2E6B3A]"
+              )}
+            >
+              {m.isWaterShort
+                ? fmt(t.shortInMonth, { month: localizedPeakMonth })
+                : t.statusGood}
+            </span>
+            {m.isWaterShort && (
+              <span className="hidden lg:block text-[15px] text-[#4A5A4F]">
+                {fmt(t.pumpCupsCaption, { cups: m.cupsDenominator })}
+              </span>
+            )}
+          </span>
+        </Link>
+
+        <Link
+          href="/solar"
+          className="bg-white border-[1.5px] border-[#E4DFD2] rounded-[16px] lg:rounded-[18px] p-3.5 lg:px-5 lg:py-[18px] no-underline text-[#17251C] flex flex-col lg:flex-row gap-1.5 lg:gap-3.5 items-start hover:border-[#C98A1B]/60 transition-colors"
+        >
+          <Sun className="w-[30px] h-[30px] lg:w-[34px] lg:h-[34px] text-[#9A6400] shrink-0" strokeWidth={2} aria-hidden="true" />
+          <span className="flex flex-col gap-1 min-w-0">
+            <b className="text-[17px] lg:text-[19px] leading-tight">{t.navSunPower}</b>
+            <span
+              className={cn(
+                "text-[14px] lg:text-[16px] font-bold leading-snug",
+                m.isSolarShortInSummer ? "text-[#8A4B00]" : "text-[#2E6B3A]"
+              )}
+            >
+              {m.isSolarShortInSummer ? t.shortInSummer : t.enoughAllYear}
+            </span>
+            <span className="hidden lg:block text-[15px] text-[#4A5A4F]">
+              {t.sunRestOfYearCaption}
+            </span>
+          </span>
+        </Link>
+
+        <Link
+          href="/environmental"
+          className="bg-white border-[1.5px] border-[#E4DFD2] rounded-[16px] lg:rounded-[18px] p-3.5 lg:px-5 lg:py-[18px] no-underline text-[#17251C] flex flex-col lg:flex-row gap-1.5 lg:gap-3.5 items-start hover:border-[#2E6B3A]/50 transition-colors"
+        >
+          <Cloud className="w-[30px] h-[30px] lg:w-[34px] lg:h-[34px] text-[#2E6B3A] shrink-0" strokeWidth={2} aria-hidden="true" />
+          <span className="flex flex-col gap-1 min-w-0">
+            <b className="text-[17px] lg:text-[19px] leading-tight">{t.navWeather}</b>
+            <span
+              className={cn(
+                "text-[14px] lg:text-[16px] font-bold leading-snug",
+                m.hasAnyWeatherAlert ? "text-[#8A4B00]" : "text-[#2E6B3A]"
+              )}
+            >
+              {m.hasAnyWeatherAlert ? t.alertAhead : t.calmWeek}
+            </span>
+            <span className="hidden lg:block text-[15px] text-[#4A5A4F]">
+              {t.weatherCalmCaption}
+            </span>
+          </span>
+        </Link>
+      </div>
+
+      {/* Bottom Row: Your next steps + Farm report */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 lg:gap-5">
+        <section className="bg-white border-[1.5px] border-[#E4DFD2] rounded-[20px] p-4 lg:px-6 lg:py-5 flex flex-col gap-3">
+          <h2 className="m-0 text-[19px] lg:text-[20px] font-bold text-[#17251C]">
+            {t.yourNextSteps}
+          </h2>
+          {nextSteps.map((step) => (
+            <label
+              key={step.key}
+              className="flex items-start gap-3 min-h-[44px] text-[17px] leading-[1.4] cursor-pointer text-[#17251C]"
+            >
+              <input
+                type="checkbox"
+                checked={Boolean(checkedSteps[step.key])}
+                onChange={() => toggleStep(step.key)}
+                className="w-6 h-6 mt-0.5 accent-[#2E6B3A] shrink-0 cursor-pointer"
+              />
+              <span className={cn(checkedSteps[step.key] && "line-through text-[#4A5A4F]")}>
+                {step.text}
+              </span>
+            </label>
+          ))}
+        </section>
+
+        <section className="bg-white border-[1.5px] border-[#E4DFD2] rounded-[20px] p-4 lg:px-6 lg:py-5 flex flex-col gap-3">
+          <h2 className="m-0 text-[19px] lg:text-[20px] font-bold text-[#17251C]">
+            {t.farmReportCardTitle}
+          </h2>
+          <p className="m-0 text-[18px] font-bold text-[#17251C]">
+            {m.isWaterShort ? t.verdictSolveWaterFirst : t.verdictGoodChoice}
+          </p>
+          <div className="flex flex-wrap gap-2.5 mt-auto pt-1">
+            <Link
+              href="/reports"
+              className="min-h-[48px] px-5 rounded-full bg-[#2E6B3A] text-white text-[16px] font-bold no-underline inline-flex items-center justify-center"
+            >
+              {t.openReport}
+            </Link>
+            <Link
+              href="/assistant"
+              className="min-h-[48px] px-5 rounded-full border-[1.5px] border-[#B8B1A0] bg-white text-[#17251C] text-[16px] font-bold no-underline inline-flex items-center justify-center"
+            >
+              {t.askAQuestion}
+            </Link>
+          </div>
+        </section>
+      </div>
+    </div>
+  );
+}
+
+function MobileLanguageButton({
+  lang,
+  setLang,
+  label,
+}: {
+  lang: "en" | "fr" | "ar";
+  setLang: (next: "en" | "fr" | "ar") => void;
+  label: string;
+}) {
+  return (
+    <div
+      role="group"
+      aria-label={label}
+      className="min-h-[44px] px-2 rounded-full border-[1.5px] border-[#C9C3B3] bg-white inline-flex items-center gap-1 text-[15px] font-bold text-[#17251C] shrink-0"
+    >
+      <button
+        type="button"
+        onClick={() => setLang("en")}
+        className={cn(
+          "min-h-[36px] px-2 rounded-full",
+          lang === "en" ? "bg-[#E3EFE2] text-[#1F4D28]" : "text-[#4A5A4F]"
+        )}
+      >
+        EN
+      </button>
+      <span className="text-[#C9C3B3]" aria-hidden="true">·</span>
+      <button
+        type="button"
+        onClick={() => setLang("ar")}
+        className={cn(
+          "min-h-[36px] px-2 rounded-full",
+          lang === "ar" ? "bg-[#E3EFE2] text-[#1F4D28]" : "text-[#4A5A4F]"
+        )}
+      >
+        ع
+      </button>
+      <span className="text-[#C9C3B3]" aria-hidden="true">·</span>
+      <button
+        type="button"
+        onClick={() => setLang("fr")}
+        className={cn(
+          "min-h-[36px] px-2 rounded-full",
+          lang === "fr" ? "bg-[#E3EFE2] text-[#1F4D28]" : "text-[#4A5A4F]"
+        )}
+      >
+        FR
+      </button>
     </div>
   );
 }
