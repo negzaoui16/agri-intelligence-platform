@@ -12,18 +12,18 @@
   --color-border: var(--border-subtle);
   --color-primary: var(--brand-primary);
   --color-primary-foreground: #ffffff;
-  --color-water: #0284c7;
-  --color-solar: #d97706;
+  --color-water: #1d4f91;
+  --color-solar: #c98a1b;
 }
 
 :root {
-  --bg-canvas: #f7f6f2;
+  --bg-canvas: #f6f4ee;
   --bg-card: #ffffff;
-  --bg-muted: #efede6;
-  --fg-primary: #1a241e;
-  --fg-muted: #5c665f;
-  --border-subtle: #dedad0;
-  --brand-primary: #14532d;
+  --bg-muted: #efebe1;
+  --fg-primary: #17251c;
+  --fg-muted: #4a5a4f;
+  --border-subtle: #e4dfd2;
+  --brand-primary: #2e6b3a;
 }
 
 .dark {
@@ -40,8 +40,14 @@ html,
 body {
   background-color: var(--bg-canvas);
   color: var(--fg-primary);
-  font-feature-settings: "cv02", "cv03", "cv04", "cv11";
+  font-family: var(--font-latin), "Atkinson Hyperlegible", system-ui, sans-serif;
+  font-size: 16px;
   -webkit-tap-highlight-color: transparent;
+}
+
+html[dir="rtl"],
+html[dir="rtl"] body {
+  font-family: var(--font-arabic), "Noto Sans Arabic", var(--font-latin), system-ui, sans-serif;
 }
 
 /* MapLibre GL overrides for crisp controls */

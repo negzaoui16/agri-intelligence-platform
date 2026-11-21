@@ -3,6 +3,7 @@
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { ThemeProvider } from "next-themes";
 import * as React from "react";
+import { LanguageProvider } from "@/components/i18n/LanguageProvider";
 import {
   flushSyncQueue,
   getPendingSyncCount,
@@ -70,8 +71,10 @@ export function AppProviders({ children }: { children: React.ReactNode }) {
   }, [queryClient, setConflictCount, setIsOnline, setLastSyncedAt, setPendingSyncCount]);
 
   return (
-    <ThemeProvider attribute="class" defaultTheme="system" enableSystem>
-      <QueryClientProvider client={queryClient}>{children}</QueryClientProvider>
+    <ThemeProvider attribute="class" defaultTheme="light" enableSystem={false}>
+      <LanguageProvider>
+        <QueryClientProvider client={queryClient}>{children}</QueryClientProvider>
+      </LanguageProvider>
     </ThemeProvider>
   );
 }

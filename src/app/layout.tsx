@@ -1,7 +1,22 @@
 import type { Metadata, Viewport } from "next";
+import { Atkinson_Hyperlegible, Noto_Sans_Arabic } from "next/font/google";
 import { AppShell } from "@/components/layout/AppShell";
 import { AppProviders } from "@/components/providers/AppProviders";
 import "./globals.css";
+
+const atkinson = Atkinson_Hyperlegible({
+  subsets: ["latin"],
+  weight: ["400", "700"],
+  variable: "--font-latin",
+  display: "swap",
+});
+
+const notoArabic = Noto_Sans_Arabic({
+  subsets: ["arabic"],
+  weight: ["400", "700"],
+  variable: "--font-arabic",
+  display: "swap",
+});
 
 export const metadata: Metadata = {
   title: "TerraPulse Agri Intelligence — Field Land, Water & Solar Feasibility",
@@ -27,10 +42,7 @@ export const viewport: Viewport = {
   initialScale: 1,
   maximumScale: 5,
   viewportFit: "cover",
-  themeColor: [
-    { media: "(prefers-color-scheme: light)", color: "#14532d" },
-    { media: "(prefers-color-scheme: dark)", color: "#0b1410" },
-  ],
+  themeColor: [{ color: "#2E6B3A" }],
 };
 
 export default function RootLayout({
@@ -39,8 +51,12 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en" suppressHydrationWarning>
-      <body className="antialiased">
+    <html
+      lang="en"
+      className={`${atkinson.variable} ${notoArabic.variable}`}
+      suppressHydrationWarning
+    >
+      <body className="antialiased min-h-screen bg-[#F6F4EE] text-[#17251C]">
         <AppProviders>
           <AppShell>{children}</AppShell>
         </AppProviders>
