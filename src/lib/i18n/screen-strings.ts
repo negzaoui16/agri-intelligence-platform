@@ -35,6 +35,13 @@ export interface ScreenStrings {
   tooManyTries: string;
   somethingWentWrong: string;
   backToSignIn: string;
+  googleTestTitle: string;
+  googleTestSubtitle: string;
+  googleTestNote: string;
+  googleName: string;
+  googleEmail: string;
+  completeGoogle: string;
+  googleFailed: string;
 
   // Login
   loginTitle: string;
@@ -89,6 +96,16 @@ export interface ScreenStrings {
 
   // Offline screen
   offlineBadge: string;
+  offlineShort: string;
+  changesSaved: string;
+  sendNow: string;
+  refresh: string;
+  refreshFarmData: string;
+  conflictNotice: string;
+  keepCloud: string;
+  keepPhone: string;
+  offlineBanner: string;
+  changesWaiting: string;
   offlineTitle: string;
   offlineBody: string;
   openMyFarm: string;
@@ -117,6 +134,7 @@ export interface ScreenStrings {
   needInternetForPdf: string;
   pdfSaved: string;
   engineerPdfReady: string;
+  pdfArabicFallback: string;
 
   // Farms
   farmSavedOnline: string;
@@ -141,6 +159,12 @@ export interface ScreenStrings {
   daySunnyNoRain: string;
   noRain: string;
   checkingLiveData: string;
+  statusNotChecked: string;
+  notCheckedTitle: string;
+  notCheckedBody: string;
+  checkMyFarm: string;
+  checkingFarm: string;
+  checkFailed: string;
 
   // Assistant
   askIntro: string; // {farm}
@@ -215,6 +239,13 @@ const EN: ScreenStrings = {
   tooManyTries: "Too many tries. Wait a few minutes and try again.",
   somethingWentWrong: "Something went wrong. Please try again.",
   backToSignIn: "Back to sign in",
+  googleTestTitle: "Google sign-in (test)",
+  googleTestSubtitle: "Finish signing in with your Google account.",
+  googleTestNote: "This test page only works on a developer computer without Google keys. On the real site, Google sign-in goes straight through Google.",
+  googleName: "Your name",
+  googleEmail: "Your Google email",
+  completeGoogle: "Continue",
+  googleFailed: "Google sign-in did not work. Please try again.",
 
   loginTitle: "Welcome back",
   loginSubtitle: "Sign in to see your farm, water and sun power.",
@@ -266,6 +297,16 @@ const EN: ScreenStrings = {
   wrongOrOldCode: "This code is wrong or too old. Ask for a new one.",
 
   offlineBadge: "No internet",
+  offlineShort: "Offline",
+  changesSaved: "{count} saved on phone",
+  sendNow: "Send now",
+  refresh: "Refresh",
+  refreshFarmData: "Refresh farm data",
+  conflictNotice: "{count} change(s) made offline are different from your saved farm.",
+  keepCloud: "Keep saved version",
+  keepPhone: "Keep my phone change",
+  offlineBanner: "No internet: your changes are saved on this phone",
+  changesWaiting: "{count} change(s) waiting to be sent",
   offlineTitle: "You are offline",
   offlineBody:
     "New weather and sun numbers need internet. You can still open your saved farms and change them. Your changes are sent when you are back online.",
@@ -295,6 +336,7 @@ const EN: ScreenStrings = {
   needInternetForPdf: "Connect to the internet once to prepare the PDF for your engineer.",
   pdfSaved: "PDF saved on your device.",
   engineerPdfReady: "PDF saved, and a short summary copied. You can paste it in a message to your engineer.",
+  pdfArabicFallback: "The Arabic letters could not load, so the PDF was saved in English. Try again when you are online.",
 
   farmSavedOnline: "Saved. Your farm numbers are updated.",
   farmSavedOffline: "Saved on your phone. It will be sent when you are back online.",
@@ -316,6 +358,12 @@ const EN: ScreenStrings = {
   daySunnyNoRain: "Sunny · No rain",
   noRain: "No rain",
   checkingLiveData: "Checking live weather and sun…",
+  statusNotChecked: "Not checked yet",
+  notCheckedTitle: "We have not checked your farm yet",
+  notCheckedBody: "Water, sun and weather need the internet once. Connect, then tap \"Check my farm\".",
+  checkMyFarm: "Check my farm",
+  checkingFarm: "Checking your farm…",
+  checkFailed: "Could not check right now. Try again in a moment.",
 
   askIntro:
     "Ask anything about water, pumps, solar panels, crops or weather for {farm}. Tap a question, or tap the green microphone to speak.",
@@ -389,6 +437,13 @@ const FR: ScreenStrings = {
   tooManyTries: "Trop d'essais. Attendez quelques minutes et réessayez.",
   somethingWentWrong: "Un problème est survenu. Veuillez réessayer.",
   backToSignIn: "Retour à la connexion",
+  googleTestTitle: "Connexion Google (test)",
+  googleTestSubtitle: "Terminez la connexion avec votre compte Google.",
+  googleTestNote: "Cette page de test ne marche que sur un ordinateur de développement sans clés Google. Sur le vrai site, la connexion passe directement par Google.",
+  googleName: "Votre nom",
+  googleEmail: "Votre e-mail Google",
+  completeGoogle: "Continuer",
+  googleFailed: "La connexion Google n'a pas marché. Veuillez réessayer.",
 
   loginTitle: "Bon retour",
   loginSubtitle: "Connectez-vous pour voir votre ferme, l'eau et l'énergie solaire.",
@@ -440,6 +495,16 @@ const FR: ScreenStrings = {
   wrongOrOldCode: "Ce code est faux ou trop ancien. Demandez-en un nouveau.",
 
   offlineBadge: "Pas d'internet",
+  offlineShort: "Hors ligne",
+  changesSaved: "{count} gardé(s) sur le téléphone",
+  sendNow: "Envoyer",
+  refresh: "Actualiser",
+  refreshFarmData: "Actualiser les données de la ferme",
+  conflictNotice: "{count} changement(s) faits hors ligne diffèrent de votre ferme enregistrée.",
+  keepCloud: "Garder la version enregistrée",
+  keepPhone: "Garder mon changement",
+  offlineBanner: "Pas d'internet : vos changements sont gardés sur ce téléphone",
+  changesWaiting: "{count} changement(s) en attente d'envoi",
   offlineTitle: "Vous êtes hors ligne",
   offlineBody:
     "Les nouvelles données de météo et de soleil demandent internet. Vous pouvez quand même ouvrir vos fermes enregistrées et les modifier. Vos changements seront envoyés au retour du réseau.",
@@ -470,6 +535,7 @@ const FR: ScreenStrings = {
   pdfSaved: "PDF enregistré sur votre appareil.",
   engineerPdfReady:
     "PDF enregistré et court résumé copié. Vous pouvez le coller dans un message à votre ingénieur.",
+  pdfArabicFallback: "Les lettres arabes n'ont pas pu se charger, le PDF est donc en anglais. Réessayez une fois en ligne.",
 
   farmSavedOnline: "Enregistré. Les chiffres de votre ferme sont à jour.",
   farmSavedOffline: "Enregistré sur votre téléphone. Ce sera envoyé au retour du réseau.",
@@ -491,6 +557,12 @@ const FR: ScreenStrings = {
   daySunnyNoRain: "Ensoleillé · Pas de pluie",
   noRain: "Pas de pluie",
   checkingLiveData: "Vérification de la météo et du soleil…",
+  statusNotChecked: "Pas encore vérifié",
+  notCheckedTitle: "Nous n'avons pas encore vérifié votre ferme",
+  notCheckedBody: "L'eau, le soleil et la météo demandent internet une fois. Connectez-vous, puis touchez « Vérifier ma ferme ».",
+  checkMyFarm: "Vérifier ma ferme",
+  checkingFarm: "Vérification de votre ferme…",
+  checkFailed: "Vérification impossible pour l'instant. Réessayez dans un moment.",
 
   askIntro:
     "Posez toute question sur l'eau, les pompes, les panneaux solaires, les cultures ou la météo pour {farm}. Touchez une question, ou le micro vert pour parler.",
@@ -564,6 +636,13 @@ const AR: ScreenStrings = {
   tooManyTries: "محاولات كثيرة. انتظر بضع دقائق ثم حاول مجدداً.",
   somethingWentWrong: "حدث خطأ. حاول مجدداً من فضلك.",
   backToSignIn: "العودة إلى الدخول",
+  googleTestTitle: "الدخول عبر Google (تجربة)",
+  googleTestSubtitle: "أكمل الدخول بحساب Google الخاص بك.",
+  googleTestNote: "صفحة التجربة هذه تعمل فقط على حاسوب المطوّر بدون مفاتيح Google. في الموقع الحقيقي يمر الدخول مباشرة عبر Google.",
+  googleName: "اسمك",
+  googleEmail: "بريدك في Google",
+  completeGoogle: "متابعة",
+  googleFailed: "لم ينجح الدخول عبر Google. حاول مجدداً من فضلك.",
 
   loginTitle: "مرحباً بعودتك",
   loginSubtitle: "ادخل لترى مزرعتك والماء وطاقة الشمس.",
@@ -614,6 +693,16 @@ const AR: ScreenStrings = {
   wrongOrOldCode: "هذا الرمز خاطئ أو قديم. اطلب رمزاً جديداً.",
 
   offlineBadge: "لا إنترنت",
+  offlineShort: "غير متصل",
+  changesSaved: "{count} محفوظ في الهاتف",
+  sendNow: "أرسل الآن",
+  refresh: "تحديث",
+  refreshFarmData: "حدّث بيانات المزرعة",
+  conflictNotice: "{count} تعديل قمت به دون اتصال يختلف عن مزرعتك المحفوظة.",
+  keepCloud: "أبقِ النسخة المحفوظة",
+  keepPhone: "أبقِ تعديل الهاتف",
+  offlineBanner: "لا إنترنت: تعديلاتك محفوظة في هذا الهاتف",
+  changesWaiting: "{count} تعديل في انتظار الإرسال",
   offlineTitle: "أنت غير متصل",
   offlineBody:
     "أرقام الطقس والشمس الجديدة تحتاج إلى الإنترنت. لكن يمكنك فتح مزارعك المحفوظة وتعديلها. تُرسل تعديلاتك عند عودة الاتصال.",
@@ -643,6 +732,7 @@ const AR: ScreenStrings = {
   needInternetForPdf: "اتصل بالإنترنت مرة واحدة لتحضير ملف PDF لمهندسك.",
   pdfSaved: "تم حفظ ملف PDF في جهازك.",
   engineerPdfReady: "تم حفظ ملف PDF ونسخ ملخص قصير. يمكنك لصقه في رسالة إلى مهندسك.",
+  pdfArabicFallback: "تعذّر تحميل الحروف العربية، لذلك حُفظ ملف PDF بالإنجليزية. حاول مجدداً عند الاتصال بالإنترنت.",
 
   farmSavedOnline: "تم الحفظ. أرقام مزرعتك محدّثة.",
   farmSavedOffline: "تم الحفظ في هاتفك. سيُرسل عند عودة الاتصال.",
@@ -664,6 +754,12 @@ const AR: ScreenStrings = {
   daySunnyNoRain: "مشمس · لا مطر",
   noRain: "لا مطر",
   checkingLiveData: "جارٍ فحص الطقس والشمس…",
+  statusNotChecked: "لم يُفحص بعد",
+  notCheckedTitle: "لم نفحص مزرعتك بعد",
+  notCheckedBody: "الماء والشمس والطقس تحتاج إلى الإنترنت مرة واحدة. اتصل ثم المس «افحص مزرعتي».",
+  checkMyFarm: "افحص مزرعتي",
+  checkingFarm: "جارٍ فحص مزرعتك…",
+  checkFailed: "تعذّر الفحص الآن. حاول مجدداً بعد قليل.",
 
   askIntro:
     "اسأل أي سؤال عن الماء أو المضخات أو الألواح الشمسية أو المحاصيل أو الطقس في {farm}. المس سؤالاً، أو المس الميكروفون الأخضر لتتكلم.",

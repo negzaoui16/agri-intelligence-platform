@@ -12,7 +12,7 @@ import {
   RefreshCw,
   Sun,
 } from "lucide-react";
-import { LanguageSwitch, ThemeToggle } from "@/components/farmer/FarmerUI";
+import { LanguageSwitch, NotCheckedYetCard, ThemeToggle } from "@/components/farmer/FarmerUI";
 import { useLanguage } from "@/components/i18n/LanguageProvider";
 import { useAuthSession } from "@/hooks/useAuth";
 import {
@@ -111,7 +111,7 @@ export default function HomePage() {
   }
 
   const m = selectFarmerMetrics(activeFarm, analysis);
-  const localizedPeakMonth = monthLabel(m.peakMonthName);
+  const localizedPeakMonth = monthLabel(m.peakMonthName ?? "");
   const localizedCrop = cropLabel(m.cropName, m.cropCode);
   const demandBarPct =
     m.peakDailyDemandM3 && m.peakDailyDemandM3 > 0
@@ -194,18 +194,22 @@ export default function HomePage() {
             type="button"
             onClick={() => refreshAnalysis.mutate(activeFarm.id)}
             disabled={refreshAnalysis.isPending}
-            aria-label="Refresh farm data"
+            aria-label={s.refreshFarmData}
             className="min-h-[44px] px-4 rounded-full border-[1.5px] border-[var(--tp-bd-C9C3B3)] bg-[var(--tp-bg-FFFFFF)] text-[15px] font-bold text-[var(--tp-fg-17251C)] inline-flex items-center gap-2 hover:bg-[var(--tp-bg-F6F4EE)]"
           >
             <RefreshCw
               className={cn("w-4 h-4", refreshAnalysis.isPending && "animate-spin")}
               aria-hidden="true"
             />
-            <span>Refresh</span>
+            <span>{s.refresh}</span>
           </button>
         </div>
       </header>
 
+      {!m.hasAnalysis ? (
+        <NotCheckedYetCard farmId={activeFarm.id} loading={analysisLoading} />
+      ) : (
+      <>
       {/* Top Row: Primary Problem Card + Today Weather Card */}
       <div className="flex flex-col lg:flex-row gap-4 lg:gap-5 items-stretch">
         {m.primaryProblem === "WATER_SHORT" && m.peakDailyDemandM3 !== null ? (
@@ -454,6 +458,8 @@ export default function HomePage() {
           </div>
         </section>
       </div>
+      </>
+      )}
     </div>
   );
 }

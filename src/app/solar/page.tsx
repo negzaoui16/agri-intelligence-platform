@@ -3,7 +3,7 @@
 import * as React from "react";
 import Link from "next/link";
 import { AlertTriangle, CheckCircle2, Loader2 } from "lucide-react";
-import { FarmerPageHeader } from "@/components/farmer/FarmerUI";
+import { FarmerPageHeader, NotCheckedYetCard } from "@/components/farmer/FarmerUI";
 import { useLanguage } from "@/components/i18n/LanguageProvider";
 import { SCREEN_STRINGS } from "@/lib/i18n/screen-strings";
 import { useFarmAnalysis, useFarms } from "@/hooks/useFarms";
@@ -28,7 +28,7 @@ export default function SolarPage() {
         <FarmerPageHeader mobileLabel={t.navSunPower} title={t.sunQuestionTitle} />
         <div className="bg-[var(--tp-bg-FFFFFF)] border-[1.5px] border-[var(--tp-bd-E4DFD2)] rounded-[20px] p-8 flex items-center gap-3 text-[17px] text-[var(--tp-fg-4A5A4F)]">
           <Loader2 className="w-6 h-6 animate-spin text-[var(--tp-fg-C98A1B)]" />
-          <span>Checking solar hours for your land…</span>
+          <span>{s.checkingFarm}</span>
         </div>
       </div>
     );
@@ -52,7 +52,17 @@ export default function SolarPage() {
   }
 
   const m = selectFarmerMetrics(activeFarm, analysis);
-  const localizedWorstMonth = monthLabel(m.worstMonthName);
+
+  if (!m.hasAnalysis) {
+    return (
+      <div className="flex flex-col gap-5">
+        <FarmerPageHeader mobileLabel={t.navSunPower} title={t.sunQuestionTitle} />
+        <NotCheckedYetCard farmId={activeFarm.id} />
+      </div>
+    );
+  }
+
+  const localizedWorstMonth = monthLabel(m.worstMonthName ?? "");
   const annualRatioPct =
     m.solarAnnualKwh && m.pumpAnnualKwh && m.solarAnnualKwh > 0
       ? Math.min(100, Math.max(8, Math.round((m.pumpAnnualKwh / m.solarAnnualKwh) * 100)))

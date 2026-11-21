@@ -2,10 +2,8 @@
 
 import * as React from "react";
 import Link from "next/link";
-import { jsPDF } from "jspdf";
-import autoTable from "jspdf-autotable";
 import { Loader2 } from "lucide-react";
-import { FarmerPageHeader, FarmerStatusBadge } from "@/components/farmer/FarmerUI";
+import { FarmerPageHeader, FarmerStatusBadge, NotCheckedYetCard } from "@/components/farmer/FarmerUI";
 import { useLanguage } from "@/components/i18n/LanguageProvider";
 import { useFarmAnalysis, useFarms, useReports } from "@/hooks/useFarms";
 import { cacheReportsLocally } from "@/lib/offline/sync-engine";
@@ -14,123 +12,10 @@ import { getCropSpec } from "@/lib/engines/fao56-calculator";
 import { useAppStore } from "@/lib/store/app-store";
 import { fillTemplate } from "@/lib/i18n/farm-ui-strings";
 import { SCREEN_STRINGS } from "@/lib/i18n/screen-strings";
-import { formatTimestamp } from "@/lib/utils";
+import { buildFeasibilityPdf, feasibilityPdfFileName } from "@/lib/reports/feasibility-pdf";
+import { loadArabicPdfFont } from "@/lib/reports/load-arabic-font";
 import type { FeasibilityReportPayload } from "@/types/agri";
 import { useQueryClient } from "@tanstack/react-query";
-
-function exportFeasibilityPdf(report: FeasibilityReportPayload) {
-  const doc = new jsPDF({ unit: "mm", format: "a4" });
-
-  doc.setFillColor(46, 107, 58);
-  doc.rect(0, 0, 210, 28, "F");
-  doc.setTextColor(255, 255, 255);
-  doc.setFontSize(16);
-  doc.text("TerraPulse Agri Intelligence — Engineer Feasibility Report", 14, 13);
-  doc.setFontSize(10);
-  doc.text(
-    `${report.farmName} | Score: ${report.overallScore}/100 (${report.verdict}) | Generated ${formatTimestamp(report.createdAt)}`,
-    14,
-    21
-  );
-
-  doc.setTextColor(20, 20, 20);
-  doc.setFontSize(12);
-  doc.text("1. Executive Summary", 14, 38);
-  doc.setFontSize(9.5);
-  const splitSummary = doc.splitTextToSize(report.executiveSummary, 182);
-  doc.text(splitSummary, 14, 44);
-
-  const yPos = 44 + splitSummary.length * 4.6 + 6;
-
-  autoTable(doc, {
-    startY: yPos,
-    head: [["Property & Environmental Metric", "Value"]],
-    body: [
-      [
-        "Coordinates",
-        `${report.propertyOverview.coordinates.latitude.toFixed(5)}°, ${report.propertyOverview.coordinates.longitude.toFixed(5)}°`,
-      ],
-      [
-        "Area & Perimeter",
-        `${report.propertyOverview.areaHectares.toFixed(2)} ha (${Math.round(report.propertyOverview.perimeterMeters)} m)`,
-      ],
-      [
-        "Elevation & Slope",
-        `${report.propertyOverview.elevationM} m ASL (${report.propertyOverview.slopePct}% slope)`,
-      ],
-      [
-        "Primary Crop & Soil",
-        `${report.propertyOverview.primaryCrop} / ${report.propertyOverview.soilTexture}`,
-      ],
-      [
-        "Climate & Aridity",
-        `${report.weatherSummary.annualPrecipMm} mm/yr rain vs ${report.weatherSummary.annualEt0Mm} mm/yr ET0 (${report.weatherSummary.aridityClass}, AI ${report.weatherSummary.aridityIndex})`,
-      ],
-      [
-        "Nearest Mapped Water",
-        report.waterSummary.nearestSourceName
-          ? `${report.waterSummary.nearestSourceName} (${report.waterSummary.nearestSourceType}) · ${report.waterSummary.nearestDistanceM} m · dZ ${report.waterSummary.elevationDiffM ?? "N/A"} m [UNVERIFIED FLOW]`
-          : "None mapped within 10 km",
-      ],
-      [
-        "Irrigation & Pump Load",
-        `${report.irrigationAndPumpSummary.annualGrossWaterM3.toLocaleString()} m3/yr · Peak ${report.irrigationAndPumpSummary.peakDailyWaterM3} m3/day · ${report.irrigationAndPumpSummary.electricalPowerKw} kW (${report.irrigationAndPumpSummary.totalDynamicHeadM} m TDH)`,
-      ],
-      [
-        "Solar PVGIS Balance",
-        `${report.solarSummary.capacityKwp} kWp -> ${report.solarSummary.annualSolarKwh.toLocaleString()} kWh/yr (${report.solarSummary.annualCoveragePct}% annual; ${report.solarSummary.worstMonthCoveragePct}% in ${report.solarSummary.worstMonthName})`,
-      ],
-    ],
-    styles: { fontSize: 8.5, cellPadding: 2.5 },
-    headStyles: { fillColor: [46, 107, 58] },
-  });
-
-  const afterMainTable =
-    (doc as unknown as { lastAutoTable?: { finalY: number } }).lastAutoTable?.finalY ?? 150;
-
-  autoTable(doc, {
-    startY: afterMainTable + 8,
-    head: [["Crop", "Score", "Rating", "Water Demand (m3/ha/yr)"]],
-    body: report.cropSuitability.map((c) => [
-      c.cropName,
-      `${c.score}/100`,
-      c.rating,
-      c.estimatedAnnualIrrigationM3Ha.toLocaleString(),
-    ]),
-    styles: { fontSize: 8.5, cellPadding: 2 },
-    headStyles: { fillColor: [29, 79, 145] },
-  });
-
-  doc.addPage();
-  doc.setFontSize(12);
-  doc.text("2. Risks, Recommendations & Data Sources", 14, 16);
-
-  autoTable(doc, {
-    startY: 22,
-    head: [["Severity", "Risk", "Engineering Detail"]],
-    body: report.risks.map((r) => [r.severity, r.title, r.detail]),
-    styles: { fontSize: 8, cellPadding: 2.5 },
-    headStyles: { fillColor: [138, 75, 0] },
-  });
-
-  const afterRisk =
-    (doc as unknown as { lastAutoTable?: { finalY: number } }).lastAutoTable?.finalY ?? 90;
-
-  autoTable(doc, {
-    startY: afterRisk + 8,
-    head: [["Data Source", "Provider", "Provenance", "Retrieved"]],
-    body: report.sources.map((s) => [
-      s.name,
-      s.provider,
-      s.provenance,
-      formatTimestamp(s.retrievedAt),
-    ]),
-    styles: { fontSize: 8, cellPadding: 2 },
-    headStyles: { fillColor: [46, 107, 58] },
-  });
-
-  doc.save(`TerraPulse_Feasibility_${report.farmName.replace(/[^a-z0-9]/gi, "_")}.pdf`);
-}
 
 export default function ReportsPage() {
   const queryClient = useQueryClient();
@@ -144,6 +29,46 @@ export default function ReportsPage() {
   const [notice, setNotice] = React.useState<string | null>(null);
 
   const activeReport = reports[0] ?? null;
+
+  /** Builds the PDF in the farmer's language and saves it. Returns false if Arabic fell back to English. */
+  const savePdf = async (report: FeasibilityReportPayload): Promise<boolean> => {
+    const metrics = activeFarm ? selectFarmerMetrics(activeFarm, analysis) : null;
+    const summaryLines: string[] = [];
+    if (metrics?.hasAnalysis) {
+      const crop = cropLabel(metrics.cropName, metrics.cropCode);
+      const cropInText = lang === "ar" ? crop : crop.toLowerCase();
+      summaryLines.push(metrics.isWaterShort ? s.verdictYesIfWater : s.verdictYesGood);
+      summaryLines.push(
+        metrics.isWaterShort && metrics.peakDailyDemandM3 !== null
+          ? fillTemplate(s.verdictShortDetail, {
+              crop: cropInText,
+              supply: metrics.pumpDailySupplyM3,
+              month: monthLabel(metrics.peakMonthName ?? ""),
+              demand: metrics.peakDailyDemandM3,
+            })
+          : fillTemplate(s.verdictOkDetail, { crop: cropInText })
+      );
+    }
+    const arabicFontBase64 = lang === "ar" ? await loadArabicPdfFont() : null;
+    const base = {
+      summaryLines,
+      worstMonthLabel: monthLabel(report.solarSummary.worstMonthName),
+      primaryCropLabel: metrics ? cropLabel(metrics.cropName, metrics.cropCode) : undefined,
+    };
+    try {
+      buildFeasibilityPdf(report, { ...base, lang, arabicFontBase64 }).save(feasibilityPdfFileName(report));
+      return lang !== "ar" || Boolean(arabicFontBase64);
+    } catch {
+      // Never leave the farmer without a PDF: fall back to the English one.
+      buildFeasibilityPdf(report, {
+        ...base,
+        lang: "en",
+        worstMonthLabel: report.solarSummary.worstMonthName,
+        primaryCropLabel: metrics?.cropName,
+      }).save(feasibilityPdfFileName(report));
+      return lang === "en";
+    }
+  };
 
   const ensureReportAndRun = async (mode: "pdf" | "engineer") => {
     let report = activeReport;
@@ -172,8 +97,8 @@ export default function ReportsPage() {
     }
 
     if (mode === "pdf") {
-      exportFeasibilityPdf(report);
-      setNotice(s.pdfSaved);
+      const inLanguage = await savePdf(report);
+      setNotice(inLanguage ? s.pdfSaved : s.pdfArabicFallback);
       return;
     }
 
@@ -194,8 +119,8 @@ export default function ReportsPage() {
       // A short readable summary to paste in a message; the full detail is in the PDF.
       await navigator.clipboard.writeText(summaryText).catch(() => undefined);
     }
-    exportFeasibilityPdf(report);
-    setNotice(s.engineerPdfReady);
+    const inLanguage = await savePdf(report);
+    setNotice(inLanguage ? s.engineerPdfReady : s.pdfArabicFallback);
   };
 
   if (farmsLoading || analysisLoading || reportsLoading) {
@@ -228,7 +153,17 @@ export default function ReportsPage() {
   }
 
   const m = selectFarmerMetrics(activeFarm, analysis);
-  const localizedPeak = monthLabel(m.peakMonthName);
+
+  if (!m.hasAnalysis) {
+    return (
+      <div className="flex flex-col gap-5">
+        <FarmerPageHeader mobileLabel={t.navReport} title={t.reportQuestionTitle} />
+        <NotCheckedYetCard farmId={activeFarm.id} />
+      </div>
+    );
+  }
+
+  const localizedPeak = monthLabel(m.peakMonthName ?? "");
   const localizedCrop = cropLabel(m.cropName, m.cropCode);
   // Lower-case only in English and French ("for citrus"); Arabic has no case.
   const cropInSentence = lang === "ar" ? localizedCrop : localizedCrop.toLowerCase();
@@ -353,7 +288,7 @@ export default function ReportsPage() {
             {m.isSolarShortInSummer
               ? fillTemplate(s.sunCoversUnits, {
                   units: m.solarUnitsOutOf10,
-                  month: monthLabel(m.worstMonthName),
+                  month: monthLabel(m.worstMonthName ?? ""),
                 })
               : s.sunCoversAllYear}{" "}
             <Link

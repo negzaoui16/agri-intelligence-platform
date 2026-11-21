@@ -2,15 +2,15 @@ import type { MetadataRoute } from "next";
 
 export default function manifest(): MetadataRoute.Manifest {
   return {
-    name: "TerraPulse Agri Intelligence Platform",
+    name: "TerraPulse: your farm, water and sun power",
     short_name: "TerraPulse",
     description:
-      "Offline-capable agricultural land evaluation, geospatial water detection, FAO-56 irrigation modeling, PVGIS solar simulation, and AI decision support.",
+      "Check if your water and sun power are enough for your crops, find water near your farm, and get plain answers. Works without internet.",
     start_url: "/",
     display: "standalone",
     orientation: "portrait-primary",
-    background_color: "#0c1a12",
-    theme_color: "#14532d",
+    background_color: "#F6F4EE",
+    theme_color: "#2E6B3A",
     categories: ["productivity", "utilities", "weather", "navigation"],
     icons: [
       {

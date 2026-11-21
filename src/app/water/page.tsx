@@ -3,7 +3,7 @@
 import * as React from "react";
 import Link from "next/link";
 import { Info, Loader2 } from "lucide-react";
-import { FarmerPageHeader } from "@/components/farmer/FarmerUI";
+import { FarmerPageHeader, NotCheckedYetCard } from "@/components/farmer/FarmerUI";
 import { useLanguage } from "@/components/i18n/LanguageProvider";
 import { SCREEN_STRINGS } from "@/lib/i18n/screen-strings";
 import { useFarmAnalysis, useFarms } from "@/hooks/useFarms";
@@ -27,7 +27,7 @@ export default function WaterPage() {
         <FarmerPageHeader mobileLabel={t.navWater} title={t.waterQuestionTitle} />
         <div className="bg-[var(--tp-bg-FFFFFF)] border-[1.5px] border-[var(--tp-bd-E4DFD2)] rounded-[20px] p-8 flex items-center gap-3 text-[17px] text-[var(--tp-fg-4A5A4F)]">
           <Loader2 className="w-6 h-6 animate-spin text-[var(--tp-fg-1D4F91)]" />
-          <span>Checking your pump and nearby water…</span>
+          <span>{s.checkingFarm}</span>
         </div>
       </div>
     );
@@ -51,7 +51,17 @@ export default function WaterPage() {
   }
 
   const m = selectFarmerMetrics(activeFarm, analysis);
-  const localizedPeak = monthLabel(m.peakMonthName);
+
+  if (!m.hasAnalysis) {
+    return (
+      <div className="flex flex-col gap-5">
+        <FarmerPageHeader mobileLabel={t.navWater} title={t.waterQuestionTitle} />
+        <NotCheckedYetCard farmId={activeFarm.id} />
+      </div>
+    );
+  }
+
+  const localizedPeak = monthLabel(m.peakMonthName ?? "");
   const demandBarPct = m.waterCoveragePct ?? 100;
 
   return (

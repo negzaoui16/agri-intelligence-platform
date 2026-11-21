@@ -3,15 +3,30 @@
 import * as React from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { AuthSplitLayout } from "@/components/auth/AuthSplitLayout";
-import { Badge, Button, Input } from "@/components/ui/primitives";
+import { CheckCircle2, Loader2 } from "lucide-react";
+import {
+  AuthNotice,
+  AuthSplitLayout,
+  authField,
+  authLabel,
+  authLink,
+  authPrimaryButton,
+} from "@/components/auth/AuthSplitLayout";
+import { useLanguage } from "@/components/i18n/LanguageProvider";
+import { SCREEN_STRINGS } from "@/lib/i18n/screen-strings";
 import { clearUserLocalCacheOnLogout } from "@/lib/offline/sync-engine";
+import { cn } from "@/lib/utils";
 import { useQueryClient } from "@tanstack/react-query";
-import { AlertCircle, CheckCircle2, Loader2 } from "lucide-react";
 
+/**
+ * Local stand-in for Google sign-in, used only on a developer computer without Google keys.
+ * The server refuses it in production (see src/lib/auth/config.ts).
+ */
 export default function AuthCallbackPage() {
   const router = useRouter();
   const queryClient = useQueryClient();
+  const { lang } = useLanguage();
+  const s = SCREEN_STRINGS[lang];
 
   const [email, setEmail] = React.useState("");
   const [name, setName] = React.useState("");
@@ -26,14 +41,11 @@ export default function AuthCallbackPage() {
       const res = await fetch("/api/auth/oauth-callback", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          email: email.trim(),
-          name: name.trim(),
-        }),
+        body: JSON.stringify({ email: email.trim(), name: name.trim() }),
       });
-      const json = await res.json();
+      const json = await res.json().catch(() => ({}));
       if (!res.ok) {
-        setError(json.error || "Unable to complete Google sign-in.");
+        setError(res.status === 429 ? s.tooManyTries : s.googleFailed);
         return;
       }
       await clearUserLocalCacheOnLogout().catch(() => undefined);
@@ -43,7 +55,7 @@ export default function AuthCallbackPage() {
       router.push(json.redirectTo || "/onboarding");
       router.refresh();
     } catch {
-      setError("Network error completing Google OAuth callback.");
+      setError(s.noConnection);
     } finally {
       setLoading(false);
     }
@@ -51,67 +63,59 @@ export default function AuthCallbackPage() {
 
   return (
     <AuthSplitLayout
-      title="Google Sign-In Callback"
-      subtitle="Connect your Google account to create or access your TerraPulse farmer workspace."
+      title={s.googleTestTitle}
+      subtitle={s.googleTestSubtitle}
+      footer={
+        <Link href="/login" className={authLink}>
+          {s.backToSignIn}
+        </Link>
+      }
     >
-      <div className="p-3.5 rounded-xl bg-muted border border-border text-xs space-y-1.5">
-        <Badge variant="blue">Google OAuth 2.0 Integration</Badge>
-        <p className="text-muted-foreground">
-          When <code>GOOGLE_CLIENT_ID</code> and <code>GOOGLE_CLIENT_SECRET</code> are configured in <code>.env.local</code>, this callback completes automatically with Google OAuth. In local/dev mode without Google keys, confirm your Google profile below to continue.
-        </p>
-      </div>
+      <AuthNotice tone="good">{s.googleTestNote}</AuthNotice>
 
-      {error && (
-        <div className="p-3 rounded-xl bg-red-50 dark:bg-red-950/50 border border-red-300 text-xs flex items-center gap-2 text-red-900">
-          <AlertCircle className="h-4 w-4" />
-          <span>{error}</span>
-        </div>
-      )}
+      {error && <AuthNotice tone="problem">{error}</AuthNotice>}
 
-      <form onSubmit={handleGoogleComplete} className="space-y-4">
-        <div className="space-y-1.5">
-          <label htmlFor="g-name" className="text-xs font-medium">
-            Google Account Full Name
+      <form onSubmit={handleGoogleComplete} className="flex flex-col gap-4">
+        <div className="flex flex-col gap-2">
+          <label htmlFor="g-name" className={authLabel}>
+            {s.googleName}
           </label>
-          <Input
+          <input
             id="g-name"
+            autoComplete="name"
             placeholder="Youssef Mansouri"
             value={name}
             onChange={(e) => setName(e.target.value)}
-            className="h-11"
+            className={authField}
             required
           />
         </div>
-        <div className="space-y-1.5">
-          <label htmlFor="g-email" className="text-xs font-medium">
-            Google Email Address
+        <div className="flex flex-col gap-2">
+          <label htmlFor="g-email" className={authLabel}>
+            {s.googleEmail}
           </label>
-          <Input
+          <input
             id="g-email"
             type="email"
             inputMode="email"
+            autoComplete="email"
+            dir="ltr"
             placeholder="youssef@gmail.com"
             value={email}
             onChange={(e) => setEmail(e.target.value)}
-            className="h-11"
+            className={authField}
             required
           />
         </div>
-        <Button type="submit" size="lg" variant="primary" className="w-full" disabled={loading}>
+        <button type="submit" className={cn(authPrimaryButton, "mt-1")} disabled={loading}>
           {loading ? (
-            <Loader2 className="h-4 w-4 animate-spin" />
+            <Loader2 className="w-5 h-5 animate-spin" aria-hidden="true" />
           ) : (
-            <CheckCircle2 className="h-4 w-4" />
+            <CheckCircle2 className="w-5 h-5" aria-hidden="true" />
           )}
-          <span>Complete Google Sign-In</span>
-        </Button>
+          <span>{s.completeGoogle}</span>
+        </button>
       </form>
-
-      <p className="text-xs text-center text-muted-foreground">
-        <Link href="/login" className="underline">
-          Return to Sign In
-        </Link>
-      </p>
     </AuthSplitLayout>
   );
 }

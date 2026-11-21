@@ -2,9 +2,12 @@
 
 import * as React from "react";
 import Link from "next/link";
-import { AlertTriangle, ArrowLeft, CheckCircle2, MinusCircle, Moon, Sun } from "lucide-react";
+import { AlertTriangle, ArrowLeft, CheckCircle2, CircleHelp, Loader2, MinusCircle, Moon, RefreshCw, Sun } from "lucide-react";
 import { useTheme } from "next-themes";
 import { useLanguage } from "@/components/i18n/LanguageProvider";
+import { useRefreshFarmAnalysis } from "@/hooks/useFarms";
+import { useAppStore } from "@/lib/store/app-store";
+import { SCREEN_STRINGS } from "@/lib/i18n/screen-strings";
 import type { FarmerStatusLevel } from "@/lib/services/farmer-metrics";
 import { cn } from "@/lib/utils";
 
@@ -163,10 +166,25 @@ export function FarmerStatusBadge({
   level: FarmerStatusLevel;
   label?: string;
 }) {
-  const { t } = useLanguage();
+  const { lang, t } = useLanguage();
   const resolvedLabel =
     label ??
-    (level === "GOOD" ? t.statusGood : level === "OK" ? t.statusOk : t.statusProblem);
+    (level === "GOOD"
+      ? t.statusGood
+      : level === "OK"
+        ? t.statusOk
+        : level === "UNKNOWN"
+          ? SCREEN_STRINGS[lang].statusNotChecked
+          : t.statusProblem);
+
+  if (level === "UNKNOWN") {
+    return (
+      <span className="inline-flex items-center gap-1.5 text-[15px] font-bold text-[var(--tp-fg-4A5A4F)]">
+        <CircleHelp className="w-[22px] h-[22px] shrink-0" strokeWidth={2.2} aria-hidden="true" />
+        <span>{resolvedLabel}</span>
+      </span>
+    );
+  }
 
   if (level === "GOOD") {
     return (
@@ -189,5 +207,51 @@ export function FarmerStatusBadge({
       <MinusCircle className="w-[22px] h-[22px] shrink-0" strokeWidth={2.4} aria-hidden="true" />
       <span>{resolvedLabel}</span>
     </span>
+  );
+}
+
+/**
+ * Shown instead of answers when the farm has not been checked yet (no live analysis),
+ * so screens never present a guessed month or status as a fact.
+ */
+export function NotCheckedYetCard({ farmId, loading = false }: { farmId: string; loading?: boolean }) {
+  const { lang } = useLanguage();
+  const s = SCREEN_STRINGS[lang];
+  const refresh = useRefreshFarmAnalysis();
+  const isOnline = useAppStore((st) => st.isOnline);
+  // Offline the check cannot run: say so instead of offering a button that would just wait.
+  const busy = isOnline && (loading || refresh.isPending);
+
+  return (
+    <section className="bg-[var(--tp-bg-FFFFFF)] border-[1.5px] border-[var(--tp-bd-E4DFD2)] rounded-[20px] p-5 lg:p-6 flex flex-col gap-3">
+      {busy ? (
+        <p role="status" className="m-0 flex items-center gap-3 text-[18px] font-bold text-[var(--tp-fg-17251C)]">
+          <Loader2 className="w-6 h-6 animate-spin text-[var(--tp-fg-2E6B3A)]" aria-hidden="true" />
+          {s.checkingFarm}
+        </p>
+      ) : (
+        <>
+          <h2 className="m-0 text-[22px] lg:text-[24px] font-bold leading-[1.25] text-[var(--tp-fg-17251C)]">
+            {s.notCheckedTitle}
+          </h2>
+          <p className="m-0 text-[17px] leading-[1.45] text-[var(--tp-fg-4A5A4F)]">{s.notCheckedBody}</p>
+          {refresh.isError && (
+            <p role="alert" className="m-0 text-[16px] font-bold text-[var(--tp-fg-8A4B00)]">
+              {s.checkFailed}
+            </p>
+          )}
+          {isOnline && (
+          <button
+            type="button"
+            onClick={() => refresh.mutate(farmId)}
+            className="self-start min-h-[52px] px-6 rounded-full bg-[var(--tp-bg-2E6B3A)] text-white text-[17px] font-bold inline-flex items-center gap-2 hover:bg-[var(--tp-bg-23542D)]"
+          >
+            <RefreshCw className="w-5 h-5" aria-hidden="true" />
+            {s.checkMyFarm}
+          </button>
+          )}
+        </>
+      )}
+    </section>
   );
 }

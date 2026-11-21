@@ -1,4 +1,4 @@
-const CACHE_NAME = "terrapulse-agri-shell-v2";
+const CACHE_NAME = "terrapulse-agri-shell-v3";
 const APP_ROUTES = [
   "/",
   "/map",
@@ -75,7 +75,8 @@ self.addEventListener("fetch", (event) => {
   // Static Next.js assets & icons: Stale-While-Revalidate
   if (
     url.pathname.startsWith("/_next/static/") ||
-    url.pathname.startsWith("/icons/")
+    url.pathname.startsWith("/icons/") ||
+    url.pathname.startsWith("/fonts/")
   ) {
     event.respondWith(
       caches.match(request).then((cached) => {

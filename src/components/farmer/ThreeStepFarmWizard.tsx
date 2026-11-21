@@ -25,7 +25,6 @@ import { CROP_DATABASE } from "@/lib/engines/fao56-calculator";
 import type {
   FarmPin,
   FarmRecord,
-  FarmerWaterSourceRecord,
   FarmerWaterSourceType,
   GeoPolygon,
   IrrigationMethod,

@@ -120,7 +120,7 @@ export function InteractiveFarmMap(props: InteractiveFarmMapProps) {
   const f = FARM_UI_STRINGS[lang];
 
   // Popup text comes from OpenStreetMap; build it with text nodes so a place name can never run as HTML.
-  const buildWaterPopup = (ws: WaterSourceFeature): HTMLElement => {
+  const buildWaterPopup = React.useCallback((ws: WaterSourceFeature): HTMLElement => {
     const place = localizeWaterSource(ws.name, ws.sourceType, lang);
     const box = document.createElement("div");
     box.style.cssText = "font-size:13px;color:#17251C;line-height:1.4;max-width:220px";
@@ -134,7 +134,7 @@ export function InteractiveFarmMap(props: InteractiveFarmMapProps) {
     note.textContent = f.popupNotChecked;
     box.append(title, kind, dist, note);
     return box;
-  };
+  }, [lang, f]);
   const [webglError, setWebglError] = React.useState(false);
   const [mapReady, setMapReady] = React.useState(false);
 
@@ -476,7 +476,7 @@ export function InteractiveFarmMap(props: InteractiveFarmMapProps) {
     props.centerLat,
     props.centerLon,
     draftVertices,
-    lang,
+    buildWaterPopup,
   ]);
 
   const handleLocateGps = () => {

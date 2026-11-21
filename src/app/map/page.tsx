@@ -48,10 +48,6 @@ export default function MapPage() {
   const [newLat, setNewLat] = React.useState("");
   const [newLon, setNewLon] = React.useState("");
   const [newFarmName, setNewFarmName] = React.useState("");
-  const [inspectedCoord, setInspectedCoord] = React.useState<{
-    lat: number;
-    lon: number;
-  } | null>(null);
 
   React.useEffect(() => {
     if (activeFarm) {
@@ -297,7 +293,6 @@ export default function MapPage() {
           onAddPin={handleAddPin}
           onBoundaryChange={handleBoundaryChange}
           onCoordinateInspect={(lat, lon) => {
-            setInspectedCoord({ lat, lon });
             setNewLat(lat.toFixed(5));
             setNewLon(lon.toFixed(5));
           }}

@@ -22,12 +22,18 @@ import type {
   FeasibilityReportPayload,
 } from "@/types/agri";
 
+// These hooks read and write the phone's own copy when there is no internet, so they must
+// keep running offline. React Query's default ("online") would pause them instead, and a
+// farmer opening the app without signal would see no farm at all.
+const OFFLINE_FIRST = { networkMode: "always" } as const;
+
 export function useFarms() {
   const isOnline = useAppStore((s) => s.isOnline);
   const activeFarmId = useAppStore((s) => s.activeFarmId);
   const setActiveFarmId = useAppStore((s) => s.setActiveFarmId);
 
   const query = useQuery<FarmRecord[]>({
+    ...OFFLINE_FIRST,
     queryKey: ["farms", isOnline],
     queryFn: async () => {
       if (isOnline) {
@@ -84,6 +90,7 @@ export function useSaveFarm() {
   const setLastSyncedAt = useAppStore((s) => s.setLastSyncedAt);
 
   return useMutation({
+    ...OFFLINE_FIRST,
     mutationFn: async (params: { farm: FarmRecord; isNew?: boolean }) => {
       const action = params.isNew ? "CREATE" : "UPDATE";
       await saveFarmOfflineFirst(params.farm, action);
@@ -110,6 +117,7 @@ export function useDeleteFarm() {
   const setPendingSyncCount = useAppStore((s) => s.setPendingSyncCount);
 
   return useMutation({
+    ...OFFLINE_FIRST,
     mutationFn: async (farmId: string) => {
       await deleteFarmOfflineFirst(farmId);
       if (isOnline) {
@@ -127,6 +135,7 @@ export function useFarmAnalysis(farm: FarmRecord | null) {
   const isOnline = useAppStore((s) => s.isOnline);
 
   return useQuery<CompleteFarmAnalysisBundle | null>({
+    ...OFFLINE_FIRST,
     queryKey: ["farm_analysis", farm?.id, isOnline],
     enabled: Boolean(farm?.id),
     queryFn: async () => {
@@ -198,6 +207,7 @@ export function useReports(farmId?: string) {
   const isOnline = useAppStore((s) => s.isOnline);
 
   return useQuery<FeasibilityReportPayload[]>({
+    ...OFFLINE_FIRST,
     queryKey: ["reports", farmId, isOnline],
     queryFn: async () => {
       if (isOnline) {

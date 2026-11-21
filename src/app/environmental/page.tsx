@@ -3,7 +3,7 @@
 import * as React from "react";
 import Link from "next/link";
 import { Loader2 } from "lucide-react";
-import { FarmerPageHeader } from "@/components/farmer/FarmerUI";
+import { FarmerPageHeader, NotCheckedYetCard } from "@/components/farmer/FarmerUI";
 import { useLanguage } from "@/components/i18n/LanguageProvider";
 import { SCREEN_STRINGS, type ScreenStrings } from "@/lib/i18n/screen-strings";
 import { localizeWeatherCondition } from "@/lib/i18n/translations";
@@ -41,6 +41,15 @@ export default function WeatherPage() {
           <Loader2 className="w-6 h-6 animate-spin text-[var(--tp-fg-2E6B3A)]" />
           <span>{s.checkingForecast}</span>
         </div>
+      </div>
+    );
+  }
+
+  if (activeFarm && !analysis) {
+    return (
+      <div className="flex flex-col gap-4">
+        <FarmerPageHeader mobileLabel={t.navWeather} title={t.weatherQuestionTitle} />
+        <NotCheckedYetCard farmId={activeFarm.id} />
       </div>
     );
   }
@@ -88,7 +97,9 @@ export default function WeatherPage() {
         </p>
         <p className="m-0 text-[16px] lg:text-[17px] leading-[1.45] text-[var(--tp-fg-22392A)]">
           {m.shouldWaterToday
-            ? fmt(t.soilLosesMmDay, { mm: m.todayEt0Mm })
+            ? m.todayEt0Mm !== null
+              ? fmt(t.soilLosesMmDay, { mm: m.todayEt0Mm })
+              : null
             : fmt(t.rainComingTodayDetail, { mm: Math.round(m.todayPrecipMm) })}
         </p>
       </section>

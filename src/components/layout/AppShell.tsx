@@ -17,6 +17,8 @@ import {
 } from "lucide-react";
 import { ThemeToggle } from "@/components/farmer/FarmerUI";
 import { useLanguage } from "@/components/i18n/LanguageProvider";
+import { fillTemplate } from "@/lib/i18n/farm-ui-strings";
+import { SCREEN_STRINGS } from "@/lib/i18n/screen-strings";
 import { Button } from "@/components/ui/primitives";
 import { useAuthSession } from "@/hooks/useAuth";
 import { useFarmAnalysis, useFarms, useSyncController } from "@/hooks/useFarms";
@@ -49,7 +51,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
     logout,
   } = useAuthSession();
   const { farms, activeFarm, setActiveFarmId } = useFarms();
-  const { data: activeAnalysis } = useFarmAnalysis(activeFarm);
+  const { data: activeAnalysis, isLoading: analysisLoading } = useFarmAnalysis(activeFarm);
   const { syncNow, resolveConflict } = useSyncController();
 
   const isOnline = useAppStore((s) => s.isOnline);
@@ -108,21 +110,25 @@ export function AppShell({ children }: { children: React.ReactNode }) {
 
   const metrics = activeFarm ? selectFarmerMetrics(activeFarm, activeAnalysis) : null;
 
-  const waterStatusText = metrics
-    ? metrics.isWaterShort
-      ? fmt(t.shortInMonth, { month: monthLabel(metrics.peakMonthName) })
-      : t.statusGood
-    : t.statusOk;
-  const sunStatusText = metrics
-    ? metrics.isSolarShortInSummer
+  // Without a live check, say so instead of showing a hopeful default.
+  // While the first check is still loading, show "…" rather than "not checked yet".
+  const notChecked = analysisLoading ? "…" : SCREEN_STRINGS[lang].statusNotChecked;
+  const checked = Boolean(metrics?.hasAnalysis);
+  const waterStatusText = !metrics || !checked
+    ? notChecked
+    : metrics.isWaterShort
+      ? fmt(t.shortInMonth, { month: monthLabel(metrics.peakMonthName ?? "") })
+      : t.statusGood;
+  const sunStatusText = !metrics || !checked
+    ? notChecked
+    : metrics.isSolarShortInSummer
       ? t.shortInSummer
-      : t.enoughAllYear
-    : t.statusOk;
-  const weatherStatusText = metrics
-    ? metrics.hasAnyWeatherAlert
+      : t.enoughAllYear;
+  const weatherStatusText = !metrics || !checked
+    ? notChecked
+    : metrics.hasAnyWeatherAlert
       ? t.alertAhead
-      : t.calmWeek
-    : t.calmWeek;
+      : t.calmWeek;
 
   const primaryNav = [
     { href: "/", label: t.navHome, icon: Home },
@@ -232,7 +238,11 @@ export function AppShell({ children }: { children: React.ReactNode }) {
             <span
               className={cn(
                 "text-[13px] font-bold whitespace-nowrap",
-                metrics?.waterStatus === "PROBLEM" ? "text-[var(--tp-fg-8A4B00)]" : "text-[var(--tp-fg-2E6B3A)]"
+                !checked
+                  ? "text-[var(--tp-fg-4A5A4F)]"
+                  : metrics?.waterStatus === "PROBLEM"
+                    ? "text-[var(--tp-fg-8A4B00)]"
+                    : "text-[var(--tp-fg-2E6B3A)]"
               )}
             >
               {waterStatusText}
@@ -253,7 +263,11 @@ export function AppShell({ children }: { children: React.ReactNode }) {
             <span
               className={cn(
                 "text-[13px] font-bold whitespace-nowrap",
-                metrics?.isSolarShortInSummer ? "text-[var(--tp-fg-8A4B00)]" : "text-[var(--tp-fg-2E6B3A)]"
+                !checked
+                  ? "text-[var(--tp-fg-4A5A4F)]"
+                  : metrics?.isSolarShortInSummer
+                    ? "text-[var(--tp-fg-8A4B00)]"
+                    : "text-[var(--tp-fg-2E6B3A)]"
               )}
             >
               {sunStatusText}
@@ -274,7 +288,11 @@ export function AppShell({ children }: { children: React.ReactNode }) {
             <span
               className={cn(
                 "text-[13px] font-bold whitespace-nowrap",
-                metrics?.hasAnyWeatherAlert ? "text-[var(--tp-fg-8A4B00)]" : "text-[var(--tp-fg-2E6B3A)]"
+                !checked
+                  ? "text-[var(--tp-fg-4A5A4F)]"
+                  : metrics?.hasAnyWeatherAlert
+                    ? "text-[var(--tp-fg-8A4B00)]"
+                    : "text-[var(--tp-fg-2E6B3A)]"
               )}
             >
               {weatherStatusText}
@@ -288,16 +306,18 @@ export function AppShell({ children }: { children: React.ReactNode }) {
             <div className="rounded-[12px] border border-[var(--tp-bd-E2B66B)] bg-[var(--tp-bg-FCEFD9)] px-3 py-2 flex items-center justify-between gap-2 text-[14px] text-[var(--tp-fg-6B3A00)]">
               <span className="inline-flex items-center gap-1.5 font-bold">
                 <WifiOff className="w-4 h-4 shrink-0" />
-                {!isOnline ? "Offline" : `${pendingSyncCount} saved`}
+                {!isOnline
+                  ? SCREEN_STRINGS[lang].offlineShort
+                  : fillTemplate(SCREEN_STRINGS[lang].changesSaved, { count: pendingSyncCount })}
               </span>
               {pendingSyncCount > 0 && isOnline && (
                 <button
                   type="button"
                   onClick={handleSync}
                   disabled={syncing}
-                  className="font-bold underline text-[13px]"
+                  className="min-h-[36px] font-bold underline text-[13px]"
                 >
-                  {syncing ? "…" : "Sync"}
+                  {syncing ? "…" : SCREEN_STRINGS[lang].sendNow}
                 </button>
               )}
             </div>
@@ -373,12 +393,14 @@ export function AppShell({ children }: { children: React.ReactNode }) {
           <div className="no-print lg:hidden bg-[var(--tp-bg-FCEFD9)] border-b border-[var(--tp-bd-E2B66B)] px-4 py-2 flex items-center justify-between text-[14px] text-[var(--tp-fg-6B3A00)]">
             <span className="flex items-center gap-2 font-bold">
               <WifiOff className="w-4 h-4 shrink-0" />
-              {!isOnline ? "Working offline — changes saved on phone" : `${pendingSyncCount} change(s) waiting to save`}
+              {!isOnline
+                ? SCREEN_STRINGS[lang].offlineBanner
+                : fillTemplate(SCREEN_STRINGS[lang].changesWaiting, { count: pendingSyncCount })}
             </span>
             {isOnline && pendingSyncCount > 0 && (
               <button type="button" onClick={handleSync} disabled={syncing} className="inline-flex items-center gap-1 font-bold underline">
-                <RefreshCw className={cn("w-3.5 h-3.5", syncing && "animate-spin")} />
-                Sync
+                <RefreshCw className={cn("w-3.5 h-3.5", syncing && "animate-spin")} aria-hidden="true" />
+                {SCREEN_STRINGS[lang].sendNow}
               </button>
             )}
           </div>
@@ -390,7 +412,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
               <div className="flex items-center gap-2 text-[var(--tp-fg-6B3A00)]">
                 <AlertTriangle className="h-5 w-5 shrink-0" />
                 <span>
-                  {conflicts.length} offline edit(s) differ from your saved cloud data.
+                  {fillTemplate(SCREEN_STRINGS[lang].conflictNotice, { count: conflicts.length })}
                 </span>
               </div>
               <div className="flex items-center gap-2">
@@ -401,14 +423,14 @@ export function AppShell({ children }: { children: React.ReactNode }) {
                       variant="outline"
                       onClick={() => resolveConflict(conflicts[0].seq!, "ACCEPT_SERVER")}
                     >
-                      Keep cloud version
+                      {SCREEN_STRINGS[lang].keepCloud}
                     </Button>
                     <Button
                       size="sm"
                       variant="primary"
                       onClick={() => resolveConflict(conflicts[0].seq!, "KEEP_LOCAL")}
                     >
-                      Keep my phone edit
+                      {SCREEN_STRINGS[lang].keepPhone}
                     </Button>
                   </>
                 )}

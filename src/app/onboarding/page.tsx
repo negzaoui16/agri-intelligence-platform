@@ -265,7 +265,7 @@ export default function OnboardingPage() {
       await queryClient.invalidateQueries({ queryKey: ["farms"] });
       router.push(completeJson.redirectTo || "/");
       router.refresh();
-    } catch (err) {
+    } catch {
       setError(s.couldNotSaveFarm);
     } finally {
       setSubmitting(false);
@@ -276,7 +276,7 @@ export default function OnboardingPage() {
     return (
       <div className="min-h-screen bg-[var(--tp-bg-F6F4EE)] flex items-center justify-center gap-3 text-[18px] text-[var(--tp-fg-4A5A4F)]">
         <Loader2 className="w-6 h-6 animate-spin text-[var(--tp-fg-2E6B3A)]" />
-        <span>Loading your farm setup…</span>
+        <span>{s.checkingFarm}</span>
       </div>
     );
   }

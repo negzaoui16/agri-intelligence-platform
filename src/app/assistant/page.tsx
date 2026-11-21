@@ -58,7 +58,7 @@ export default function AskPage() {
   const { lang, t, fmt, cropLabel, monthLabel } = useLanguage();
   const s = SCREEN_STRINGS[lang];
   const { activeFarm } = useFarms();
-  const { data: analysis } = useFarmAnalysis(activeFarm);
+  const { data: analysis, isLoading: analysisLoading } = useFarmAnalysis(activeFarm);
 
   const [messages, setMessages] = React.useState<AIChatMessageRecord[]>([]);
   const [input, setInput] = React.useState("");
@@ -217,9 +217,13 @@ export default function AskPage() {
             {messages.length === 0 && activeFarm && m && (
               <div className="bg-[var(--tp-bg-FFFFFF)] border-[1.5px] border-[var(--tp-bd-E4DFD2)] rounded-[20px] p-5 flex flex-col gap-2">
                 <p className="m-0 text-[20px] font-bold text-[var(--tp-fg-17251C)]">
-                  {m.isWaterShort && m.peakDailyDemandM3 !== null
-                    ? fmt(t.waterWillBeShortInMonth, { month: monthLabel(m.peakMonthName) })
-                    : t.waterFineTitle}
+                  {!m.hasAnalysis
+                    ? analysisLoading
+                      ? s.checkingFarm
+                      : s.notCheckedTitle
+                    : m.isWaterShort && m.peakDailyDemandM3 !== null
+                      ? fmt(t.waterWillBeShortInMonth, { month: monthLabel(m.peakMonthName ?? "") })
+                      : t.waterFineTitle}
                 </p>
                 <p className="m-0 text-[16px] text-[var(--tp-fg-4A5A4F)] leading-[1.45]">
                   {s.askIntro.split("{farm}").map((part, i, parts) => (
@@ -314,7 +318,7 @@ export default function AskPage() {
             {loading && (
               <div className="self-start bg-[var(--tp-bg-FFFFFF)] border-[1.5px] border-[var(--tp-bd-E4DFD2)] rounded-[20px] px-5 py-4 flex items-center gap-3 text-[16px] text-[var(--tp-fg-4A5A4F)]">
                 <Loader2 className="w-5 h-5 animate-spin text-[var(--tp-fg-2E6B3A)]" />
-                <span>Checking your farm numbers…</span>
+                <span>{s.checkingFarm}</span>
               </div>
             )}
           </div>
@@ -425,9 +429,13 @@ export default function AskPage() {
 
                 <dt className="text-[var(--tp-fg-4A5A4F)]">{s.factWater}</dt>
                 <dd className="m-0 font-bold">
-                  {m.nearestSourceDistanceM !== null
-                    ? fillTemplate(s.nearestWater, { m: m.nearestSourceDistanceM })
-                    : s.noWaterOnMap}
+                  {!m.hasAnalysis
+                    ? analysisLoading
+                      ? "…"
+                      : s.statusNotChecked
+                    : m.nearestSourceDistanceM !== null
+                      ? fillTemplate(s.nearestWater, { m: m.nearestSourceDistanceM })
+                      : s.noWaterOnMap}
                 </dd>
               </dl>
               <Link

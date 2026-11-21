@@ -6,7 +6,8 @@ import type {
   WaterSourceFeature,
 } from "@/types/agri";
 
-export type FarmerStatusLevel = "GOOD" | "OK" | "PROBLEM";
+/** UNKNOWN = not checked yet (no live analysis), so the app never shows a guess as a fact. */
+export type FarmerStatusLevel = "GOOD" | "OK" | "PROBLEM" | "UNKNOWN";
 
 export interface FarmerWaterSourceRow {
   id: string;
@@ -33,7 +34,8 @@ export interface FarmerMetricsSnapshot {
   pumpHoursDay: number;
   pumpDailySupplyM3: number;
   peakDailyDemandM3: number | null;
-  peakMonthName: string;
+  /** null until the analysis has run: never guess a month */
+  peakMonthName: string | null;
   waterCoveragePct: number | null;
   waterDeficitRatio: number;
   cupsDenominator: number;
@@ -52,7 +54,7 @@ export interface FarmerMetricsSnapshot {
   solarAnnualKwh: number | null;
   pumpAnnualKwh: number | null;
   annualSolarCoversPump: boolean;
-  worstMonthName: string;
+  worstMonthName: string | null;
   worstMonthCoveragePct: number | null;
   solarUnitsOutOf10: number;
   worstMonthDeficitKwh: number;
@@ -67,7 +69,8 @@ export interface FarmerMetricsSnapshot {
   todayMaxTempC: number | null;
   weatherSummary: string | null;
   todayPrecipMm: number;
-  todayEt0Mm: number;
+  /** Water the soil loses today (mm); null when the forecast has no value */
+  todayEt0Mm: number | null;
   shouldWaterToday: boolean;
   hasFrostAlert: boolean;
   hasHeatAlert: boolean;
@@ -131,7 +134,7 @@ export function selectFarmerMetrics(
   const peakDailyDemandM3 = analysis
     ? Math.round(analysis.irrigation.peakDailyWaterM3)
     : null;
-  const peakMonthName = fullEnglishMonthName(analysis?.irrigation.peakMonthName ?? "July");
+  const peakMonthName = analysis ? fullEnglishMonthName(analysis.irrigation.peakMonthName) : null;
 
   const rawWaterRatio =
     peakDailyDemandM3 && peakDailyDemandM3 > 0
@@ -181,9 +184,7 @@ export function selectFarmerMetrics(
     solarAnnualKwh !== null &&
     pumpAnnualKwh !== null &&
     solarAnnualKwh >= pumpAnnualKwh;
-  const worstMonthName = fullEnglishMonthName(
-    analysis?.solarVsPump.worstMonthName ?? peakMonthName
-  );
+  const worstMonthName = analysis ? fullEnglishMonthName(analysis.solarVsPump.worstMonthName) : null;
   const worstMonthCoveragePct = analysis
     ? Math.round(analysis.solarVsPump.worstMonthCoveragePct)
     : null;
@@ -202,13 +203,14 @@ export function selectFarmerMetrics(
       ? Math.ceil(solarPanelCount500W / (worstMonthCoveragePct / 100))
       : null;
 
-  const waterStatus: FarmerStatusLevel = isWaterShort
-    ? "PROBLEM"
-    : analysis && !nearest
+  const waterStatus: FarmerStatusLevel = !analysis
+    ? "UNKNOWN"
+    : isWaterShort || !nearest
       ? "PROBLEM"
       : "GOOD";
-  const sunStatus: FarmerStatusLevel =
-    worstMonthCoveragePct !== null && worstMonthCoveragePct < 40
+  const sunStatus: FarmerStatusLevel = !analysis
+    ? "UNKNOWN"
+    : worstMonthCoveragePct !== null && worstMonthCoveragePct < 40
       ? "PROBLEM"
       : isSolarShortInSummer
         ? "OK"
@@ -228,7 +230,11 @@ export function selectFarmerMetrics(
       analysis?.weather.daily.slice(0, 4).some((d) => d.windSpeedMaxKmh >= 45)
   );
   const hasAnyWeatherAlert = hasFrostAlert || hasHeatAlert || hasWindAlert;
-  const weatherStatus: FarmerStatusLevel = hasAnyWeatherAlert ? "PROBLEM" : "GOOD";
+  const weatherStatus: FarmerStatusLevel = !analysis
+    ? "UNKNOWN"
+    : hasAnyWeatherAlert
+      ? "PROBLEM"
+      : "GOOD";
 
   const summerSeason = analysis?.climate.seasons.find(
     (s) => s.season === "Summer"
@@ -241,7 +247,7 @@ export function selectFarmerMetrics(
       : null;
   const slopePct = analysis ? analysis.elevation.estimatedSlopePct : null;
   const landStatus: FarmerStatusLevel =
-    slopePct !== null && slopePct > 8 ? "OK" : "GOOD";
+    slopePct === null ? "UNKNOWN" : slopePct > 8 ? "OK" : "GOOD";
 
   let primaryProblem: FarmerMetricsSnapshot["primaryProblem"] = "NONE";
   if (isWaterShort) primaryProblem = "WATER_SHORT";
@@ -300,9 +306,7 @@ export function selectFarmerMetrics(
     weatherSummary: analysis?.weather.current.weatherSummary ?? null,
     todayPrecipMm: today?.precipMm ?? 0,
     todayEt0Mm:
-      today?.et0Mm !== null && today?.et0Mm !== undefined
-        ? Math.round(today.et0Mm)
-        : 2,
+      today?.et0Mm !== null && today?.et0Mm !== undefined ? Math.round(today.et0Mm) : null,
     shouldWaterToday: (today?.precipMm ?? 0) < 5,
     hasFrostAlert,
     hasHeatAlert,
