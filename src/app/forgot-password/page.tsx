@@ -3,11 +3,19 @@
 import * as React from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { AuthSplitLayout } from "@/components/auth/AuthSplitLayout";
-import { Button, Input } from "@/components/ui/primitives";
+import {
+  AuthNotice,
+  AuthSplitLayout,
+  authEyeButton,
+  authField,
+  authLabel,
+  authLink,
+  authPrimaryButton,
+} from "@/components/auth/AuthSplitLayout";
+import { cn } from "@/lib/utils";
 import { useLanguage } from "@/components/i18n/LanguageProvider";
 import { SCREEN_STRINGS } from "@/lib/i18n/screen-strings";
-import { AlertCircle, CheckCircle2, Eye, EyeOff, KeyRound, Loader2 } from "lucide-react";
+import { Eye, EyeOff, KeyRound, Loader2 } from "lucide-react";
 
 export default function ForgotPasswordPage() {
   const router = useRouter();
@@ -83,24 +91,24 @@ export default function ForgotPasswordPage() {
     <AuthSplitLayout
       title={s.resetTitle}
       subtitle={s.resetSubtitle}
+      footer={
+        <p className="m-0">
+          {s.rememberedIt}{" "}
+          <Link href="/login" className={authLink}>
+            {s.backToSignIn}
+          </Link>
+        </p>
+      }
     >
-      {error && (
-        <div
-          role="alert"
-          className="p-3.5 rounded-xl bg-red-50 dark:bg-red-950/50 border border-red-300 dark:border-red-800 text-[15px] flex items-start gap-2 text-red-900 dark:text-red-200"
-        >
-          <AlertCircle className="h-5 w-5 shrink-0 mt-0.5" aria-hidden="true" />
-          <span>{error}</span>
-        </div>
-      )}
+      {error && <AuthNotice tone="problem">{error}</AuthNotice>}
 
       {step === "REQUEST" && (
-        <form onSubmit={handleRequest} className="space-y-4">
-          <div className="space-y-1.5">
-            <label htmlFor="fp-email" className="text-[15px] font-semibold">
+        <form onSubmit={handleRequest} className="flex flex-col gap-4">
+          <div className="flex flex-col gap-2">
+            <label htmlFor="fp-email" className={authLabel}>
               {s.email}
             </label>
-            <Input
+            <input
               id="fp-email"
               type="email"
               inputMode="email"
@@ -109,28 +117,36 @@ export default function ForgotPasswordPage() {
               placeholder="farmer@example.tn"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
+              className={authField}
               required
             />
           </div>
-          <Button type="submit" size="lg" variant="primary" className="w-full" disabled={loading}>
-            {loading ? <Loader2 className="h-5 w-5 animate-spin" aria-hidden="true" /> : <KeyRound className="h-5 w-5" aria-hidden="true" />}
+          <button type="submit" className={cn(authPrimaryButton, "mt-1")} disabled={loading}>
+            {loading ? (
+              <Loader2 className="w-5 h-5 animate-spin" aria-hidden="true" />
+            ) : (
+              <KeyRound className="w-5 h-5" aria-hidden="true" />
+            )}
             <span>{s.sendMeACode}</span>
-          </Button>
+          </button>
         </form>
       )}
 
       {step === "RESET" && (
-        <form onSubmit={handleReset} className="space-y-4">
+        <form onSubmit={handleReset} className="flex flex-col gap-4">
           {devCodeHint && (
-            <div className="p-3.5 rounded-xl bg-emerald-50 dark:bg-emerald-950/50 border border-emerald-300 dark:border-emerald-800 text-[15px] text-emerald-900 dark:text-emerald-200">
-              {s.devCodeNotice} <strong className="font-mono" dir="ltr">{devCodeHint}</strong>
-            </div>
+            <AuthNotice tone="good">
+              {s.devCodeNotice}{" "}
+              <strong className="font-mono" dir="ltr">
+                {devCodeHint}
+              </strong>
+            </AuthNotice>
           )}
-          <div className="space-y-1.5">
-            <label htmlFor="fp-code" className="text-[15px] font-semibold">
+          <div className="flex flex-col gap-2">
+            <label htmlFor="fp-code" className={authLabel}>
               {s.codeLabel}
             </label>
-            <Input
+            <input
               id="fp-code"
               inputMode="numeric"
               autoComplete="one-time-code"
@@ -138,23 +154,23 @@ export default function ForgotPasswordPage() {
               placeholder="123456"
               value={resetCode}
               onChange={(e) => setResetCode(e.target.value)}
-              className="font-mono tracking-widest"
+              className={cn(authField, "font-mono tracking-[0.3em]")}
               required
             />
           </div>
-          <div className="space-y-1.5">
-            <label htmlFor="fp-pass" className="text-[15px] font-semibold">
+          <div className="flex flex-col gap-2">
+            <label htmlFor="fp-pass" className={authLabel}>
               {s.newPassword}
             </label>
             <div className="relative">
-              <Input
+              <input
                 id="fp-pass"
                 type={showPassword ? "text" : "password"}
                 autoComplete="new-password"
                 placeholder={s.passwordHint}
                 value={newPassword}
                 onChange={(e) => setNewPassword(e.target.value)}
-                className="pe-12"
+                className={cn(authField, "pe-14")}
                 required
               />
               <button
@@ -162,43 +178,31 @@ export default function ForgotPasswordPage() {
                 onClick={() => setShowPassword((v) => !v)}
                 aria-label={showPassword ? s.hidePassword : s.showPassword}
                 aria-pressed={showPassword}
-                className="absolute end-1 top-1/2 -translate-y-1/2 w-10 h-10 inline-flex items-center justify-center rounded-lg text-muted-foreground hover:text-foreground"
+                className={authEyeButton}
               >
-                {showPassword ? <EyeOff className="h-5 w-5" aria-hidden="true" /> : <Eye className="h-5 w-5" aria-hidden="true" />}
+                {showPassword ? <EyeOff className="w-5 h-5" aria-hidden="true" /> : <Eye className="w-5 h-5" aria-hidden="true" />}
               </button>
             </div>
           </div>
-          <Button type="submit" size="lg" variant="primary" className="w-full" disabled={loading}>
-            {loading ? <Loader2 className="h-5 w-5 animate-spin" aria-hidden="true" /> : <KeyRound className="h-5 w-5" aria-hidden="true" />}
+          <button type="submit" className={cn(authPrimaryButton, "mt-1")} disabled={loading}>
+            {loading ? (
+              <Loader2 className="w-5 h-5 animate-spin" aria-hidden="true" />
+            ) : (
+              <KeyRound className="w-5 h-5" aria-hidden="true" />
+            )}
             <span>{s.saveNewPassword}</span>
-          </Button>
+          </button>
         </form>
       )}
 
       {step === "DONE" && (
-        <div className="space-y-4">
-          <div
-            role="status"
-            className="p-4 rounded-xl bg-emerald-50 dark:bg-emerald-950/50 border border-emerald-300 dark:border-emerald-800 text-[15px] text-emerald-900 dark:text-emerald-200 flex items-start gap-2.5"
-          >
-            <CheckCircle2 className="h-5 w-5 text-emerald-700 dark:text-emerald-400 shrink-0 mt-0.5" aria-hidden="true" />
-            <span>{s.resetDone}</span>
-          </div>
-          <Button size="lg" variant="primary" className="w-full" onClick={() => router.push("/login")}>
+        <>
+          <AuthNotice tone="good">{s.resetDone}</AuthNotice>
+          <button type="button" className={authPrimaryButton} onClick={() => router.push("/login")}>
             {s.goToSignIn}
-          </Button>
-        </div>
+          </button>
+        </>
       )}
-
-      <p className="text-[15px] text-center text-muted-foreground">
-        {s.rememberedIt}{" "}
-        <Link
-          href="/login"
-          className="min-h-[40px] inline-flex items-center text-[var(--tp-fg-14532D)] dark:text-emerald-400 font-semibold hover:underline"
-        >
-          {s.backToSignIn}
-        </Link>
-      </p>
     </AuthSplitLayout>
   );
 }

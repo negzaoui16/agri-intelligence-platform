@@ -3,15 +3,26 @@
 import * as React from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { AuthSplitLayout } from "@/components/auth/AuthSplitLayout";
-import { Button, Input } from "@/components/ui/primitives";
+import {
+  AuthDivider,
+  AuthNotice,
+  AuthSplitLayout,
+  GoogleIcon,
+  authEyeButton,
+  authField,
+  authLabel,
+  authLink,
+  authOutlineButton,
+  authPrimaryButton,
+} from "@/components/auth/AuthSplitLayout";
+import { cn } from "@/lib/utils";
 import { useAppStore } from "@/lib/store/app-store";
 import { useAuthOptions } from "@/hooks/useAuthOptions";
 import { useLanguage } from "@/components/i18n/LanguageProvider";
 import { SCREEN_STRINGS } from "@/lib/i18n/screen-strings";
 import { clearUserLocalCacheOnLogout } from "@/lib/offline/sync-engine";
 import { useQueryClient } from "@tanstack/react-query";
-import { AlertCircle, Check, Eye, EyeOff, Loader2, UserPlus, WifiOff } from "lucide-react";
+import { Check, Eye, EyeOff, Loader2, UserPlus } from "lucide-react";
 
 export default function RegisterPage() {
   const router = useRouter();
@@ -90,103 +101,75 @@ export default function RegisterPage() {
     <AuthSplitLayout
       title={s.registerTitle}
       subtitle={s.registerSubtitle}
+      footer={
+        <p className="m-0">
+          {s.haveAccount}{" "}
+          <Link href="/login" className={authLink}>
+            {s.signIn}
+          </Link>
+        </p>
+      }
     >
-      {!isOnline && (
-        <div className="p-3.5 rounded-xl bg-amber-50 dark:bg-amber-950/50 border border-amber-300 dark:border-amber-800 text-[15px] flex items-start gap-2 text-amber-900 dark:text-amber-200">
-          <WifiOff className="h-5 w-5 shrink-0 mt-0.5" aria-hidden="true" />
-          <span>{s.offlineRegister}</span>
-        </div>
-      )}
+      {!isOnline && <AuthNotice tone="offline">{s.offlineRegister}</AuthNotice>}
 
-      {error && (
-        <div
-          role="alert"
-          className="p-3.5 rounded-xl bg-red-50 dark:bg-red-950/50 border border-red-300 dark:border-red-800 text-[15px] flex items-start gap-2 text-red-900 dark:text-red-200"
-        >
-          <AlertCircle className="h-5 w-5 shrink-0 mt-0.5" aria-hidden="true" />
-          <span>{error}</span>
-        </div>
-      )}
+      {error && <AuthNotice tone="problem">{error}</AuthNotice>}
 
       {authOptions.googleSignIn && (
         <>
-        <a
-          href={isOnline ? "/api/auth/google" : "#"}
-          onClick={(e) => {
-            if (!isOnline) {
-              e.preventDefault();
-              setError(s.googleNeedsInternet);
-            }
-          }}
-          className="w-full h-12 rounded-xl border border-border bg-card hover:bg-muted transition-colors flex items-center justify-center gap-2.5 text-[16px] font-semibold"
-        >
-          <svg className="h-4 w-4" viewBox="0 0 24 24" aria-hidden="true">
-            <path
-              fill="#4285F4"
-              d="M23.745 12.27c0-.7-.06-1.4-.19-2.07H12v4.51h6.6c-.29 1.52-1.14 2.82-2.4 3.68v3.05h3.88c2.27-2.09 3.665-5.17 3.665-9.17Z"
-            />
-            <path
-              fill="#34A853"
-              d="M12 24c3.24 0 5.95-1.08 7.93-2.91l-3.88-3.05c-1.08.72-2.45 1.16-4.05 1.16-3.12 0-5.77-2.11-6.72-4.96H1.29v3.14C3.26 21.3 7.31 24 12 24Z"
-            />
-            <path
-              fill="#FBBC05"
-              d="M5.28 14.24c-.24-.72-.38-1.49-.38-2.24s.14-1.52.38-2.24V6.62H1.29C.47 8.24 0 10.06 0 12s.47 3.76 1.29 5.38l3.99-3.14Z"
-            />
-            <path
-              fill="#EA4335"
-              d="M12 4.75c1.77 0 3.35.61 4.6 1.8l3.42-3.42C17.95 1.19 15.24 0 12 0 7.31 0 3.26 2.7 1.29 6.62l3.99 3.14c.95-2.85 3.6-4.96 6.72-4.96Z"
-            />
-          </svg>
-          <span>{s.signUpWithGoogle}</span>
-        </a>
-  
-        <div className="relative">
-          <div className="absolute inset-0 flex items-center">
-            <span className="w-full border-t border-border" />
-          </div>
-          <div className="relative flex justify-center text-[14px]">
-            <span className="bg-background px-2 text-muted-foreground">{s.orUseEmail}</span>
-          </div>
-        </div>
+          <a
+            href={isOnline ? "/api/auth/google" : "#"}
+            onClick={(e) => {
+              if (!isOnline) {
+                e.preventDefault();
+                setError(s.googleNeedsInternet);
+              }
+            }}
+            className={cn(authOutlineButton, "no-underline")}
+          >
+            <GoogleIcon />
+            <span>{s.signUpWithGoogle}</span>
+          </a>
+          <AuthDivider label={s.orUseEmail} />
         </>
       )}
 
-      <form onSubmit={handleSubmit} className="space-y-4">
-        <div className="grid grid-cols-2 gap-3">
-          <div className="space-y-1.5">
-            <label htmlFor="reg-first" className="text-[15px] font-semibold">
+      <form onSubmit={handleSubmit} className="flex flex-col gap-4">
+        <div className="grid grid-cols-1 min-[400px]:grid-cols-2 gap-4 min-[400px]:gap-3">
+          <div className="flex flex-col gap-2 min-w-0">
+            <label htmlFor="reg-first" className={authLabel}>
               {s.firstName}
             </label>
-            <Input
+            <input
               id="reg-first"
               autoComplete="given-name"
               placeholder="Amine"
               value={firstName}
               onChange={(e) => setFirstName(e.target.value)}
+              className={authField}
               required
             />
           </div>
-          <div className="space-y-1.5">
-            <label htmlFor="reg-last" className="text-[15px] font-semibold">
+          <div className="flex flex-col gap-2 min-w-0">
+            <label htmlFor="reg-last" className={authLabel}>
               {s.lastName}
             </label>
-            <Input
+            <input
               id="reg-last"
               autoComplete="family-name"
               placeholder="Ben Ali"
               value={lastName}
               onChange={(e) => setLastName(e.target.value)}
+              className={authField}
               required
             />
           </div>
         </div>
 
-        <div className="space-y-1.5">
-          <label htmlFor="reg-email" className="text-[15px] font-semibold">
+        <div className="flex flex-col gap-2">
+          <label htmlFor="reg-email" className={authLabel}>
             {s.email}
           </label>
-          <Input
+          <input
             id="reg-email"
             type="email"
             inputMode="email"
@@ -195,16 +178,17 @@ export default function RegisterPage() {
             placeholder="amine@farm.tn"
             value={email}
             onChange={(e) => setEmail(e.target.value)}
+            className={authField}
             required
           />
         </div>
 
-        <div className="space-y-1.5">
-          <label htmlFor="reg-password" className="text-[15px] font-semibold">
+        <div className="flex flex-col gap-2">
+          <label htmlFor="reg-password" className={authLabel}>
             {s.choosePassword}
           </label>
           <div className="relative">
-            <Input
+            <input
               id="reg-password"
               type={showPassword ? "text" : "password"}
               autoComplete="new-password"
@@ -212,7 +196,7 @@ export default function RegisterPage() {
               aria-describedby="reg-password-rules"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
-              className="pe-12"
+              className={cn(authField, "pe-14")}
               required
             />
             <button
@@ -220,45 +204,36 @@ export default function RegisterPage() {
               onClick={() => setShowPassword((v) => !v)}
               aria-label={showPassword ? s.hidePassword : s.showPassword}
               aria-pressed={showPassword}
-              className="absolute end-1 top-1/2 -translate-y-1/2 w-10 h-10 inline-flex items-center justify-center rounded-lg text-muted-foreground hover:text-foreground cursor-pointer"
+              className={authEyeButton}
             >
-              {showPassword ? <EyeOff className="h-5 w-5" aria-hidden="true" /> : <Eye className="h-5 w-5" aria-hidden="true" />}
+              {showPassword ? <EyeOff className="w-5 h-5" aria-hidden="true" /> : <Eye className="w-5 h-5" aria-hidden="true" />}
             </button>
           </div>
-          <div id="reg-password-rules" className="grid grid-cols-2 gap-1.5 pt-1">
+          <ul id="reg-password-rules" className="m-0 p-0 list-none grid grid-cols-2 gap-x-3 gap-y-1.5 pt-1">
             {checks.map((c) => (
-              <div
+              <li
                 key={c.label}
-                className={`flex items-center gap-1.5 text-[14px] ${
-                  c.ok ? "text-emerald-700 dark:text-emerald-400 font-semibold" : "text-muted-foreground"
-                }`}
+                className={cn(
+                  "flex items-center gap-1.5 text-[15px]",
+                  c.ok ? "text-[var(--tp-fg-2E6B3A)] font-bold" : "text-[var(--tp-fg-4A5A4F)]"
+                )}
               >
-                <Check className={`h-4 w-4 shrink-0 ${c.ok ? "" : "opacity-40"}`} aria-hidden="true" />
+                <Check className={cn("w-4 h-4 shrink-0", !c.ok && "opacity-40")} aria-hidden="true" />
                 <span>{c.label}</span>
-              </div>
+              </li>
             ))}
-          </div>
+          </ul>
         </div>
 
-        <Button type="submit" size="lg" variant="primary" className="w-full" disabled={loading}>
+        <button type="submit" className={cn(authPrimaryButton, "mt-1")} disabled={loading}>
           {loading ? (
-            <Loader2 className="h-5 w-5 animate-spin" aria-hidden="true" />
+            <Loader2 className="w-5 h-5 animate-spin" aria-hidden="true" />
           ) : (
-            <UserPlus className="h-5 w-5" aria-hidden="true" />
+            <UserPlus className="w-5 h-5" aria-hidden="true" />
           )}
           <span>{loading ? s.creatingAccount : s.createAccountBtn}</span>
-        </Button>
+        </button>
       </form>
-
-      <p className="text-[15px] text-center text-muted-foreground">
-        {s.haveAccount}{" "}
-        <Link
-          href="/login"
-          className="min-h-[40px] inline-flex items-center text-[var(--tp-fg-14532D)] dark:text-emerald-400 font-semibold hover:underline"
-        >
-          {s.signIn}
-        </Link>
-      </p>
     </AuthSplitLayout>
   );
 }
