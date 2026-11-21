@@ -18,6 +18,7 @@ import { fetchHistoricalClimate, fetchWeatherAndForecast } from "./open-meteo";
 import { fetchPVGISSolarAnalysis } from "./pvgis";
 import { fetchWaPORData } from "./wapor";
 import { fetchNearbyWaterSources } from "./water-sources";
+import { selectFarmerMetrics } from "./farmer-metrics";
 
 export async function runCompleteFarmAnalysis(
   farm: FarmRecord
@@ -120,8 +121,18 @@ export function buildFeasibilityReport(
 ): FeasibilityReportPayload {
   const crop = getCropSpec(farm.irrigationConfig.cropCode);
   const nearest = bundle.waterSources.nearestSource;
+  const metrics = selectFarmerMetrics(farm, bundle);
 
   const risks: FeasibilityReportPayload["risks"] = [];
+
+  if (metrics.isWaterShort && metrics.peakDailyDemandM3 !== null) {
+    risks.push({
+      category: "WATER",
+      severity: "HIGH",
+      title: `Water supply too small in ${metrics.peakMonthName}`,
+      detail: `Your pump gives ${metrics.pumpDailySupplyM3} m³ a day (${metrics.pumpFlowM3Hr} m³/h × ${metrics.pumpHoursDay} h), but in ${metrics.peakMonthName} your crops need ${metrics.peakDailyDemandM3} m³ a day (about 1 of every ${metrics.cupsDenominator} cups needed).`,
+    });
+  }
 
   if (bundle.climate.aridityIndex < 0.2) {
     risks.push({
@@ -198,6 +209,10 @@ export function buildFeasibilityReport(
   else if (bundle.climate.aridityIndex < 0.5) score -= 6;
   if (!nearest) score -= 18;
   else if (nearest.distanceFromBoundaryM > 2500) score -= 8;
+  if (metrics.isWaterShort && metrics.waterDeficitRatio > 0) {
+    // Proportional deduction so pump undersizing always lowers the score honestly
+    score -= Math.max(4, Math.round(metrics.waterDeficitRatio * 18));
+  }
   if (bundle.solarVsPump.annualCoveragePct >= 95) score += 6;
   else if (bundle.solarVsPump.annualCoveragePct < 60) score -= 12;
   if (bundle.solarVsPump.worstMonthCoveragePct < 70) score -= 6;
@@ -205,6 +220,10 @@ export function buildFeasibilityReport(
   score = Math.max(25, Math.min(96, Math.round(score)));
 
   let verdict: FeasibilityVerdict = "FEASIBLE_WITH_MITIGATION";
+  if (metrics.isWaterShort && score >= 80) {
+    // Never label a farm "HIGHLY_FEASIBLE" when the pump cannot meet peak summer water demand
+    score = 79;
+  }
   if (score >= 80) verdict = "HIGHLY_FEASIBLE";
   else if (score >= 62) verdict = "FEASIBLE_WITH_MITIGATION";
   else if (score >= 45) verdict = "CONDITIONAL";
@@ -247,7 +266,7 @@ export function buildFeasibilityReport(
     title: `Agricultural Land, Water & Solar Feasibility Report — ${farm.name}`,
     overallScore: score,
     verdict,
-    executiveSummary: `${farm.name} (${farm.areaHectares.toFixed(2)} ha at ${farm.centerLat.toFixed(4)}°, ${farm.centerLon.toFixed(4)}°, ${bundle.elevation.farmElevationM} m ASL) falls in a ${bundle.climate.aridityClass} climate (${bundle.climate.annualPrecipMm} mm/yr rainfall vs. ${bundle.climate.annualEt0Mm} mm/yr ET₀). For ${crop.name} under ${farm.irrigationConfig.irrigationMethod.toLowerCase()} irrigation, annual gross demand is ${bundle.irrigation.annualGrossVolumeM3.toLocaleString()} m³/yr. A ${farm.solarConfig.capacityKwp} kWp PV installation generates an estimated ${bundle.solar.annualKwh.toLocaleString()} kWh/yr, covering ${bundle.solarVsPump.annualCoveragePct}% of annual pump energy (${bundle.solarVsPump.worstMonthCoveragePct}% in peak ${bundle.solarVsPump.worstMonthName}).`,
+    executiveSummary: `${metrics.isWaterShort && metrics.peakDailyDemandM3 !== null ? `Yes, if you solve summer water first: water supply too small in ${metrics.peakMonthName} (${metrics.pumpDailySupplyM3} m³/day vs ${metrics.peakDailyDemandM3} m³/day needed). ` : ""}${farm.name} (${farm.areaHectares.toFixed(2)} ha at ${farm.centerLat.toFixed(4)}°, ${farm.centerLon.toFixed(4)}°, ${bundle.elevation.farmElevationM} m ASL) falls in a ${bundle.climate.aridityClass} climate (${bundle.climate.annualPrecipMm} mm/yr rainfall vs. ${bundle.climate.annualEt0Mm} mm/yr ET₀). For ${crop.name} under ${farm.irrigationConfig.irrigationMethod.toLowerCase()} irrigation, annual gross demand is ${bundle.irrigation.annualGrossVolumeM3.toLocaleString()} m³/yr. A ${farm.solarConfig.capacityKwp} kWp PV installation generates an estimated ${bundle.solar.annualKwh.toLocaleString()} kWh/yr, covering ${bundle.solarVsPump.annualCoveragePct}% of annual pump energy (${bundle.solarVsPump.worstMonthCoveragePct}% in peak ${bundle.solarVsPump.worstMonthName}).`,
     propertyOverview: {
       coordinates: { latitude: farm.centerLat, longitude: farm.centerLon },
       areaHectares: farm.areaHectares,

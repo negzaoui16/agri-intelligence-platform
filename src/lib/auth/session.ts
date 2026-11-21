@@ -124,11 +124,19 @@ export async function getSessionState(): Promise<{
   } catch {
     // cookies() unavailable outside Next request context (e.g., unit tests)
   }
+  if (process.env.NODE_ENV !== "production") {
+    return {
+      user: DEFAULT_DEMO_USER,
+      isAuthenticated: true,
+      isExpired: false,
+      isDemoFallback: true,
+    };
+  }
   return {
-    user: DEFAULT_DEMO_USER,
-    isAuthenticated: true,
+    user: null,
+    isAuthenticated: false,
     isExpired: false,
-    isDemoFallback: true,
+    isDemoFallback: false,
   };
 }
 

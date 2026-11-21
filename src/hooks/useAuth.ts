@@ -38,10 +38,14 @@ export function useAuthSession() {
     staleTime: 30_000,
   });
 
-  const logout = async () => {
-    await fetch("/api/auth/session", { method: "DELETE" });
+  const clearLocalSessionCache = async () => {
     await clearUserLocalCacheOnLogout().catch(() => undefined);
     queryClient.clear();
+  };
+
+  const logout = async () => {
+    await fetch("/api/auth/session", { method: "DELETE" });
+    await clearLocalSessionCache();
     router.push("/login");
     router.refresh();
   };
@@ -54,6 +58,7 @@ export function useAuthSession() {
     isDemoFallback: query.data?.isDemoFallback ?? false,
     farmerProfile: query.data?.farmerProfile ?? null,
     onboardingProgress: query.data?.onboardingProgress ?? null,
+    clearLocalSessionCache,
     logout,
   };
 }

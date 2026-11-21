@@ -52,19 +52,85 @@ export const pumpConfigInputSchema = z.object({
   operatingHoursDay: z.coerce.number().min(0.5).max(24),
 });
 
+export const farmCropInputSchema = z.object({
+  id: z.string().optional(),
+  cropCode: z.string().min(1).max(60),
+  cropName: z.string().min(1).max(120),
+  cultivatedAreaHa: z.coerce.number().positive("Crop area must be > 0").max(100000),
+  areaUnit: z.enum(["ha", "m2"]).default("ha"),
+  plantingDate: z.string().max(40).nullable().optional(),
+  growthStage: z.string().max(60).nullable().optional(),
+  plotCount: z.coerce.number().int().min(1).max(1000).default(1),
+  plantingDensity: z.string().max(80).nullable().optional(),
+  irrigationMethod: z
+    .enum(["DRIP", "SUBSURFACE_DRIP", "SPRINKLER", "CENTER_PIVOT", "FURROW", "MANUAL", "NONE", "OTHER"])
+    .default("DRIP"),
+});
+
+export const farmerWaterSourceSchema = z.object({
+  id: z.string().optional(),
+  sourceType: z.enum([
+    "WELL",
+    "BOREHOLE",
+    "RIVER",
+    "LAKE",
+    "RESERVOIR",
+    "RAINWATER_COLLECTION",
+    "PUBLIC_NETWORK",
+    "OTHER",
+    "UNKNOWN",
+  ]),
+  latitude: z.coerce.number().min(-90).max(90).nullable().optional(),
+  longitude: z.coerce.number().min(-180).max(180).nullable().optional(),
+  distanceMeters: z.coerce.number().min(0).max(100000).nullable().optional(),
+  availability: z.string().max(100).nullable().optional(),
+  wellDepthM: z.coerce.number().min(0).max(2000).nullable().optional(),
+  flowRateM3Hr: z.coerce.number().min(0).max(5000).nullable().optional(),
+  waterQualityNotes: z.string().max(300).nullable().optional(),
+  isFarmerProvided: z.boolean().default(true),
+});
+
 export const createFarmSchema = z.object({
   id: z.string().optional(),
   name: z.string().min(2).max(140),
   description: z.string().max(1000).nullable().optional(),
   country: z.string().max(100).nullable().optional(),
   region: z.string().max(120).nullable().optional(),
+  governorate: z.string().max(100).nullable().optional(),
+  delegation: z.string().max(100).nullable().optional(),
+  locality: z.string().max(140).nullable().optional(),
   centerLat: z.coerce.number().min(-90).max(90),
   centerLon: z.coerce.number().min(-180).max(180),
   elevationM: z.coerce.number().nullable().optional(),
   areaHectares: z.coerce.number().min(0.01).max(100000).optional(),
   perimeterMeters: z.coerce.number().min(1).max(1000000).optional(),
   boundary: polygonBoundarySchema.nullable().optional(),
+  boundaryVerified: z.boolean().optional(),
   pins: z.array(farmPinInputSchema).optional(),
+  crops: z.array(farmCropInputSchema).optional(),
+  allowCropOverlap: z.boolean().optional(),
+  farmerWaterSources: z.array(farmerWaterSourceSchema).optional(),
+  solarConfig: solarConfigInputSchema
+    .partial()
+    .extend({
+      solarStatus: z.enum(["YES", "NO", "PLANNING", "NOT_SURE"]).optional(),
+      panelCount: z.number().nullable().optional(),
+      panelWattageW: z.number().nullable().optional(),
+      hasBattery: z.boolean().optional(),
+      batteryCapacityKwh: z.number().nullable().optional(),
+      hasGridConnection: z.boolean().optional(),
+      isFarmerProvided: z.boolean().optional(),
+    })
+    .optional(),
+  pumpConfig: pumpConfigInputSchema
+    .partial()
+    .extend({
+      hasPump: z.boolean().optional(),
+      pumpType: z.string().nullable().optional(),
+      powerKw: z.number().nullable().optional(),
+      isFarmerProvided: z.boolean().optional(),
+    })
+    .optional(),
   primaryCropCode: z.string().min(1).max(40).default("tomato"),
   plantingMonth: z.coerce.number().int().min(1).max(12).default(3),
   soilTexture: z
@@ -153,44 +219,6 @@ export const farmerProfileStageSchema = z.object({
     "AGRICULTURAL_LANDOWNER",
     "OTHER",
   ]),
-});
-
-export const farmCropInputSchema = z.object({
-  id: z.string().optional(),
-  cropCode: z.string().min(1).max(60),
-  cropName: z.string().min(1).max(120),
-  cultivatedAreaHa: z.coerce.number().positive("Crop area must be > 0").max(100000),
-  areaUnit: z.enum(["ha", "m2"]).default("ha"),
-  plantingDate: z.string().max(40).nullable().optional(),
-  growthStage: z.string().max(60).nullable().optional(),
-  plotCount: z.coerce.number().int().min(1).max(1000).default(1),
-  plantingDensity: z.string().max(80).nullable().optional(),
-  irrigationMethod: z
-    .enum(["DRIP", "SUBSURFACE_DRIP", "SPRINKLER", "CENTER_PIVOT", "FURROW", "MANUAL", "NONE", "OTHER"])
-    .default("DRIP"),
-});
-
-export const farmerWaterSourceSchema = z.object({
-  id: z.string().optional(),
-  sourceType: z.enum([
-    "WELL",
-    "BOREHOLE",
-    "RIVER",
-    "LAKE",
-    "RESERVOIR",
-    "RAINWATER_COLLECTION",
-    "PUBLIC_NETWORK",
-    "OTHER",
-    "UNKNOWN",
-  ]),
-  latitude: z.coerce.number().min(-90).max(90).nullable().optional(),
-  longitude: z.coerce.number().min(-180).max(180).nullable().optional(),
-  distanceMeters: z.coerce.number().min(0).max(100000).nullable().optional(),
-  availability: z.string().max(100).nullable().optional(),
-  wellDepthM: z.coerce.number().min(0).max(2000).nullable().optional(),
-  flowRateM3Hr: z.coerce.number().min(0).max(5000).nullable().optional(),
-  waterQualityNotes: z.string().max(300).nullable().optional(),
-  isFarmerProvided: z.boolean().default(true),
 });
 
 export const aiChatRequestSchema = z.object({

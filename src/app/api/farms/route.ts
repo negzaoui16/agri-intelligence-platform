@@ -41,6 +41,32 @@ export async function POST(request: Request) {
         elevationM: p.elevationM ?? null,
         notes: p.notes ?? null,
       })),
+      crops: parsed.data.crops?.map((c, idx) => ({
+        id: c.id || `crop_${Date.now()}_${idx}`,
+        farmId: parsed.data.id || "",
+        cropCode: c.cropCode,
+        cropName: c.cropName,
+        cultivatedAreaHa: c.cultivatedAreaHa,
+        areaUnit: c.areaUnit,
+        plantingDate: c.plantingDate ?? null,
+        growthStage: c.growthStage ?? null,
+        plotCount: c.plotCount,
+        plantingDensity: c.plantingDensity ?? null,
+        irrigationMethod: c.irrigationMethod,
+      })),
+      farmerWaterSources: parsed.data.farmerWaterSources?.map((ws, idx) => ({
+        id: ws.id || `fws_${Date.now()}_${idx}`,
+        farmId: parsed.data.id || "",
+        sourceType: ws.sourceType,
+        latitude: ws.latitude ?? null,
+        longitude: ws.longitude ?? null,
+        distanceMeters: ws.distanceMeters ?? null,
+        availability: ws.availability ?? null,
+        wellDepthM: ws.wellDepthM ?? null,
+        flowRateM3Hr: ws.flowRateM3Hr ?? null,
+        waterQualityNotes: ws.waterQualityNotes ?? null,
+        isFarmerProvided: ws.isFarmerProvided,
+      })),
     });
 
     return NextResponse.json({ farm }, { status: 201 });

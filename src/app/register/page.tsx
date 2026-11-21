@@ -6,6 +6,7 @@ import { useRouter } from "next/navigation";
 import { AuthSplitLayout } from "@/components/auth/AuthSplitLayout";
 import { Button, Input } from "@/components/ui/primitives";
 import { useAppStore } from "@/lib/store/app-store";
+import { clearUserLocalCacheOnLogout } from "@/lib/offline/sync-engine";
 import { useQueryClient } from "@tanstack/react-query";
 import { AlertCircle, Check, Eye, EyeOff, Loader2, UserPlus, WifiOff } from "lucide-react";
 
@@ -58,6 +59,8 @@ export default function RegisterPage() {
         setError(json.error || "Could not create account.");
         return;
       }
+      await clearUserLocalCacheOnLogout().catch(() => undefined);
+      queryClient.clear();
       await queryClient.invalidateQueries({ queryKey: ["auth_session"] });
       await queryClient.invalidateQueries({ queryKey: ["farms"] });
       router.push(json.redirectTo || "/onboarding");

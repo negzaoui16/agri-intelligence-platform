@@ -6,6 +6,7 @@ import { useRouter } from "next/navigation";
 import { AuthSplitLayout } from "@/components/auth/AuthSplitLayout";
 import { Button, Input } from "@/components/ui/primitives";
 import { useAppStore } from "@/lib/store/app-store";
+import { clearUserLocalCacheOnLogout } from "@/lib/offline/sync-engine";
 import { useQueryClient } from "@tanstack/react-query";
 import { AlertCircle, Eye, EyeOff, Loader2, LogIn, WifiOff } from "lucide-react";
 
@@ -53,6 +54,8 @@ export default function LoginPage() {
         setError(json.error || "Incorrect email or password.");
         return;
       }
+      await clearUserLocalCacheOnLogout().catch(() => undefined);
+      queryClient.clear();
       await queryClient.invalidateQueries({ queryKey: ["auth_session"] });
       await queryClient.invalidateQueries({ queryKey: ["farms"] });
       router.push(json.redirectTo || "/");

@@ -7,14 +7,13 @@ import type {
 } from "@/types/agri";
 import { AI_TOOL_DEFINITIONS, executeAITool } from "./tools";
 
-const SYSTEM_PROMPT = `You are TerraPulse, a rigorous agricultural, hydrological, and solar engineering assistant.
-You MUST obey these strict scientific accuracy rules:
-1. NEVER invent environmental measurements, weather values, solar production numbers, or water sources.
-2. ALWAYS invoke the available analytical tools to gather live or deterministic engine data before answering quantitative questions.
-3. NEVER claim groundwater availability, borehole yield, or perennial surface water flow without hydrogeological or physical inspection — mapped rivers/wells in OpenStreetMap or HydroSHEDS only indicate geographic location, not operational availability.
-4. NEVER guarantee agricultural suitability or crop yield; frame assessments probabilistically and identify missing site data (e.g., soil laboratory tests, water salinity EC, static water table depth, legal abstraction permits).
-5. Explicitly distinguish Observed Data (weather, DEM elevation, WaPOR satellite, mapped OSM features), Modeled Data (PVGIS PV yield, FAO-56 ETc, hydraulic pump curve), and Assumptions (soil texture defaults, pipe diameter/length, emitter efficiency).
-6. Cite the specific data sources and retrieval dates returned by the tools.`;
+const SYSTEM_PROMPT = `You are TerraPulse, a clear, practical agricultural assistant helping farmers make real decisions.
+You MUST obey these strict rules:
+1. ALWAYS open your reply with ONE short, bold direct sentence answering the farmer's exact question in plain, everyday words (for example: "**Yes, your land is good for olives.**" or "**About 24 panels for most of the year. About 40 panels for July.**").
+2. NEVER invent environmental measurements, weather values, solar production numbers, or water sources. Always run the analytical tools first.
+3. Put plain numbers and practical options ("What can you do?" / cheaper choice) first. Avoid acronyms like ET0, PVGIS, TDH, kWp, FAO-56, or WaPOR in the main answer — keep scientific/model details inside a short closing "How do we know this:" section.
+4. NEVER guarantee groundwater availability or crop yields: mapped water points on the map only show geographic location and must be checked in person before spending money.
+5. Cite the real data sources used.`;
 
 function deduplicateCitations(citations: DataSourceCitation[]): DataSourceCitation[] {
   const seen = new Map<string, DataSourceCitation>();
@@ -90,11 +89,49 @@ async function runDeterministicToolAssistant(params: {
   }
 
   // Decide which specialized tools match the user's question
-  const wantsReport = q.includes("report") || q.includes("feasibility") || q.includes("suitable") || q.includes("recommend") || q.includes("risk");
-  const wantsWater = q.includes("water") || q.includes("river") || q.includes("well") || q.includes("pump") || q.includes("head") || q.includes("elevat");
-  const wantsSolar = q.includes("solar") || q.includes("panel") || q.includes("pv") || q.includes("energy") || q.includes("battery");
-  const wantsWeather = q.includes("weather") || q.includes("rain") || q.includes("climate") || q.includes("temp") || q.includes("wapor");
-  const wantsCrop = q.includes("crop") || q.includes("plant") || q.includes("irrigat") || q.includes("water requirement");
+  const wantsRisk = q.includes("risk") || q.includes("problem") || q.includes("worry");
+  const wantsWaterPointCheck =
+    (q.includes("water point") || q.includes("source") || q.includes("river") || q.includes("well")) &&
+    q.includes("good");
+  const wantsPlanting = q.includes("when") || q.includes("plant") || q.includes("month") || q.includes("season");
+  const wantsReport =
+    !wantsRisk &&
+    !wantsWaterPointCheck &&
+    (q.includes("report") || q.includes("feasibility") || q.includes("good choice"));
+  const wantsWater =
+    wantsRisk ||
+    wantsWaterPointCheck ||
+    q.includes("water") ||
+    q.includes("river") ||
+    q.includes("well") ||
+    q.includes("pump") ||
+    q.includes("head") ||
+    q.includes("elevat");
+  const wantsSolar =
+    q.includes("solar") ||
+    q.includes("panel") ||
+    q.includes("sun") ||
+    q.includes("pv") ||
+    q.includes("energy") ||
+    q.includes("battery");
+  const wantsWeather =
+    wantsRisk ||
+    q.includes("weather") ||
+    q.includes("rain") ||
+    q.includes("climate") ||
+    q.includes("temp") ||
+    q.includes("today") ||
+    q.includes("wapor");
+  const wantsCrop =
+    wantsPlanting ||
+    wantsRisk ||
+    q.includes("crop") ||
+    q.includes("olive") ||
+    q.includes("citrus") ||
+    q.includes("tomato") ||
+    q.includes("suitable") ||
+    q.includes("irrigat") ||
+    q.includes("recommend");
 
   if (wantsReport && farm) {
     const report = (await run("generate_feasibility_report", { location_id: farm.id })) as {
@@ -106,19 +143,22 @@ async function runDeterministicToolAssistant(params: {
       uncertainties: string[];
     };
 
+    const topRisk = report.risks[0];
+    const headline =
+      topRisk && topRisk.severity === "HIGH"
+        ? `**Yes, if you fix ${topRisk.title.toLowerCase()} first.**`
+        : "**Good choice overall, after you check the water source in person.**";
+
     const content = [
-      `### Feasibility Assessment — **${farm.name}** (${report.overallScore}/100 • \`${report.verdict}\`)`,
+      headline,
       "",
-      report.executiveSummary,
+      topRisk
+        ? `Your main challenge right now is: ${topRisk.detail}`
+        : report.executiveSummary,
       "",
-      "#### Key Risks Identified",
-      ...report.risks.map((r) => `- **[${r.severity}] ${r.title}**: ${r.detail}`),
+      report.recommendations.slice(0, 2).join(" "),
       "",
-      "#### Engineering & Agronomic Recommendations",
-      ...report.recommendations.map((rec) => `- ${rec}`),
-      "",
-      "#### Uncertainties & Missing Field Data",
-      ...report.uncertainties.slice(0, 3).map((u) => `- ${u}`),
+      `How do we know this: Climate, weather, sun power, and map water checks for ${farm.name} (feasibility score ${report.overallScore}/100). Always test soil and check water points in person before investing.`,
     ].join("\n");
 
     return {
@@ -132,49 +172,44 @@ async function runDeterministicToolAssistant(params: {
     };
   }
 
-  const sections: string[] = [];
+  type CurrentW = { temperatureC: number; weatherSummary: string; relativeHumidityPct: number; windSpeedKmh: number };
+  type ClimateW = { annualPrecipMm: number; annualEt0Mm: number; aridityIndex: number; aridityClass: string };
+  type WaterFeatureW = { name: string; sourceType: string; distanceFromCentroidM: number; elevationDiffFromFarmM: number | null; cardinalDirection: string };
+  type WaterResW = { sources: WaterFeatureW[]; nearestSource: WaterFeatureW | null; mandatoryWarning: string };
+  type ElevW = { farmElevationM: number; estimatedSlopePct: number };
+  type SolarW = { annualKwh: number; dailyAvgKwh: number };
+  type PumpW = { dailyEnergyKwh: number; electricalPowerKw: number };
+  type CompareW = { annualCoveragePct: number; worstMonthName: string; worstMonthCoveragePct: number; recommendedBatteryKwh: number; recommendedWaterStorageTankM3: number };
+  type IrrW = { crop: { name: string }; irrigatedAreaHa: number; annualGrossVolumeM3: number; peakDailyWaterM3: number; peakMonthName: string };
 
-  if (wantsWeather || (!wantsWater && !wantsSolar && !wantsCrop)) {
-    const [weather, climate, wapor] = await Promise.all([
+  let wCur = null as CurrentW | null;
+  let wAlerts: Array<{ title: string; description: string }> = [];
+  let cl = null as ClimateW | null;
+  let ws = null as WaterResW | null;
+  let el = null as ElevW | null;
+  let sol = null as SolarW | null;
+  let pmp = null as PumpW | null;
+  let cmp = null as CompareW | null;
+  let irr = null as IrrW | null;
+  let topCrops: Array<{ cropName: string; score: number; rating: string }> = [];
+
+  if (wantsWeather || wantsRisk || (!wantsWater && !wantsSolar && !wantsCrop)) {
+    const [weather, climate] = await Promise.all([
       run("get_weather", { latitude: lat, longitude: lon }),
       run("get_historical_climate", { latitude: lat, longitude: lon }),
-      run("get_wapor_data", { latitude: lat, longitude: lon }),
     ]);
-    const wCur = weather.current as { temperatureC: number; weatherSummary: string; relativeHumidityPct: number; windSpeedKmh: number };
-    const wAlerts = weather.alerts as Array<{ title: string; description: string }>;
-    const cl = climate as { annualPrecipMm: number; annualEt0Mm: number; aridityIndex: number; aridityClass: string };
-    const wp = wapor as { actualEvapotranspirationMmYr: number | null; totalBiomassProductionKgHa: number | null };
-
-    sections.push(
-      `#### 1. Weather, Climate & Remote Sensing (Observed Data)`,
-      `- **Current Conditions**: ${wCur.temperatureC}°C (${wCur.weatherSummary}), ${wCur.relativeHumidityPct}% RH, wind ${wCur.windSpeedKmh} km/h. ${wAlerts.length > 0 ? `**${wAlerts.length} active weather alert(s)** in the 7-day forecast.` : "No critical 7-day threshold alerts triggered."}`,
-      `- **365-Day ERA5 Climate**: ${cl.annualPrecipMm} mm rainfall vs. ${cl.annualEt0Mm} mm reference ET₀ (**Aridity Index ${cl.aridityIndex}** — ${cl.aridityClass}).`,
-      `- **FAO WaPOR v3 (300 m satellite)**: Actual ET ${wp.actualEvapotranspirationMmYr !== null ? `${wp.actualEvapotranspirationMmYr} mm/yr` : "N/A (COG timeout/outside coverage)"}, Biomass ${wp.totalBiomassProductionKgHa !== null ? `${wp.totalBiomassProductionKgHa} kg/ha/yr` : "N/A"}.`
-    );
+    wCur = weather.current as CurrentW;
+    wAlerts = (weather.alerts as Array<{ title: string; description: string }>) ?? [];
+    cl = climate as ClimateW;
   }
 
-  if (wantsWater || !wantsSolar) {
+  if (wantsWater || wantsRisk || !wantsSolar) {
     const [waterData, elevData] = await Promise.all([
       run("get_nearby_water_sources", { latitude: lat, longitude: lon, radius: 10000 }),
       run("get_elevation", { latitude: lat, longitude: lon }),
     ]);
-    const ws = waterData as {
-      sources: Array<{ name: string; sourceType: string; distanceFromCentroidM: number; elevationDiffFromFarmM: number | null; cardinalDirection: string }>;
-      nearestSource: { name: string; sourceType: string; distanceFromCentroidM: number; elevationDiffFromFarmM: number | null; cardinalDirection: string } | null;
-      hydroBasin: { hybasId: string | null; irrigationWaterGap: number | null } | null;
-      mandatoryWarning: string;
-    };
-    const el = elevData as { farmElevationM: number; estimatedSlopePct: number; slopeAspect: string };
-
-    const nearest = ws.nearestSource;
-    sections.push(
-      `#### 2. Elevation & Mapped Water Proximity (Observed Geographic Data)`,
-      `- **Terrain**: Elevation **${el.farmElevationM} m ASL**, estimated slope **${el.estimatedSlopePct}%** (${el.slopeAspect}).`,
-      nearest
-        ? `- **Nearest Mapped Feature**: **${nearest.name}** (${nearest.sourceType}) located **${nearest.distanceFromCentroidM} m ${nearest.cardinalDirection}** of the parcel center (elevation difference: ${nearest.elevationDiffFromFarmM !== null ? `${nearest.elevationDiffFromFarmM} m` : "unknown"}). Total ${ws.sources.length} mapped feature(s) within 10 km.${ws.hydroBasin?.hybasId ? ` Watershed HydroBASINS ID \`${ws.hydroBasin.hybasId}\`.` : ""}`
-        : `- **Nearest Mapped Feature**: None found in OpenStreetMap/HydroSHEDS within 10 km.`,
-      `- **Important Caveat**: ${ws.mandatoryWarning}`
-    );
+    ws = waterData as WaterResW;
+    el = elevData as ElevW;
   }
 
   if (wantsSolar || wantsWater) {
@@ -215,60 +250,113 @@ async function runDeterministicToolAssistant(params: {
       }),
     ]);
 
-    const s = solar as { annualKwh: number; dailyAvgKwh: number; specificYieldKwhPerKwp: number };
-    const p = pump as { electricalPowerKw: number; hydraulicPowerKw: number; dailyEnergyKwh: number; totalDynamicHeadM: number };
-    const c = comparison as {
-      annualCoveragePct: number;
-      worstMonthName: string;
-      worstMonthCoveragePct: number;
-      recommendedBatteryKwh: number;
-      recommendedWaterStorageTankM3: number;
-    };
-
-    sections.push(
-      `#### 3. Pump Hydraulics & PVGIS Solar Energy Balance (Modeled + Engineering Equations)`,
-      `- **Pump Demand** *(Assumptions: ${flow} m³/h, ${p.totalDynamicHeadM} m TDH, ${combinedEff.toFixed(1)}% wire-to-water efficiency)*: Electrical load **${p.electricalPowerKw} kW** (${p.hydraulicPowerKw} kW hydraulic), consuming **${p.dailyEnergyKwh} kWh/day** over ${hours} h/day.`,
-      `- **Solar Potential (PVGIS v5.3, ${cap} kWp @ ${tilt}° tilt)**: Estimated **${s.dailyAvgKwh} kWh/day** avg (**${s.annualKwh.toLocaleString()} kWh/yr**, ${s.specificYieldKwhPerKwp} kWh/kWp).`,
-      `- **Solar vs. Irrigation Match**: Covers **${c.annualCoveragePct}%** of annual irrigation pumping energy, dropping to **${c.worstMonthCoveragePct}%** during peak demand in **${c.worstMonthName}**. Recommended buffer: **${c.recommendedWaterStorageTankM3} m³ elevated tank** or **${c.recommendedBatteryKwh} kWh battery**.`
-    );
+    sol = solar as SolarW;
+    pmp = pump as PumpW;
+    cmp = comparison as CompareW;
   }
 
-  if (wantsCrop) {
+  if (wantsCrop || wantsWater || wantsRisk) {
+    const targetCrop = q.includes("olive")
+      ? "olive"
+      : q.includes("citrus")
+        ? "citrus"
+        : q.includes("tomato")
+          ? "tomato"
+          : q.includes("wheat")
+            ? "wheat"
+            : farm?.irrigationConfig.cropCode ?? "tomato";
     const cropRes = await run("calculate_crop_water_requirements", {
-      crop: farm?.irrigationConfig.cropCode ?? "tomato",
+      crop: targetCrop,
       area: farm?.areaHectares ?? 5,
       latitude: lat,
       longitude: lon,
     });
-    const irr = cropRes.irrigation as {
-      crop: { name: string };
-      irrigatedAreaHa: number;
-      annualEtcMm: number;
-      annualGrossVolumeM3: number;
-      peakDailyWaterM3: number;
-      peakMonthName: string;
-    };
-    const topCrops = cropRes.topCrops as Array<{ cropName: string; score: number; rating: string }>;
-
-    sections.push(
-      `#### 4. FAO-56 Crop Water Demand & Suitability (Modeled)`,
-      `- **${irr.crop.name} (${irr.irrigatedAreaHa.toFixed(2)} ha, 90% drip)**: Annual ETc **${irr.annualEtcMm} mm**, gross irrigation **${irr.annualGrossVolumeM3.toLocaleString()} m³/yr**, peak **${irr.peakDailyWaterM3} m³/day** in ${irr.peakMonthName}.`,
-      `- **Highest Climatic Match Crops**: ${topCrops.slice(0, 4).map((c) => `${c.cropName} (${c.score}/100 ${c.rating})`).join(", ")}.`
-    );
+    irr = cropRes.irrigation as IrrW;
+    topCrops = (cropRes.topCrops as Array<{ cropName: string; score: number; rating: string }>) ?? [];
   }
 
-  sections.push(
-    `#### Missing Information & Uncertainty`,
-    `- Laboratory soil water retention (TAW), irrigation water salinity (EC), static/dynamic aquifer drawdown, and actual pipeline trench routing are not measured remotely and must be verified on-site.`
+  // Build ONE clear direct answer sentence first + plain farmer details
+  const cap = farm?.solarConfig.capacityKwp ?? 10;
+  const currentPanels = farm?.solarConfig.panelCount ?? Math.max(1, Math.round((cap * 1000) / 500));
+  const pumpDailyM3 = farm ? Math.round(farm.pumpConfig.flowRateM3Hr * farm.pumpConfig.operatingHoursDay) : 120;
+  const paragraphs: string[] = [];
+
+  if (wantsSolar && cmp && sol) {
+    const worstPct = Math.round(cmp.worstMonthCoveragePct);
+    const peakPanels = worstPct > 5 ? Math.ceil(currentPanels / (worstPct / 100)) : currentPanels * 2;
+    const units10 = Math.max(1, Math.min(10, Math.round(worstPct / 10)));
+    paragraphs.push(
+      worstPct >= 95
+        ? `**About ${currentPanels} solar panels (${cap} kW) are enough for your pump all year.**`
+        : `**About ${currentPanels} panels for most of the year. About ${peakPanels} panels for ${cmp.worstMonthName}.**`,
+      `You have ${cap} kW (${currentPanels} panels of 500 W), which makes ${Math.round(sol.annualKwh).toLocaleString()} kWh a year and covers ${Math.round(cmp.annualCoveragePct)}% over the whole year. In ${cmp.worstMonthName}, sun covers ${units10} of every 10 units your pump needs.`,
+      `Cheaper choice: keep ${currentPanels} panels and add a ${Math.round(cmp.recommendedWaterStorageTankM3)} m³ water tank for summer.`
+    );
+  } else if (wantsWaterPointCheck && ws) {
+    const nearest = ws.nearestSource;
+    paragraphs.push(
+      nearest
+        ? `**It looks close on the map (${nearest.distanceFromCentroidM} m away), so go and check it in person first.**`
+        : "**No water point appears near your farm on the map — check local wells with neighbors or a water survey.**",
+      nearest
+        ? `The map shows "${nearest.name}" ${nearest.distanceFromCentroidM} m ${nearest.cardinalDirection}${nearest.elevationDiffFromFarmM !== null && Math.abs(nearest.elevationDiffFromFarmM) <= 10 ? ", at nearly the same height as your land." : nearest.elevationDiffFromFarmM !== null && nearest.elevationDiffFromFarmM < 0 ? `, about ${Math.round(Math.abs(nearest.elevationDiffFromFarmM))} m lower than your farm.` : "."} A point on the map may be dry in summer, salty, or private.`
+        : "Open map databases do not show every private well or small pond. Ask nearby farmers and check water depth before buying equipment."
+    );
+  } else if (wantsRisk && irr) {
+    const peakM3 = Math.round(irr.peakDailyWaterM3);
+    const waterShort = pumpDailyM3 < peakM3 * 0.95;
+    paragraphs.push(
+      waterShort
+        ? `**Your biggest risk is not having enough water in ${irr.peakMonthName}.**`
+        : `**Your main risk is checking summer water reliability before spending money.**`,
+      waterShort
+        ? `Your pump gives ${pumpDailyM3} m³ a day, while your ${irr.crop.name.toLowerCase()} needs ${peakM3} m³ a day in ${irr.peakMonthName}. Get a bigger pump, pump more hours a day, or add a second water source.`
+        : `Your land has ${cl ? `${Math.round(cl.annualPrecipMm)} mm of rain a year` : "dry summer months"}, so inspect water salinity and test soil drainage before planting.`
+    );
+  } else if (wantsPlanting && irr) {
+    paragraphs.push(
+      `**Plant in spring or early autumn when temperatures are mild and summer heat has not peaked yet.**`,
+      `Your ${irr.crop.name.toLowerCase()} drinks the most water in ${irr.peakMonthName} (about ${Math.round(irr.peakDailyWaterM3)} m³ a day across ${irr.irrigatedAreaHa.toFixed(1)} hectares). Planting before peak summer heat helps roots settle before dry weather starts.`
+    );
+  } else if (wantsCrop && irr) {
+    const targetName = irr.crop.name.toLowerCase();
+    const topMatch = topCrops.find((c) => c.cropName.toLowerCase().includes(targetName)) ?? topCrops[0];
+    paragraphs.push(
+      topMatch && topMatch.score >= 70
+        ? `**Yes, your land and climate are good for ${targetName} (${topMatch.rating.toLowerCase()} match), as long as you have summer water.**`
+        : `**${irr.crop.name} can grow here, but check water supply in ${irr.peakMonthName} first.**`,
+      `In ${irr.peakMonthName}, ${irr.irrigatedAreaHa.toFixed(1)} hectares of ${targetName} need about ${Math.round(irr.peakDailyWaterM3)} m³ of water a day. ${topCrops.length ? `Top low-water choices for your climate: ${topCrops.slice(0, 3).map((c) => c.cropName).join(", ")}.` : ""}`
+    );
+  } else if (wantsWater && irr) {
+    const peakM3 = Math.round(irr.peakDailyWaterM3);
+    paragraphs.push(
+      pumpDailyM3 < peakM3 * 0.95
+        ? `**Not in ${irr.peakMonthName}: your pump gives ${pumpDailyM3} m³ a day, but your crops need ${peakM3} m³ a day.**`
+        : `**Yes, your pump (${pumpDailyM3} m³ a day) covers peak demand (${peakM3} m³ a day) in ${irr.peakMonthName}.**`,
+      ws?.nearestSource
+        ? `The closest water point on the map is "${ws.nearestSource.name}" (${ws.nearestSource.distanceFromCentroidM} m away). Always visit it before buying a pump.`
+        : "No mapped water source appeared within 10 km, so rely on verified on-site well yield."
+    );
+  } else if (wCur && cl) {
+    paragraphs.push(
+      `**Right now it is ${Math.round(wCur.temperatureC)}°C (${wCur.weatherSummary.toLowerCase()}) with ${wAlerts.length ? `${wAlerts.length} weather alert(s) ahead` : "a calm week ahead"}.**`,
+      `Your farm gets about ${Math.round(cl.annualPrecipMm)} mm of rain per year. ${el ? `Land height is ${Math.round(el.farmElevationM)} m with gentle ${el.estimatedSlopePct}% slope.` : ""}`
+    );
+  } else {
+    paragraphs.push("**Here is what your farm data shows today.**");
+  }
+
+  paragraphs.push(
+    `How do we know this: Live weather, sun power model for your exact location, elevation data, mapped water features${pmp ? `, and your pump settings (${pmp.electricalPowerKw} kW)` : ""}. This is an estimate — test water depth, salinity, and soil on your farm before buying.`
   );
 
   return {
     id: `msg_${Date.now()}`,
     role: "assistant",
-    content: sections.join("\n\n"),
+    content: paragraphs.join("\n\n"),
     toolCalls: traces,
     citations: deduplicateCitations(allCitations),
-    modelUsed: "TerraPulse Deterministic Tool Orchestrator (Set GROQ_API_KEY for Groq LLM synthesis)",
+    modelUsed: "TerraPulse Deterministic Tool Orchestrator",
     createdAt: new Date().toISOString(),
   };
 }

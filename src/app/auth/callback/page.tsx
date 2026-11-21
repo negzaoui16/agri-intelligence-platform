@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { AuthSplitLayout } from "@/components/auth/AuthSplitLayout";
 import { Badge, Button, Input } from "@/components/ui/primitives";
+import { clearUserLocalCacheOnLogout } from "@/lib/offline/sync-engine";
 import { useQueryClient } from "@tanstack/react-query";
 import { AlertCircle, CheckCircle2, Loader2 } from "lucide-react";
 
@@ -35,6 +36,8 @@ export default function AuthCallbackPage() {
         setError(json.error || "Unable to complete Google sign-in.");
         return;
       }
+      await clearUserLocalCacheOnLogout().catch(() => undefined);
+      queryClient.clear();
       await queryClient.invalidateQueries({ queryKey: ["auth_session"] });
       await queryClient.invalidateQueries({ queryKey: ["farms"] });
       router.push(json.redirectTo || "/onboarding");
