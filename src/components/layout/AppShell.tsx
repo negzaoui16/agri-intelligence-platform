@@ -3,32 +3,24 @@
 import * as React from "react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
-import { useTheme } from "next-themes";
 import {
-  Bot,
-  CloudRain,
-  Download,
-  Droplets,
+  AlertTriangle,
+  ChevronDown,
   FileText,
-  LayoutDashboard,
+  Home,
   LogOut,
-  Map as MapIcon,
-  Menu,
-  Moon,
+  MessageCircle,
   RefreshCw,
   Sprout,
-  Sun,
   Tractor,
-  UserCheck,
-  Wifi,
   WifiOff,
-  X,
-  AlertTriangle,
 } from "lucide-react";
-import { Badge, Button, Select } from "@/components/ui/primitives";
+import { useLanguage } from "@/components/i18n/LanguageProvider";
+import { Button } from "@/components/ui/primitives";
 import { useAuthSession } from "@/hooks/useAuth";
-import { useFarms, useSyncController } from "@/hooks/useFarms";
+import { useFarmAnalysis, useFarms, useSyncController } from "@/hooks/useFarms";
 import { getSyncConflicts } from "@/lib/offline/sync-engine";
+import { selectFarmerMetrics } from "@/lib/services/farmer-metrics";
 import { useAppStore } from "@/lib/store/app-store";
 import { cn } from "@/lib/utils";
 import type { SyncQueueItem } from "@/types/agri";
@@ -41,28 +33,11 @@ const STANDALONE_ROUTES = new Set([
   "/onboarding",
 ]);
 
-const NAV_ITEMS = [
-  { href: "/", label: "Dashboard", shortLabel: "Home", icon: LayoutDashboard },
-  { href: "/map", label: "Interactive Map", shortLabel: "Map", icon: MapIcon },
-  { href: "/farms", label: "Farm Profile", shortLabel: "Farms", icon: Tractor },
-  { href: "/environmental", label: "Climate & WaPOR", shortLabel: "Climate", icon: CloudRain },
-  { href: "/water", label: "Water & Pump", shortLabel: "Water", icon: Droplets },
-  { href: "/solar", label: "Solar PVGIS", shortLabel: "Solar", icon: Sun },
-  { href: "/assistant", label: "AI Advisor", shortLabel: "AI", icon: Bot },
-  { href: "/reports", label: "Feasibility PDF", shortLabel: "Reports", icon: FileText },
-];
-
-const MOBILE_PRIMARY_HREFS = new Set(["/", "/map", "/water", "/solar", "/assistant"]);
-
-interface BeforeInstallPromptEvent extends Event {
-  prompt: () => Promise<void>;
-  userChoice: Promise<{ outcome: "accepted" | "dismissed" }>;
-}
-
 export function AppShell({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
   const router = useRouter();
-  const { theme, setTheme } = useTheme();
+  const { lang, setLang, t, fmt, monthLabel } = useLanguage();
+
   const {
     user,
     farmerProfile,
@@ -73,7 +48,15 @@ export function AppShell({ children }: { children: React.ReactNode }) {
     logout,
   } = useAuthSession();
   const { farms, activeFarm, setActiveFarmId } = useFarms();
+  const { data: activeAnalysis } = useFarmAnalysis(activeFarm);
   const { syncNow, resolveConflict } = useSyncController();
+
+  const isOnline = useAppStore((s) => s.isOnline);
+  const pendingSyncCount = useAppStore((s) => s.pendingSyncCount);
+  const conflictCount = useAppStore((s) => s.conflictCount);
+
+  const [syncing, setSyncing] = React.useState(false);
+  const [conflicts, setConflicts] = React.useState<SyncQueueItem[]>([]);
 
   const isStandalone = STANDALONE_ROUTES.has(pathname);
 
@@ -101,24 +84,6 @@ export function AppShell({ children }: { children: React.ReactNode }) {
     router,
   ]);
 
-  const isOnline = useAppStore((s) => s.isOnline);
-  const pendingSyncCount = useAppStore((s) => s.pendingSyncCount);
-  const conflictCount = useAppStore((s) => s.conflictCount);
-
-  const [mobileMenuOpen, setMobileMenuOpen] = React.useState(false);
-  const [syncing, setSyncing] = React.useState(false);
-  const [installEvent, setInstallEvent] = React.useState<BeforeInstallPromptEvent | null>(null);
-  const [conflicts, setConflicts] = React.useState<SyncQueueItem[]>([]);
-
-  React.useEffect(() => {
-    const handler = (e: Event) => {
-      e.preventDefault();
-      setInstallEvent(e as BeforeInstallPromptEvent);
-    };
-    window.addEventListener("beforeinstallprompt", handler);
-    return () => window.removeEventListener("beforeinstallprompt", handler);
-  }, []);
-
   React.useEffect(() => {
     if (conflictCount > 0) {
       getSyncConflicts().then(setConflicts);
@@ -126,12 +91,6 @@ export function AppShell({ children }: { children: React.ReactNode }) {
       setConflicts([]);
     }
   }, [conflictCount]);
-
-  const handleInstall = async () => {
-    if (!installEvent) return;
-    await installEvent.prompt();
-    setInstallEvent(null);
-  };
 
   const handleSync = async () => {
     setSyncing(true);
@@ -146,263 +105,289 @@ export function AppShell({ children }: { children: React.ReactNode }) {
     return <>{children}</>;
   }
 
+  const metrics = activeFarm ? selectFarmerMetrics(activeFarm, activeAnalysis) : null;
+
+  const waterStatusText = metrics
+    ? metrics.isWaterShort
+      ? fmt(t.shortInMonth, { month: monthLabel(metrics.peakMonthName) })
+      : t.statusGood
+    : t.statusOk;
+  const sunStatusText = metrics
+    ? metrics.isSolarShortInSummer
+      ? t.shortInSummer
+      : t.enoughAllYear
+    : t.statusOk;
+  const weatherStatusText = metrics
+    ? metrics.hasAnyWeatherAlert
+      ? t.alertAhead
+      : t.calmWeek
+    : t.calmWeek;
+
+  const primaryNav = [
+    { href: "/", label: t.navHome, icon: Home },
+    { href: "/farms", label: t.navMyFarm, icon: Tractor },
+    { href: "/assistant", label: t.navAsk, icon: MessageCircle },
+    { href: "/reports", label: t.navReport, icon: FileText },
+  ];
+
+  const isNavActive = (href: string) => {
+    if (href === "/farms" && pathname === "/map") return true;
+    return pathname === href;
+  };
+
   return (
-    <div className="min-h-screen flex flex-col lg:flex-row bg-background text-foreground">
-      {/* Desktop Sidebar */}
-      <aside className="no-print hidden lg:flex lg:w-64 lg:flex-col lg:fixed lg:inset-y-0 border-r border-border bg-card z-30">
-        <div className="p-4 border-b border-border flex items-center gap-2.5">
-          <div className="h-9 w-9 rounded-xl bg-[#14532d] text-white flex items-center justify-center shrink-0">
-            <Sprout className="h-5 w-5" />
-          </div>
-          <div className="min-w-0">
-            <p className="font-bold text-sm tracking-tight truncate">TerraPulse</p>
-            <p className="text-[11px] text-muted-foreground truncate">Agri Intelligence</p>
-          </div>
+    <div className="min-h-screen flex flex-col lg:flex-row bg-[#F6F4EE] text-[#17251C]">
+      {/* Desktop Left Sidebar */}
+      <aside className="no-print hidden lg:flex lg:w-[256px] lg:flex-col lg:fixed lg:inset-y-0 lg:start-0 border-e-[1.5px] border-[#E4DFD2] bg-white z-30 px-[18px] py-6 gap-[22px]">
+        {/* Logo */}
+        <div className="flex items-center gap-2.5">
+          <span className="w-10 h-10 rounded-[12px] bg-[#2E6B3A] text-white flex items-center justify-center shrink-0">
+            <Sprout className="w-[22px] h-[22px]" aria-hidden="true" />
+          </span>
+          <b className="text-[20px] font-bold tracking-tight text-[#17251C]">
+            {t.appName}
+          </b>
         </div>
 
         {/* Active Farm Selector */}
-        <div className="p-3 border-b border-border space-y-2">
-          <label className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
-            Active Property
-          </label>
-          <Select
+        <div className="relative">
+          <div className="min-h-[52px] rounded-[14px] border-[1.5px] border-[#C9C3B3] bg-[#F6F4EE] px-3.5 py-2 flex items-center justify-between gap-2 pointer-events-none">
+            <span className="min-w-0 flex flex-col text-start">
+              <span className="text-[16px] font-bold text-[#17251C] truncate">
+                {activeFarm ? activeFarm.name : t.addFarmTitle}
+              </span>
+              <span className="text-[13px] text-[#4A5A4F] truncate">
+                {activeFarm
+                  ? `${Number(activeFarm.areaHectares.toFixed(1))} ${t.hectaresShort} · ${t.changeFarm}`
+                  : t.threeShortSteps}
+              </span>
+            </span>
+            <ChevronDown className="w-[18px] h-[18px] text-[#17251C] shrink-0" aria-hidden="true" />
+          </div>
+          <select
+            aria-label={t.changeFarm}
             value={activeFarm?.id ?? ""}
             onChange={(e) => setActiveFarmId(e.target.value)}
-            aria-label="Active Farm Selector"
-            className="h-9 text-xs"
+            className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
           >
             {farms.length === 0 ? (
-              <option value="">No saved properties</option>
+              <option value="">{t.addFarmTitle}</option>
             ) : (
               farms.map((f) => (
                 <option key={f.id} value={f.id}>
-                  {f.name} ({f.areaHectares.toFixed(1)} ha)
+                  {f.name} ({Number(f.areaHectares.toFixed(1))} {t.hectaresShort})
                 </option>
               ))
             )}
-          </Select>
+          </select>
         </div>
 
-        {/* Navigation Links */}
-        <nav className="flex-1 p-3 space-y-1 overflow-y-auto" aria-label="Primary Navigation">
-          {NAV_ITEMS.map((item) => {
+        {/* 4 Main Farmer Navigation Items */}
+        <nav className="flex flex-col gap-1" aria-label="Main">
+          {primaryNav.map((item) => {
             const Icon = item.icon;
-            const active = pathname === item.href;
+            const active = isNavActive(item.href);
             return (
               <Link
                 key={item.href}
                 href={item.href}
+                aria-current={active ? "page" : undefined}
                 className={cn(
-                  "flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-colors",
+                  "min-h-[48px] rounded-[12px] px-3.5 flex items-center gap-3 text-[17px] transition-colors",
                   active
-                    ? "bg-[#14532d] text-white dark:bg-[#16a34a]"
-                    : "text-muted-foreground hover:bg-muted hover:text-foreground"
+                    ? "bg-[#E3EFE2] text-[#1F4D28] font-bold"
+                    : "text-[#17251C] font-normal hover:bg-[#F6F4EE]"
                 )}
               >
-                <Icon className="h-4 w-4 shrink-0" />
+                <Icon
+                  className={cn(
+                    "w-[22px] h-[22px] shrink-0",
+                    active ? "text-[#1F4D28]" : "text-[#4A5A4F]"
+                  )}
+                  aria-hidden="true"
+                />
                 <span>{item.label}</span>
               </Link>
             );
           })}
         </nav>
 
-        {/* Status Footer */}
-        <div className="p-3 border-t border-border space-y-2.5">
-          <div className="flex items-center justify-between gap-2">
-            <Badge variant={isOnline ? "green" : "amber"}>
-              {isOnline ? <Wifi className="h-3 w-3" /> : <WifiOff className="h-3 w-3" />}
-              {isOnline ? "Online" : "Offline Mode"}
-            </Badge>
-            {pendingSyncCount > 0 && (
-              <Button size="sm" variant="outline" onClick={handleSync} disabled={syncing || !isOnline}>
-                <RefreshCw className={cn("h-3 w-3", syncing && "animate-spin")} />
-                Sync ({pendingSyncCount})
-              </Button>
+        {/* CHECK Group (Water, Sun power, Weather) */}
+        <div className="flex flex-col gap-1">
+          <span className="text-[13px] font-bold text-[#4A5A4F] tracking-[0.06em] px-3.5 uppercase">
+            {t.navCheckGroup}
+          </span>
+          <Link
+            href="/water"
+            aria-current={pathname === "/water" ? "page" : undefined}
+            className={cn(
+              "min-h-[44px] rounded-[12px] px-3.5 flex items-center justify-between gap-2 text-[16px] transition-colors",
+              pathname === "/water"
+                ? "bg-[#E6EEF9] text-[#123766] font-bold"
+                : "text-[#17251C] hover:bg-[#F6F4EE]"
             )}
-          </div>
-
-          <div className="flex items-center gap-2">
-            <Button
-              size="sm"
-              variant="outline"
-              className="flex-1"
-              onClick={() => setTheme(theme === "dark" ? "light" : "dark")}
+          >
+            <span>{t.navWater}</span>
+            <span
+              className={cn(
+                "text-[13px] font-bold whitespace-nowrap",
+                metrics?.waterStatus === "PROBLEM" ? "text-[#8A4B00]" : "text-[#2E6B3A]"
+              )}
             >
-              {theme === "dark" ? <Sun className="h-3.5 w-3.5" /> : <Moon className="h-3.5 w-3.5" />}
-              <span>{theme === "dark" ? "Light" : "Dark"}</span>
-            </Button>
-            {installEvent && (
-              <Button size="sm" variant="primary" className="flex-1" onClick={handleInstall}>
-                <Download className="h-3.5 w-3.5" />
-                Install
-              </Button>
-            )}
-          </div>
+              {waterStatusText}
+            </span>
+          </Link>
 
-          {user && (
-            <div className="pt-2 border-t border-border flex items-center justify-between gap-2 text-xs">
-              <div className="min-w-0">
-                <p className="font-semibold truncate">
-                  {farmerProfile ? `${farmerProfile.firstName} ${farmerProfile.lastName}` : user.name}
-                </p>
-                <p className="text-[10px] text-muted-foreground truncate">{user.email}</p>
-              </div>
-              <div className="flex items-center gap-1 shrink-0">
-                <Link href="/onboarding" title="Edit Profile & Onboarding">
-                  <Button size="sm" variant="ghost" aria-label="Edit Onboarding">
-                    <UserCheck className="h-3.5 w-3.5" />
-                  </Button>
-                </Link>
-                <Button size="sm" variant="ghost" onClick={logout} title="Sign Out" aria-label="Sign out">
-                  <LogOut className="h-3.5 w-3.5 text-red-600" />
-                </Button>
-              </div>
+          <Link
+            href="/solar"
+            aria-current={pathname === "/solar" ? "page" : undefined}
+            className={cn(
+              "min-h-[44px] rounded-[12px] px-3.5 flex items-center justify-between gap-2 text-[16px] transition-colors",
+              pathname === "/solar"
+                ? "bg-[#F6ECD6] text-[#5B3A00] font-bold"
+                : "text-[#17251C] hover:bg-[#F6F4EE]"
+            )}
+          >
+            <span>{t.navSunPower}</span>
+            <span
+              className={cn(
+                "text-[13px] font-bold whitespace-nowrap",
+                metrics?.isSolarShortInSummer ? "text-[#8A4B00]" : "text-[#2E6B3A]"
+              )}
+            >
+              {sunStatusText}
+            </span>
+          </Link>
+
+          <Link
+            href="/environmental"
+            aria-current={pathname === "/environmental" ? "page" : undefined}
+            className={cn(
+              "min-h-[44px] rounded-[12px] px-3.5 flex items-center justify-between gap-2 text-[16px] transition-colors",
+              pathname === "/environmental"
+                ? "bg-[#E3EFE2] text-[#1F4D28] font-bold"
+                : "text-[#17251C] hover:bg-[#F6F4EE]"
+            )}
+          >
+            <span>{t.navWeather}</span>
+            <span
+              className={cn(
+                "text-[13px] font-bold whitespace-nowrap",
+                metrics?.hasAnyWeatherAlert ? "text-[#8A4B00]" : "text-[#2E6B3A]"
+              )}
+            >
+              {weatherStatusText}
+            </span>
+          </Link>
+        </div>
+
+        {/* Footer Controls */}
+        <div className="mt-auto flex flex-col gap-3">
+          {(!isOnline || pendingSyncCount > 0) && (
+            <div className="rounded-[12px] border border-[#E2B66B] bg-[#FCEFD9] px-3 py-2 flex items-center justify-between gap-2 text-[14px] text-[#6B3A00]">
+              <span className="inline-flex items-center gap-1.5 font-bold">
+                <WifiOff className="w-4 h-4 shrink-0" />
+                {!isOnline ? "Offline" : `${pendingSyncCount} saved`}
+              </span>
+              {pendingSyncCount > 0 && isOnline && (
+                <button
+                  type="button"
+                  onClick={handleSync}
+                  disabled={syncing}
+                  className="font-bold underline text-[13px]"
+                >
+                  {syncing ? "…" : "Sync"}
+                </button>
+              )}
             </div>
           )}
+
+          {user && (
+            <div className="pt-2 border-t border-[#E4DFD2] flex items-center justify-between gap-2">
+              <span className="text-[14px] text-[#4A5A4F] truncate">
+                {farmerProfile
+                  ? `${farmerProfile.firstName} ${farmerProfile.lastName}`.trim()
+                  : user.name}
+              </span>
+              <button
+                type="button"
+                onClick={logout}
+                aria-label={t.signOut}
+                title={t.signOut}
+                className="min-h-[44px] min-w-[44px] rounded-full flex items-center justify-center text-[#4A5A4F] hover:bg-[#F6F4EE] hover:text-[#17251C]"
+              >
+                <LogOut className="w-4 h-4" />
+              </button>
+            </div>
+          )}
+
+          {/* Language Switcher Pill matching DeskHome.dc.html */}
+          <div
+            role="group"
+            aria-label={t.changeLanguageLabel}
+            className="min-h-[44px] rounded-full border-[1.5px] border-[#C9C3B3] bg-white px-2 flex items-center justify-around gap-1 text-[14px] font-bold"
+          >
+            <button
+              type="button"
+              onClick={() => setLang("en")}
+              className={cn(
+                "min-h-[36px] px-2.5 rounded-full transition-colors",
+                lang === "en" ? "bg-[#E3EFE2] text-[#1F4D28]" : "text-[#4A5A4F] hover:text-[#17251C]"
+              )}
+            >
+              English
+            </button>
+            <span className="text-[#C9C3B3]" aria-hidden="true">·</span>
+            <button
+              type="button"
+              onClick={() => setLang("ar")}
+              className={cn(
+                "min-h-[36px] px-2.5 rounded-full transition-colors",
+                lang === "ar" ? "bg-[#E3EFE2] text-[#1F4D28]" : "text-[#4A5A4F] hover:text-[#17251C]"
+              )}
+            >
+              العربية
+            </button>
+            <span className="text-[#C9C3B3]" aria-hidden="true">·</span>
+            <button
+              type="button"
+              onClick={() => setLang("fr")}
+              className={cn(
+                "min-h-[36px] px-2.5 rounded-full transition-colors",
+                lang === "fr" ? "bg-[#E3EFE2] text-[#1F4D28]" : "text-[#4A5A4F] hover:text-[#17251C]"
+              )}
+            >
+              Français
+            </button>
+          </div>
         </div>
       </aside>
 
-      {/* Mobile Header */}
-      <header className="no-print lg:hidden sticky top-0 z-30 border-b border-border bg-card/95 backdrop-blur-xs px-3 py-2 flex items-center justify-between gap-2">
-        <div className="flex items-center gap-2 min-w-0">
-          <div className="h-8 w-8 rounded-lg bg-[#14532d] text-white flex items-center justify-center shrink-0">
-            <Sprout className="h-4 w-4" />
-          </div>
-          <div className="min-w-0">
-            <p className="text-xs font-bold truncate">
-              {activeFarm ? activeFarm.name : "TerraPulse Agri"}
-            </p>
-            <div className="flex items-center gap-1.5 text-[10px] text-muted-foreground">
-              <span className={cn("inline-block h-1.5 w-1.5 rounded-full", isOnline ? "bg-emerald-500" : "bg-amber-500")} />
-              <span>{isOnline ? "Online" : "Offline"}</span>
-              {pendingSyncCount > 0 && <span>• {pendingSyncCount} queued</span>}
-            </div>
-          </div>
-        </div>
-
-        <div className="flex items-center gap-1.5 shrink-0">
-          {pendingSyncCount > 0 && isOnline && (
-            <Button size="sm" variant="outline" onClick={handleSync} disabled={syncing} aria-label="Sync queued changes">
-              <RefreshCw className={cn("h-3.5 w-3.5", syncing && "animate-spin")} />
-            </Button>
-          )}
-          {installEvent && (
-            <Button size="sm" variant="primary" onClick={handleInstall} aria-label="Install PWA">
-              <Download className="h-3.5 w-3.5" />
-            </Button>
-          )}
-          <Button
-            size="sm"
-            variant="ghost"
-            onClick={() => setTheme(theme === "dark" ? "light" : "dark")}
-            aria-label="Toggle theme"
-          >
-            {theme === "dark" ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
-          </Button>
-          <Button
-            size="sm"
-            variant="outline"
-            onClick={() => setMobileMenuOpen(true)}
-            aria-label="Open menu"
-          >
-            <Menu className="h-4 w-4" />
-          </Button>
-        </div>
-      </header>
-
-      {/* Mobile Drawer */}
-      {mobileMenuOpen && (
-        <div className="no-print fixed inset-0 z-50 lg:hidden bg-black/50 flex justify-end">
-          <div className="w-72 max-w-[85vw] bg-card h-full p-4 flex flex-col gap-4 border-l border-border">
-            <div className="flex items-center justify-between">
-              <span className="font-bold text-sm">TerraPulse Navigation</span>
-              <Button size="sm" variant="ghost" onClick={() => setMobileMenuOpen(false)}>
-                <X className="h-4 w-4" />
-              </Button>
-            </div>
-            <div>
-              <label className="text-[11px] font-semibold uppercase text-muted-foreground">
-                Active Property
-              </label>
-              <Select
-                value={activeFarm?.id ?? ""}
-                onChange={(e) => {
-                  setActiveFarmId(e.target.value);
-                  setMobileMenuOpen(false);
-                }}
-                className="mt-1 h-9 text-xs"
-              >
-                {farms.map((f) => (
-                  <option key={f.id} value={f.id}>
-                    {f.name}
-                  </option>
-                ))}
-              </Select>
-            </div>
-            <div className="flex-1 space-y-1 overflow-y-auto">
-              {NAV_ITEMS.map((item) => {
-                const Icon = item.icon;
-                const active = pathname === item.href;
-                return (
-                  <Link
-                    key={item.href}
-                    href={item.href}
-                    onClick={() => setMobileMenuOpen(false)}
-                    className={cn(
-                      "flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium",
-                      active
-                        ? "bg-[#14532d] text-white"
-                        : "text-foreground hover:bg-muted"
-                    )}
-                  >
-                    <Icon className="h-4 w-4" />
-                    <span>{item.label}</span>
-                  </Link>
-                );
-              })}
-            </div>
-            {user && (
-              <div className="pt-3 border-t border-border space-y-2 text-xs">
-                <div>
-                  <p className="font-semibold truncate">
-                    {farmerProfile ? `${farmerProfile.firstName} ${farmerProfile.lastName}` : user.name}
-                  </p>
-                  <p className="text-[11px] text-muted-foreground truncate">{user.email}</p>
-                </div>
-                <div className="grid grid-cols-2 gap-2">
-                  <Link href="/onboarding" onClick={() => setMobileMenuOpen(false)}>
-                    <Button size="sm" variant="outline" className="w-full">
-                      Edit Profile
-                    </Button>
-                  </Link>
-                  <Button
-                    size="sm"
-                    variant="danger"
-                    className="w-full"
-                    onClick={() => {
-                      setMobileMenuOpen(false);
-                      logout();
-                    }}
-                  >
-                    Sign Out
-                  </Button>
-                </div>
-              </div>
+      {/* Main Content Area */}
+      <main className="flex-1 lg:ps-[256px] pb-[88px] lg:pb-10 min-w-0">
+        {/* Offline / Sync Queue Notice on Phone or Conflicts */}
+        {(!isOnline || pendingSyncCount > 0) && (
+          <div className="no-print lg:hidden bg-[#FCEFD9] border-b border-[#E2B66B] px-4 py-2 flex items-center justify-between text-[14px] text-[#6B3A00]">
+            <span className="flex items-center gap-2 font-bold">
+              <WifiOff className="w-4 h-4 shrink-0" />
+              {!isOnline ? "Working offline — changes saved on phone" : `${pendingSyncCount} change(s) waiting to save`}
+            </span>
+            {isOnline && pendingSyncCount > 0 && (
+              <button type="button" onClick={handleSync} disabled={syncing} className="inline-flex items-center gap-1 font-bold underline">
+                <RefreshCw className={cn("w-3.5 h-3.5", syncing && "animate-spin")} />
+                Sync
+              </button>
             )}
           </div>
-        </div>
-      )}
+        )}
 
-      {/* Main Content */}
-      <main className="flex-1 lg:pl-64 pb-20 lg:pb-8">
-        {/* Sync Conflict Resolution Banner */}
         {conflicts.length > 0 && (
-          <div className="no-print bg-amber-50 dark:bg-amber-950/60 border-b border-amber-300 dark:border-amber-800 px-4 py-3">
-            <div className="max-w-7xl mx-auto flex flex-col sm:flex-row sm:items-center justify-between gap-2 text-xs">
-              <div className="flex items-center gap-2 text-amber-900 dark:text-amber-200">
-                <AlertTriangle className="h-4 w-4 shrink-0" />
+          <div className="no-print bg-[#FCEFD9] border-b border-[#E2B66B] px-4 py-3">
+            <div className="max-w-[1080px] mx-auto flex flex-col sm:flex-row sm:items-center justify-between gap-2 text-[15px]">
+              <div className="flex items-center gap-2 text-[#6B3A00]">
+                <AlertTriangle className="h-5 w-5 shrink-0" />
                 <span>
-                  Sync conflict detected for {conflicts.length} offline edit(s). Newer server data was preserved.
+                  {conflicts.length} offline edit(s) differ from your saved cloud data.
                 </span>
               </div>
               <div className="flex items-center gap-2">
@@ -413,14 +398,14 @@ export function AppShell({ children }: { children: React.ReactNode }) {
                       variant="outline"
                       onClick={() => resolveConflict(conflicts[0].seq!, "ACCEPT_SERVER")}
                     >
-                      Keep Server Version
+                      Keep cloud version
                     </Button>
                     <Button
                       size="sm"
                       variant="primary"
                       onClick={() => resolveConflict(conflicts[0].seq!, "KEEP_LOCAL")}
                     >
-                      Push My Offline Edit
+                      Keep my phone edit
                     </Button>
                   </>
                 )}
@@ -429,35 +414,41 @@ export function AppShell({ children }: { children: React.ReactNode }) {
           </div>
         )}
 
-        <div className="max-w-7xl mx-auto p-3 sm:p-5 lg:p-6">{children}</div>
+        <div className="max-w-[1120px] mx-auto px-5 py-4 lg:px-10 lg:py-8">
+          {children}
+        </div>
       </main>
 
-      {/* Mobile Bottom Navigation */}
+      {/* Mobile 4-Tab Bottom Navigation Bar matching Main.dc.html */}
       <nav
-        className="no-print lg:hidden fixed bottom-0 inset-x-0 z-30 border-t border-border bg-card/95 backdrop-blur-xs px-1 pt-1 pb-[max(0.35rem,env(safe-area-inset-bottom))]"
-        aria-label="Mobile Navigation"
+        aria-label="Main"
+        className="no-print lg:hidden fixed bottom-0 inset-x-0 z-30 grid grid-cols-4 bg-white border-t-[1.5px] border-[#E4DFD2] px-1.5 pt-1.5 pb-[max(12px,env(safe-area-inset-bottom))]"
       >
-        <div className="grid grid-cols-5 gap-1">
-          {NAV_ITEMS.filter((i) => MOBILE_PRIMARY_HREFS.has(i.href)).map((item) => {
-            const Icon = item.icon;
-            const active = pathname === item.href;
-            return (
-              <Link
-                key={item.href}
-                href={item.href}
+        {primaryNav.map((item) => {
+          const Icon = item.icon;
+          const active = isNavActive(item.href);
+          return (
+            <Link
+              key={item.href}
+              href={item.href}
+              aria-current={active ? "page" : undefined}
+              className={cn(
+                "min-h-[56px] flex flex-col items-center justify-center gap-1 rounded-[12px] text-[14px] transition-colors",
+                active ? "text-[#2E6B3A] font-bold" : "text-[#4A5A4F] font-normal"
+              )}
+            >
+              <Icon
                 className={cn(
-                  "flex flex-col items-center justify-center py-1.5 rounded-lg text-[10px] font-medium transition-colors",
-                  active
-                    ? "text-[#14532d] dark:text-[#4ade80] bg-emerald-50/80 dark:bg-emerald-950/50"
-                    : "text-muted-foreground"
+                  "w-[26px] h-[26px]",
+                  active ? "text-[#2E6B3A]" : "text-[#4A5A4F]"
                 )}
-              >
-                <Icon className="h-4 w-4 mb-0.5" />
-                <span className="truncate">{item.shortLabel}</span>
-              </Link>
-            );
-          })}
-        </div>
+                strokeWidth={active ? 2.2 : 1.9}
+                aria-hidden="true"
+              />
+              <span className="truncate max-w-full px-1">{item.label}</span>
+            </Link>
+          );
+        })}
       </nav>
     </div>
   );
