@@ -1,5 +1,6 @@
 import crypto from "node:crypto";
 import { cookies } from "next/headers";
+import { DEMO_ACCOUNT_EMAIL, getAuthSecret } from "./config";
 
 export interface SessionUser {
   id: string;
@@ -10,7 +11,7 @@ export interface SessionUser {
 
 export const DEFAULT_DEMO_USER: SessionUser = {
   id: "user_demo_agronomist",
-  email: "agronomist@terrapulse.agri",
+  email: DEMO_ACCOUNT_EMAIL,
   name: "Field Agronomist",
   role: "AGRONOMIST",
 };
@@ -19,7 +20,8 @@ const COOKIE_NAME = "terrapulse_session";
 export const LOGGED_OUT_COOKIE_NAME = "terrapulse_logged_out";
 
 function getSecret(): string {
-  return process.env.AUTH_SECRET || "agri-intelligence-platform-dev-secret-local";
+  // Refuses missing / development secrets in production (see auth/config.ts)
+  return getAuthSecret();
 }
 
 export function hashPassword(password: string): string {

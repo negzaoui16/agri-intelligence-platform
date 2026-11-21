@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { getAuthOptions } from "@/lib/auth/config";
 import {
   DEFAULT_DEMO_USER,
   getSessionState,
@@ -40,6 +41,10 @@ export async function GET() {
 }
 
 export async function POST(request: Request) {
+  // Signs in without a password: a development shortcut only, never on a live site
+  if (!getAuthOptions().demoLogin) {
+    return NextResponse.json({ error: "Demo sign-in is not available." }, { status: 403 });
+  }
   try {
     const body = await request.json();
     const parsed = demoSwitchSchema.safeParse(body);

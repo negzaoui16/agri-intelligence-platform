@@ -1,4 +1,5 @@
 import { cookies } from "next/headers";
+import { isGoogleStandInAllowed } from "@/lib/auth/config";
 import { NextResponse } from "next/server";
 import { apiError } from "@/lib/api/http";
 import { loginOrRegisterWithGoogle } from "@/lib/auth/service";
@@ -29,7 +30,12 @@ export async function GET(request: Request) {
   }
 
   if (!code) {
-    return NextResponse.redirect(new URL("/auth/callback?provider=google", url.origin));
+    return NextResponse.redirect(
+      new URL(
+        isGoogleStandInAllowed() ? "/auth/callback?provider=google" : "/login?error=oauth_not_configured",
+        url.origin
+      )
+    );
   }
 
   const clientId = process.env.GOOGLE_CLIENT_ID?.trim();
@@ -101,6 +107,11 @@ export async function GET(request: Request) {
 }
 
 export async function POST(request: Request) {
+  // Local stand-in for Google: signs in with a typed email and no proof of ownership.
+  // Allowed only in development when real Google keys are not set.
+  if (!isGoogleStandInAllowed()) {
+    return apiError("Google sign-in must go through Google.", 403);
+  }
   try {
     const body = await request.json();
     const parsed = oauthConfirmSchema.safeParse(body);

@@ -1,4 +1,5 @@
 import crypto from "node:crypto";
+import { isGoogleStandInAllowed } from "@/lib/auth/config";
 import { NextResponse } from "next/server";
 
 export async function GET(request: Request) {
@@ -28,6 +29,11 @@ export async function GET(request: Request) {
     return res;
   }
 
-  // Redirect to callback page for Google OAuth configuration / local dev OAuth flow
-  return NextResponse.redirect(new URL("/auth/callback?provider=google", url.origin));
+  // No real Google keys: local stand-in in development, a clear error on a live site
+  return NextResponse.redirect(
+    new URL(
+      isGoogleStandInAllowed() ? "/auth/callback?provider=google" : "/login?error=oauth_not_configured",
+      url.origin
+    )
+  );
 }

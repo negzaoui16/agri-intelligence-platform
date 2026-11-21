@@ -1,4 +1,5 @@
 import crypto from "node:crypto";
+import { DEMO_ACCOUNT_EMAIL, isProduction } from "./config";
 import {
   createUserAccount,
   findUserByEmail,
@@ -63,6 +64,10 @@ export async function loginWithEmail(input: {
   email: string;
   password: string;
 }): Promise<AuthOutcome> {
+  // The demo account's password ships in the code: never accept it on a live site
+  if (isProduction() && input.email.trim().toLowerCase() === DEMO_ACCOUNT_EMAIL) {
+    throw new Error("INVALID_CREDENTIALS");
+  }
   const user = await findUserByEmail(input.email);
   if (!user || !verifyPassword(input.password, user.passwordHash)) {
     throw new Error("INVALID_CREDENTIALS");
@@ -165,11 +170,11 @@ export async function requestPasswordReset(email: string): Promise<{
     resetTokenExpiresAt: expiresAt,
   });
 
-  // Expose reset code in non-production / local environments when SMTP is unconfigured
-  const isDev = process.env.NODE_ENV !== "production" || !process.env.SMTP_HOST;
+  // The app does not send emails yet: the code may only be shown on screen in development.
+  // Returning it in production would let anyone reset anyone's password.
   return {
     accepted: true,
-    devResetCode: isDev ? code : undefined,
+    devResetCode: isProduction() ? undefined : code,
   };
 }
 
