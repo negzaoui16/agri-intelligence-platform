@@ -60,7 +60,7 @@ export const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
   ({ className, variant = "primary", size = "md", ...props }, ref) => {
     const variants = {
       primary:
-        "bg-[#14532d] text-white hover:bg-[#166534] dark:bg-[#16a34a] dark:hover:bg-[#15803d] shadow-xs",
+        "bg-[var(--tp-bg-2E6B3A)] text-white hover:bg-[var(--tp-bg-23542D)] shadow-xs",
       secondary:
         "bg-muted text-foreground hover:bg-muted/80 border border-border",
       outline:
@@ -77,7 +77,7 @@ export const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
       <button
         ref={ref}
         className={cn(
-          "inline-flex items-center justify-center font-medium transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#15803d] disabled:pointer-events-none disabled:opacity-50 cursor-pointer",
+          "inline-flex items-center justify-center font-medium transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--tp-bd-15803D)] disabled:pointer-events-none disabled:opacity-50 cursor-pointer",
           variants[variant],
           sizes[size],
           className
@@ -124,7 +124,7 @@ export const Input = React.forwardRef<
   <input
     ref={ref}
     className={cn(
-      "flex h-10 w-full rounded-lg border border-border bg-card px-3 py-2 text-sm text-foreground placeholder:text-muted-foreground focus-visible:outline-2 focus-visible:outline-[#15803d] disabled:opacity-50",
+      "flex h-10 w-full rounded-lg border border-border bg-card px-3 py-2 text-sm text-foreground placeholder:text-muted-foreground focus-visible:outline-2 focus-visible:outline-[var(--tp-bd-15803D)] disabled:opacity-50",
       className
     )}
     {...props}
@@ -139,7 +139,7 @@ export const Select = React.forwardRef<
   <select
     ref={ref}
     className={cn(
-      "flex h-10 w-full rounded-lg border border-border bg-card px-2.5 py-1 text-sm text-foreground focus-visible:outline-2 focus-visible:outline-[#15803d] disabled:opacity-50",
+      "flex h-10 w-full rounded-lg border border-border bg-card px-2.5 py-1 text-sm text-foreground focus-visible:outline-2 focus-visible:outline-[var(--tp-bd-15803D)] disabled:opacity-50",
       className
     )}
     {...props}

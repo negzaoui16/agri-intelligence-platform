@@ -432,18 +432,18 @@ export function ThreeStepFarmWizard({
                 className={cn(
                   "w-full text-start rounded-[14px] lg:rounded-[16px] p-2.5 lg:px-4 lg:py-3.5 transition-colors flex flex-col lg:flex-row lg:items-center gap-1.5 lg:gap-3",
                   active
-                    ? "bg-white border-2 border-[#2E6B3A]"
-                    : "bg-white border-[1.5px] border-[#E4DFD2]"
+                    ? "bg-[var(--tp-bg-FFFFFF)] border-2 border-[var(--tp-bd-2E6B3A)]"
+                    : "bg-[var(--tp-bg-FFFFFF)] border-[1.5px] border-[var(--tp-bd-E4DFD2)]"
                 )}
               >
                 <span
                   className={cn(
                     "hidden lg:flex w-[34px] h-[34px] rounded-full font-bold items-center justify-center shrink-0",
                     active
-                      ? "bg-[#2E6B3A] text-white"
+                      ? "bg-[var(--tp-bg-2E6B3A)] text-white"
                       : done
-                        ? "bg-[#E3EFE2] text-[#2E6B3A]"
-                        : "bg-[#EFEBE1] text-[#4A5A4F]"
+                        ? "bg-[var(--tp-bg-E3EFE2)] text-[var(--tp-fg-2E6B3A)]"
+                        : "bg-[var(--tp-bg-EFEBE1)] text-[var(--tp-fg-4A5A4F)]"
                   )}
                 >
                   {done ? <Check className="w-4 h-4" /> : s.num}
@@ -451,20 +451,20 @@ export function ThreeStepFarmWizard({
                 <span
                   className={cn(
                     "lg:hidden h-[6px] w-full rounded-full block",
-                    active || done ? "bg-[#2E6B3A]" : "bg-[#D9D3C3]"
+                    active || done ? "bg-[var(--tp-bg-2E6B3A)]" : "bg-[var(--tp-bg-D9D3C3)]"
                   )}
                 />
                 <span className="flex flex-col min-w-0">
                   <b
                     className={cn(
                       "text-[14px] lg:text-[18px] leading-tight",
-                      active ? "text-[#2E6B3A] lg:text-[#17251C]" : "text-[#4A5A4F]"
+                      active ? "text-[var(--tp-fg-2E6B3A)] lg:text-[var(--tp-fg-17251C)]" : "text-[var(--tp-fg-4A5A4F)]"
                     )}
                   >
                     <span className="lg:hidden">{s.num} · </span>
                     {s.title}
                   </b>
-                  <span className="hidden lg:block text-[14px] text-[#4A5A4F]">
+                  <span className="hidden lg:block text-[14px] text-[var(--tp-fg-4A5A4F)]">
                     {s.sub}
                   </span>
                 </span>
@@ -475,9 +475,9 @@ export function ThreeStepFarmWizard({
       </ol>
 
       {/* Active Step Card matching AddFarm.dc.html / DeskAddFarm.dc.html */}
-      <section className="flex-1 min-w-0 w-full bg-white border-[1.5px] border-[#E4DFD2] rounded-[22px] p-5 lg:p-6 flex flex-col gap-4.5">
+      <section className="flex-1 min-w-0 w-full bg-[var(--tp-bg-FFFFFF)] border-[1.5px] border-[var(--tp-bd-E4DFD2)] rounded-[22px] p-5 lg:p-6 flex flex-col gap-4.5">
         {stepError && (
-          <div className="bg-[#FCEFD9] border-2 border-[#E2B66B] text-[#6B3A00] rounded-[14px] px-4 py-3 text-[16px] font-bold">
+          <div className="bg-[var(--tp-bg-FCEFD9)] border-2 border-[var(--tp-bd-E2B66B)] text-[var(--tp-fg-6B3A00)] rounded-[14px] px-4 py-3 text-[16px] font-bold">
             {stepError}
           </div>
         )}
@@ -485,10 +485,10 @@ export function ThreeStepFarmWizard({
         {step === 1 && (
           <>
             <div className="flex flex-col gap-1">
-              <h2 className="m-0 text-[26px] font-bold text-[#17251C]">
+              <h2 className="m-0 text-[26px] font-bold text-[var(--tp-fg-17251C)]">
                 {t.whereIsYourFarm}
               </h2>
-              <p className="m-0 text-[17px] text-[#4A5A4F] leading-[1.45]">
+              <p className="m-0 text-[17px] text-[var(--tp-fg-4A5A4F)] leading-[1.45]">
                 {t.standOnLandHint}
               </p>
             </div>
@@ -497,17 +497,17 @@ export function ThreeStepFarmWizard({
               <button
                 type="button"
                 onClick={handleUseMyLocation}
-                className="flex-1 min-h-[60px] rounded-full bg-[#2E6B3A] text-white text-[18px] lg:text-[19px] font-bold px-5 flex items-center justify-center gap-2.5 hover:bg-[#23542d]"
+                className="flex-1 min-h-[60px] rounded-full bg-[var(--tp-bg-2E6B3A)] text-white text-[18px] lg:text-[19px] font-bold px-5 flex items-center justify-center gap-2.5 hover:bg-[var(--tp-bg-23542D)]"
               >
                 <MapPin className="w-6 h-6 shrink-0" aria-hidden="true" />
                 <span className="lg:hidden">{t.iAmOnMyFarmNow}</span>
                 <span className="hidden lg:inline">{t.useMyLocation}</span>
               </button>
 
-              <div className="lg:hidden flex items-center gap-2.5 text-[#4A5A4F] text-[15px]">
-                <span className="flex-1 h-[1.5px] bg-[#D9D3C3]" />
+              <div className="lg:hidden flex items-center gap-2.5 text-[var(--tp-fg-4A5A4F)] text-[15px]">
+                <span className="flex-1 h-[1.5px] bg-[var(--tp-bg-D9D3C3)]" />
                 <span>or</span>
-                <span className="flex-1 h-[1.5px] bg-[#D9D3C3]" />
+                <span className="flex-1 h-[1.5px] bg-[var(--tp-bg-D9D3C3)]" />
               </div>
 
               <div className="flex-1 flex flex-col gap-1.5">
@@ -527,14 +527,14 @@ export function ThreeStepFarmWizard({
                       }
                     }}
                     placeholder={t.villagePlaceholder}
-                    className="flex-1 min-w-0 min-h-[52px] rounded-[14px] border-[1.5px] border-[#B8B1A0] bg-white px-4 text-[17px] text-[#17251C]"
+                    className="flex-1 min-w-0 min-h-[52px] rounded-[14px] border-[1.5px] border-[var(--tp-bd-B8B1A0)] bg-[var(--tp-bg-FFFFFF)] px-4 text-[17px] text-[var(--tp-fg-17251C)]"
                   />
                   <button
                     type="button"
                     onClick={() => handleVillageSearch()}
                     disabled={searchingVillage}
                     aria-label="Search village"
-                    className="min-h-[52px] px-4 rounded-[14px] border-[1.5px] border-[#B8B1A0] bg-[#F6F4EE] text-[#17251C] font-bold flex items-center justify-center"
+                    className="min-h-[52px] px-4 rounded-[14px] border-[1.5px] border-[var(--tp-bd-B8B1A0)] bg-[var(--tp-bg-F6F4EE)] text-[var(--tp-fg-17251C)] font-bold flex items-center justify-center"
                   >
                     {searchingVillage ? (
                       <Loader2 className="w-5 h-5 animate-spin" />
@@ -547,7 +547,7 @@ export function ThreeStepFarmWizard({
             </div>
 
             {gpsStatus && (
-              <p className="m-0 text-[15px] font-bold text-[#1F4D28] bg-[#E3EFE2] rounded-[12px] px-4 py-2.5">
+              <p className="m-0 text-[15px] font-bold text-[var(--tp-fg-1F4D28)] bg-[var(--tp-bg-E3EFE2)] rounded-[12px] px-4 py-2.5">
                 {gpsStatus}
               </p>
             )}
@@ -564,7 +564,7 @@ export function ThreeStepFarmWizard({
                       setLocality(hit.display_name.split(",")[0] ?? "");
                       setVillageHits([]);
                     }}
-                    className="min-h-[44px] px-3.5 rounded-full border border-[#B8B1A0] bg-[#F6F4EE] text-[14px] text-[#17251C]"
+                    className="min-h-[44px] px-3.5 rounded-full border border-[var(--tp-bd-B8B1A0)] bg-[var(--tp-bg-F6F4EE)] text-[14px] text-[var(--tp-fg-17251C)]"
                   >
                     {hit.display_name.split(",").slice(0, 2).join(", ")}
                   </button>
@@ -575,7 +575,7 @@ export function ThreeStepFarmWizard({
             {/* Farm Name, Governorate, Area (with step="any"!) */}
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
               <div className="flex flex-col gap-1">
-                <label htmlFor="farm-name" className="text-[15px] font-bold text-[#17251C]">
+                <label htmlFor="farm-name" className="text-[15px] font-bold text-[var(--tp-fg-17251C)]">
                   Farm name
                 </label>
                 <input
@@ -583,12 +583,12 @@ export function ThreeStepFarmWizard({
                   type="text"
                   value={name}
                   onChange={(e) => setName(e.target.value)}
-                  className="min-h-[48px] rounded-[12px] border-[1.5px] border-[#B8B1A0] bg-white px-3.5 text-[16px]"
+                  className="min-h-[48px] rounded-[12px] border-[1.5px] border-[var(--tp-bd-B8B1A0)] bg-[var(--tp-bg-FFFFFF)] px-3.5 text-[16px]"
                 />
               </div>
 
               <div className="flex flex-col gap-1">
-                <label htmlFor="farm-area" className="text-[15px] font-bold text-[#17251C]">
+                <label htmlFor="farm-area" className="text-[15px] font-bold text-[var(--tp-fg-17251C)]">
                   Size (hectares)
                 </label>
                 <input
@@ -598,12 +598,12 @@ export function ThreeStepFarmWizard({
                   min="0.01"
                   value={areaHectares}
                   onChange={(e) => setAreaHectares(Number(e.target.value) || 0)}
-                  className="min-h-[48px] rounded-[12px] border-[1.5px] border-[#B8B1A0] bg-white px-3.5 text-[16px]"
+                  className="min-h-[48px] rounded-[12px] border-[1.5px] border-[var(--tp-bd-B8B1A0)] bg-[var(--tp-bg-FFFFFF)] px-3.5 text-[16px]"
                 />
               </div>
 
               <div className="flex flex-col gap-1">
-                <label htmlFor="farm-gov" className="text-[15px] font-bold text-[#17251C]">
+                <label htmlFor="farm-gov" className="text-[15px] font-bold text-[var(--tp-fg-17251C)]">
                   Region / Governorate
                 </label>
                 <select
@@ -618,7 +618,7 @@ export function ThreeStepFarmWizard({
                       setCenterLon(coord.lon);
                     }
                   }}
-                  className="min-h-[48px] rounded-[12px] border-[1.5px] border-[#B8B1A0] bg-white px-3 text-[16px]"
+                  className="min-h-[48px] rounded-[12px] border-[1.5px] border-[var(--tp-bd-B8B1A0)] bg-[var(--tp-bg-FFFFFF)] px-3 text-[16px]"
                 >
                   {TUNISIA_GOVERNORATE_COORDS.map((g) => (
                     <option key={g.name} value={g.name}>
@@ -639,8 +639,8 @@ export function ThreeStepFarmWizard({
                   className={cn(
                     "min-h-[44px] px-4 rounded-full border-[1.5px] text-[15px] font-bold",
                     mapMode === "DROP_PIN"
-                      ? "bg-[#2E6B3A] text-white border-[#2E6B3A]"
-                      : "bg-white text-[#17251C] border-[#B8B1A0]"
+                      ? "bg-[var(--tp-bg-2E6B3A)] text-white border-[var(--tp-bd-2E6B3A)]"
+                      : "bg-[var(--tp-bg-FFFFFF)] text-[var(--tp-fg-17251C)] border-[var(--tp-bd-B8B1A0)]"
                   )}
                 >
                   {mapMode === "DROP_PIN" ? "Tap map to set spot…" : "Move pin on map"}
@@ -653,15 +653,15 @@ export function ThreeStepFarmWizard({
                   className={cn(
                     "min-h-[44px] px-4 rounded-full border-[1.5px] text-[15px] font-bold",
                     mapMode === "DRAW_BOUNDARY"
-                      ? "bg-[#2E6B3A] text-white border-[#2E6B3A]"
-                      : "bg-white text-[#17251C] border-[#B8B1A0]"
+                      ? "bg-[var(--tp-bg-2E6B3A)] text-white border-[var(--tp-bd-2E6B3A)]"
+                      : "bg-[var(--tp-bg-FFFFFF)] text-[var(--tp-fg-17251C)] border-[var(--tp-bd-B8B1A0)]"
                   )}
                 >
                   {mapMode === "DRAW_BOUNDARY" ? "Tap corners on map…" : "Draw land shape (optional)"}
                 </button>
               </div>
 
-              <div className="h-[260px] lg:h-[360px] rounded-[18px] overflow-hidden border-[1.5px] border-[#E4DFD2]">
+              <div className="h-[260px] lg:h-[360px] rounded-[18px] overflow-hidden border-[1.5px] border-[var(--tp-bd-E4DFD2)]">
                 <InteractiveFarmMap
                   centerLat={centerLat}
                   centerLon={centerLon}
@@ -699,45 +699,45 @@ export function ThreeStepFarmWizard({
                 />
               </div>
 
-              <figcaption className="bg-[#F6F4EE] border border-[#E4DFD2] rounded-[12px] px-3.5 py-2.5 text-[15px] text-[#17251C]">
+              <figcaption className="bg-[var(--tp-bg-F6F4EE)] border border-[var(--tp-bd-E4DFD2)] rounded-[12px] px-3.5 py-2.5 text-[15px] text-[var(--tp-fg-17251C)]">
                 Your farm: about <b>{Number(areaHectares.toFixed(1))} {t.hectaresFull}</b>. Drag the corners if the shape is wrong.{" "}
-                <span className="text-[#4A5A4F]">(Optional)</span>
+                <span className="text-[var(--tp-fg-4A5A4F)]">(Optional)</span>
               </figcaption>
             </figure>
 
             {/* Collapsed optional exact coordinates with step="any" */}
-            <details className="text-[15px] text-[#4A5A4F]">
-              <summary className="min-h-[44px] flex items-center cursor-pointer font-bold text-[#1D4F91]">
+            <details className="text-[15px] text-[var(--tp-fg-4A5A4F)]">
+              <summary className="min-h-[44px] flex items-center cursor-pointer font-bold text-[var(--tp-fg-1D4F91)]">
                 {t.skipIfDontKnow}: type GPS coordinates or country
               </summary>
               <div className="pt-2 grid grid-cols-1 sm:grid-cols-3 gap-3">
-                <label className="flex flex-col gap-1 text-[#17251C]">
+                <label className="flex flex-col gap-1 text-[var(--tp-fg-17251C)]">
                   <span className="font-bold">Latitude</span>
                   <input
                     type="number"
                     step="any"
                     value={centerLat}
                     onChange={(e) => setCenterLat(Number(e.target.value) || 0)}
-                    className="min-h-[44px] rounded-[12px] border border-[#B8B1A0] px-3 text-[16px]"
+                    className="min-h-[44px] rounded-[12px] border border-[var(--tp-bd-B8B1A0)] px-3 text-[16px]"
                   />
                 </label>
-                <label className="flex flex-col gap-1 text-[#17251C]">
+                <label className="flex flex-col gap-1 text-[var(--tp-fg-17251C)]">
                   <span className="font-bold">Longitude</span>
                   <input
                     type="number"
                     step="any"
                     value={centerLon}
                     onChange={(e) => setCenterLon(Number(e.target.value) || 0)}
-                    className="min-h-[44px] rounded-[12px] border border-[#B8B1A0] px-3 text-[16px]"
+                    className="min-h-[44px] rounded-[12px] border border-[var(--tp-bd-B8B1A0)] px-3 text-[16px]"
                   />
                 </label>
-                <label className="flex flex-col gap-1 text-[#17251C]">
+                <label className="flex flex-col gap-1 text-[var(--tp-fg-17251C)]">
                   <span className="font-bold">Country</span>
                   <input
                     type="text"
                     value={country}
                     onChange={(e) => setCountry(e.target.value)}
-                    className="min-h-[44px] rounded-[12px] border border-[#B8B1A0] px-3 text-[16px]"
+                    className="min-h-[44px] rounded-[12px] border border-[var(--tp-bd-B8B1A0)] px-3 text-[16px]"
                   />
                 </label>
               </div>
@@ -748,7 +748,7 @@ export function ThreeStepFarmWizard({
                 <button
                   type="button"
                   onClick={onCancel}
-                  className="min-h-[54px] px-6 rounded-full border-[1.5px] border-[#B8B1A0] bg-white text-[17px] font-bold text-[#17251C]"
+                  className="min-h-[54px] px-6 rounded-full border-[1.5px] border-[var(--tp-bd-B8B1A0)] bg-[var(--tp-bg-FFFFFF)] text-[17px] font-bold text-[var(--tp-fg-17251C)]"
                 >
                   {mode === "onboarding" ? "Later" : "Cancel"}
                 </button>
@@ -756,7 +756,7 @@ export function ThreeStepFarmWizard({
               <button
                 type="button"
                 onClick={() => goNext(2)}
-                className="min-h-[54px] px-7 rounded-full bg-[#17251C] text-white text-[17px] font-bold inline-flex items-center gap-2"
+                className="min-h-[54px] px-7 rounded-full bg-[var(--tp-bg-17251C)] text-[var(--tp-on-inverse)] text-[17px] font-bold inline-flex items-center gap-2"
               >
                 <span>Next: {t.step2WhatGrow.toLowerCase()}</span>
                 <ChevronRight className={cn("w-5 h-5", isRtl && "rotate-180")} />
@@ -768,8 +768,8 @@ export function ThreeStepFarmWizard({
         {step === 2 && (
           <>
             <div className="flex items-center gap-2.5">
-              <Sprout className="w-7 h-7 text-[#2E6B3A]" />
-              <h2 className="m-0 text-[26px] font-bold text-[#17251C]">
+              <Sprout className="w-7 h-7 text-[var(--tp-fg-2E6B3A)]" />
+              <h2 className="m-0 text-[26px] font-bold text-[var(--tp-fg-17251C)]">
                 What do you grow?
               </h2>
             </div>
@@ -784,7 +784,7 @@ export function ThreeStepFarmWizard({
                 value={cropSearch}
                 onChange={(e) => setCropSearch(e.target.value)}
                 placeholder="Olive, Citrus, Tomato, Wheat, Dates…"
-                className="min-h-[52px] rounded-[14px] border-[1.5px] border-[#B8B1A0] px-4 text-[17px]"
+                className="min-h-[52px] rounded-[14px] border-[1.5px] border-[var(--tp-bd-B8B1A0)] px-4 text-[17px]"
               />
             </div>
 
@@ -799,12 +799,12 @@ export function ThreeStepFarmWizard({
                     className={cn(
                       "min-h-[52px] rounded-[14px] px-3.5 py-2.5 text-start border-[1.5px] transition-colors flex flex-col gap-0.5",
                       selected
-                        ? "bg-[#E3EFE2] border-2 border-[#2E6B3A] text-[#1F4D28]"
-                        : "bg-white border-[#E4DFD2] text-[#17251C] hover:bg-[#F6F4EE]"
+                        ? "bg-[var(--tp-bg-E3EFE2)] border-2 border-[var(--tp-bd-2E6B3A)] text-[var(--tp-fg-1F4D28)]"
+                        : "bg-[var(--tp-bg-FFFFFF)] border-[var(--tp-bd-E4DFD2)] text-[var(--tp-fg-17251C)] hover:bg-[var(--tp-bg-F6F4EE)]"
                     )}
                   >
                     <b className="text-[16px]">{cropLabel(crop.name, crop.code)}</b>
-                    <span className="text-[13px] text-[#4A5A4F]">
+                    <span className="text-[13px] text-[var(--tp-fg-4A5A4F)]">
                       {crop.droughtTolerance} drought tolerance
                     </span>
                   </button>
@@ -814,13 +814,13 @@ export function ThreeStepFarmWizard({
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-1">
               <label className="flex flex-col gap-1">
-                <span className="text-[15px] font-bold text-[#17251C]">
+                <span className="text-[15px] font-bold text-[var(--tp-fg-17251C)]">
                   Planting start month
                 </span>
                 <select
                   value={plantingMonth}
                   onChange={(e) => setPlantingMonth(Number(e.target.value))}
-                  className="min-h-[48px] rounded-[12px] border-[1.5px] border-[#B8B1A0] bg-white px-3 text-[16px]"
+                  className="min-h-[48px] rounded-[12px] border-[1.5px] border-[var(--tp-bd-B8B1A0)] bg-[var(--tp-bg-FFFFFF)] px-3 text-[16px]"
                 >
                   {Array.from({ length: 12 }, (_, idx) => (
                     <option key={idx + 1} value={idx + 1}>
@@ -831,13 +831,13 @@ export function ThreeStepFarmWizard({
               </label>
 
               <label className="flex flex-col gap-1">
-                <span className="text-[15px] font-bold text-[#17251C]">
+                <span className="text-[15px] font-bold text-[var(--tp-fg-17251C)]">
                   Soil feel ({t.skipIfDontKnow})
                 </span>
                 <select
                   value={soilTexture}
                   onChange={(e) => setSoilTexture(e.target.value as SoilTextureClass)}
-                  className="min-h-[48px] rounded-[12px] border-[1.5px] border-[#B8B1A0] bg-white px-3 text-[16px]"
+                  className="min-h-[48px] rounded-[12px] border-[1.5px] border-[var(--tp-bd-B8B1A0)] bg-[var(--tp-bg-FFFFFF)] px-3 text-[16px]"
                 >
                   <option value="SANDY">Sandy (drains fast)</option>
                   <option value="SANDY_LOAM">Sandy loam</option>
@@ -853,7 +853,7 @@ export function ThreeStepFarmWizard({
               <button
                 type="button"
                 onClick={() => setStep(1)}
-                className="min-h-[54px] px-6 rounded-full border-[1.5px] border-[#B8B1A0] bg-white text-[17px] font-bold inline-flex items-center gap-2"
+                className="min-h-[54px] px-6 rounded-full border-[1.5px] border-[var(--tp-bd-B8B1A0)] bg-[var(--tp-bg-FFFFFF)] text-[17px] font-bold inline-flex items-center gap-2"
               >
                 <ChevronLeft className={cn("w-5 h-5", isRtl && "rotate-180")} />
                 <span>Back</span>
@@ -861,7 +861,7 @@ export function ThreeStepFarmWizard({
               <button
                 type="button"
                 onClick={() => goNext(3)}
-                className="min-h-[54px] px-7 rounded-full bg-[#17251C] text-white text-[17px] font-bold inline-flex items-center gap-2"
+                className="min-h-[54px] px-7 rounded-full bg-[var(--tp-bg-17251C)] text-[var(--tp-on-inverse)] text-[17px] font-bold inline-flex items-center gap-2"
               >
                 <span>Next: {t.step3Water.toLowerCase()}</span>
                 <ChevronRight className={cn("w-5 h-5", isRtl && "rotate-180")} />
@@ -873,12 +873,12 @@ export function ThreeStepFarmWizard({
         {step === 3 && (
           <>
             <div className="flex items-center gap-2.5">
-              <Droplets className="w-7 h-7 text-[#1D4F91]" />
+              <Droplets className="w-7 h-7 text-[var(--tp-fg-1D4F91)]" />
               <div className="flex flex-col">
-                <h2 className="m-0 text-[26px] font-bold text-[#17251C]">
+                <h2 className="m-0 text-[26px] font-bold text-[var(--tp-fg-17251C)]">
                   Water, pump and sun panels
                 </h2>
-                <span className="text-[15px] text-[#4A5A4F]">
+                <span className="text-[15px] text-[var(--tp-fg-4A5A4F)]">
                   {t.skipIfDontKnow} — we fill safe values labeled &ldquo;{t.ourEstimateBadge}&rdquo;.
                 </span>
               </div>
@@ -890,7 +890,7 @@ export function ThreeStepFarmWizard({
                 <select
                   value={waterSourceType}
                   onChange={(e) => setWaterSourceType(e.target.value as FarmerWaterSourceType)}
-                  className="min-h-[48px] rounded-[12px] border-[1.5px] border-[#B8B1A0] bg-white px-3 text-[16px]"
+                  className="min-h-[48px] rounded-[12px] border-[1.5px] border-[var(--tp-bd-B8B1A0)] bg-[var(--tp-bg-FFFFFF)] px-3 text-[16px]"
                 >
                   {WATER_SOURCE_OPTIONS.map((w) => (
                     <option key={w.value} value={w.value}>
@@ -906,7 +906,7 @@ export function ThreeStepFarmWizard({
                 <select
                   value={irrigationMethod}
                   onChange={(e) => setIrrigationMethod(e.target.value as IrrigationMethod)}
-                  className="min-h-[48px] rounded-[12px] border-[1.5px] border-[#B8B1A0] bg-white px-3 text-[16px]"
+                  className="min-h-[48px] rounded-[12px] border-[1.5px] border-[var(--tp-bd-B8B1A0)] bg-[var(--tp-bg-FFFFFF)] px-3 text-[16px]"
                 >
                   {(
                     Object.entries(IRRIGATION_EFFICIENCY_DEFAULTS) as Array<
@@ -922,7 +922,7 @@ export function ThreeStepFarmWizard({
             </div>
 
             {/* Pump Simple Questions */}
-            <div className="bg-[#F6F4EE] border border-[#E4DFD2] rounded-[16px] p-4 flex flex-col gap-3">
+            <div className="bg-[var(--tp-bg-F6F4EE)] border border-[var(--tp-bd-E4DFD2)] rounded-[16px] p-4 flex flex-col gap-3">
               <div className="flex flex-wrap items-center justify-between gap-2">
                 <b className="text-[17px]">Do you already have a pump?</b>
                 <div className="flex gap-2">
@@ -932,8 +932,8 @@ export function ThreeStepFarmWizard({
                     className={cn(
                       "min-h-[44px] px-4 rounded-full font-bold text-[15px] border",
                       hasPump
-                        ? "bg-[#2E6B3A] text-white border-[#2E6B3A]"
-                        : "bg-white text-[#17251C] border-[#B8B1A0]"
+                        ? "bg-[var(--tp-bg-2E6B3A)] text-white border-[var(--tp-bd-2E6B3A)]"
+                        : "bg-[var(--tp-bg-FFFFFF)] text-[var(--tp-fg-17251C)] border-[var(--tp-bd-B8B1A0)]"
                     )}
                   >
                     Yes
@@ -944,8 +944,8 @@ export function ThreeStepFarmWizard({
                     className={cn(
                       "min-h-[44px] px-4 rounded-full font-bold text-[15px] border",
                       !hasPump
-                        ? "bg-[#2E6B3A] text-white border-[#2E6B3A]"
-                        : "bg-white text-[#17251C] border-[#B8B1A0]"
+                        ? "bg-[var(--tp-bg-2E6B3A)] text-white border-[var(--tp-bd-2E6B3A)]"
+                        : "bg-[var(--tp-bg-FFFFFF)] text-[var(--tp-fg-17251C)] border-[var(--tp-bd-B8B1A0)]"
                     )}
                   >
                     No / Planning
@@ -964,7 +964,7 @@ export function ThreeStepFarmWizard({
                     placeholder={`20 (${t.ourEstimateBadge})`}
                     value={flowRateStr}
                     onChange={(e) => setFlowRateStr(e.target.value)}
-                    className="min-h-[48px] rounded-[12px] border-[1.5px] border-[#B8B1A0] bg-white px-3.5 text-[16px]"
+                    className="min-h-[48px] rounded-[12px] border-[1.5px] border-[var(--tp-bd-B8B1A0)] bg-[var(--tp-bg-FFFFFF)] px-3.5 text-[16px]"
                   />
                 </label>
 
@@ -978,14 +978,14 @@ export function ThreeStepFarmWizard({
                     placeholder={`6 (${t.ourEstimateBadge})`}
                     value={hoursStr}
                     onChange={(e) => setHoursStr(e.target.value)}
-                    className="min-h-[48px] rounded-[12px] border-[1.5px] border-[#B8B1A0] bg-white px-3.5 text-[16px]"
+                    className="min-h-[48px] rounded-[12px] border-[1.5px] border-[var(--tp-bd-B8B1A0)] bg-[var(--tp-bg-FFFFFF)] px-3.5 text-[16px]"
                   />
                 </label>
               </div>
             </div>
 
             {/* Solar Simple Questions */}
-            <div className="bg-[#F6F4EE] border border-[#E4DFD2] rounded-[16px] p-4 flex flex-col gap-3">
+            <div className="bg-[var(--tp-bg-F6F4EE)] border border-[var(--tp-bd-E4DFD2)] rounded-[16px] p-4 flex flex-col gap-3">
               <b className="text-[17px]">Do you have solar panels?</b>
               <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
                 {(
@@ -1003,8 +1003,8 @@ export function ThreeStepFarmWizard({
                     className={cn(
                       "min-h-[44px] px-3 rounded-[12px] text-[14px] font-bold border",
                       solarStatus === opt.value
-                        ? "bg-[#2E6B3A] text-white border-[#2E6B3A]"
-                        : "bg-white text-[#17251C] border-[#B8B1A0]"
+                        ? "bg-[var(--tp-bg-2E6B3A)] text-white border-[var(--tp-bd-2E6B3A)]"
+                        : "bg-[var(--tp-bg-FFFFFF)] text-[var(--tp-fg-17251C)] border-[var(--tp-bd-B8B1A0)]"
                     )}
                   >
                     {opt.label}
@@ -1022,14 +1022,14 @@ export function ThreeStepFarmWizard({
                   placeholder={`16 (${t.ourEstimateBadge})`}
                   value={panelsStr}
                   onChange={(e) => setPanelsStr(e.target.value)}
-                  className="min-h-[48px] rounded-[12px] border-[1.5px] border-[#B8B1A0] bg-white px-3.5 text-[16px]"
+                  className="min-h-[48px] rounded-[12px] border-[1.5px] border-[var(--tp-bd-B8B1A0)] bg-[var(--tp-bg-FFFFFF)] px-3.5 text-[16px]"
                 />
               </label>
             </div>
 
             {/* Collapsed Advanced Settings ("Skip if you don't know") */}
-            <details className="bg-white border border-[#E4DFD2] rounded-[16px] px-4 py-1">
-              <summary className="min-h-[48px] flex items-center cursor-pointer text-[16px] font-bold text-[#1D4F91]">
+            <details className="bg-[var(--tp-bg-FFFFFF)] border border-[var(--tp-bd-E4DFD2)] rounded-[16px] px-4 py-1">
+              <summary className="min-h-[48px] flex items-center cursor-pointer text-[16px] font-bold text-[var(--tp-fg-1D4F91)]">
                 {t.skipIfDontKnow}: pipe size, well depth, panel tilt and efficiency
               </summary>
               <div className="pb-4 pt-2 grid grid-cols-2 sm:grid-cols-3 gap-3 text-[15px]">
@@ -1041,7 +1041,7 @@ export function ThreeStepFarmWizard({
                     placeholder={t.ourEstimateBadge}
                     value={wellDepthStr}
                     onChange={(e) => setWellDepthStr(e.target.value)}
-                    className="min-h-[44px] rounded-[10px] border border-[#B8B1A0] px-3"
+                    className="min-h-[44px] rounded-[10px] border border-[var(--tp-bd-B8B1A0)] px-3"
                   />
                 </label>
                 <label className="flex flex-col gap-1">
@@ -1052,7 +1052,7 @@ export function ThreeStepFarmWizard({
                     placeholder={`18 (${t.ourEstimateBadge})`}
                     value={staticHeadStr}
                     onChange={(e) => setStaticHeadStr(e.target.value)}
-                    className="min-h-[44px] rounded-[10px] border border-[#B8B1A0] px-3"
+                    className="min-h-[44px] rounded-[10px] border border-[var(--tp-bd-B8B1A0)] px-3"
                   />
                 </label>
                 <label className="flex flex-col gap-1">
@@ -1063,7 +1063,7 @@ export function ThreeStepFarmWizard({
                     placeholder={`180 (${t.ourEstimateBadge})`}
                     value={pipeLengthStr}
                     onChange={(e) => setPipeLengthStr(e.target.value)}
-                    className="min-h-[44px] rounded-[10px] border border-[#B8B1A0] px-3"
+                    className="min-h-[44px] rounded-[10px] border border-[var(--tp-bd-B8B1A0)] px-3"
                   />
                 </label>
                 <label className="flex flex-col gap-1">
@@ -1074,7 +1074,7 @@ export function ThreeStepFarmWizard({
                     placeholder={`75 (${t.ourEstimateBadge})`}
                     value={pipeDiameterStr}
                     onChange={(e) => setPipeDiameterStr(e.target.value)}
-                    className="min-h-[44px] rounded-[10px] border border-[#B8B1A0] px-3"
+                    className="min-h-[44px] rounded-[10px] border border-[var(--tp-bd-B8B1A0)] px-3"
                   />
                 </label>
                 <label className="flex flex-col gap-1">
@@ -1085,7 +1085,7 @@ export function ThreeStepFarmWizard({
                     placeholder={`65 (${t.ourEstimateBadge})`}
                     value={pumpEfficiencyStr}
                     onChange={(e) => setPumpEfficiencyStr(e.target.value)}
-                    className="min-h-[44px] rounded-[10px] border border-[#B8B1A0] px-3"
+                    className="min-h-[44px] rounded-[10px] border border-[var(--tp-bd-B8B1A0)] px-3"
                   />
                 </label>
                 <label className="flex flex-col gap-1">
@@ -1096,7 +1096,7 @@ export function ThreeStepFarmWizard({
                     placeholder={t.ourEstimateBadge}
                     value={tiltStr}
                     onChange={(e) => setTiltStr(e.target.value)}
-                    className="min-h-[44px] rounded-[10px] border border-[#B8B1A0] px-3"
+                    className="min-h-[44px] rounded-[10px] border border-[var(--tp-bd-B8B1A0)] px-3"
                   />
                 </label>
                 <label className="flex flex-col gap-1">
@@ -1107,7 +1107,7 @@ export function ThreeStepFarmWizard({
                     placeholder="0 (South)"
                     value={azimuthStr}
                     onChange={(e) => setAzimuthStr(e.target.value)}
-                    className="min-h-[44px] rounded-[10px] border border-[#B8B1A0] px-3"
+                    className="min-h-[44px] rounded-[10px] border border-[var(--tp-bd-B8B1A0)] px-3"
                   />
                 </label>
                 <label className="flex flex-col gap-1">
@@ -1118,7 +1118,7 @@ export function ThreeStepFarmWizard({
                     placeholder={`14 (${t.ourEstimateBadge})`}
                     value={systemLossStr}
                     onChange={(e) => setSystemLossStr(e.target.value)}
-                    className="min-h-[44px] rounded-[10px] border border-[#B8B1A0] px-3"
+                    className="min-h-[44px] rounded-[10px] border border-[var(--tp-bd-B8B1A0)] px-3"
                   />
                 </label>
               </div>
@@ -1128,7 +1128,7 @@ export function ThreeStepFarmWizard({
               <button
                 type="button"
                 onClick={() => setStep(2)}
-                className="min-h-[54px] px-6 rounded-full border-[1.5px] border-[#B8B1A0] bg-white text-[17px] font-bold inline-flex items-center gap-2"
+                className="min-h-[54px] px-6 rounded-full border-[1.5px] border-[var(--tp-bd-B8B1A0)] bg-[var(--tp-bg-FFFFFF)] text-[17px] font-bold inline-flex items-center gap-2"
               >
                 <ChevronLeft className={cn("w-5 h-5", isRtl && "rotate-180")} />
                 <span>Back</span>
@@ -1137,7 +1137,7 @@ export function ThreeStepFarmWizard({
                 type="button"
                 disabled={submitting}
                 onClick={handleComplete}
-                className="min-h-[56px] px-8 rounded-full bg-[#2E6B3A] text-white text-[17px] font-bold inline-flex items-center gap-2 hover:bg-[#23542d]"
+                className="min-h-[56px] px-8 rounded-full bg-[var(--tp-bg-2E6B3A)] text-white text-[17px] font-bold inline-flex items-center gap-2 hover:bg-[var(--tp-bg-23542D)]"
               >
                 {submitting && <Loader2 className="w-5 h-5 animate-spin" />}
                 <span>{finishLabel ?? t.saveFarmBtn}</span>

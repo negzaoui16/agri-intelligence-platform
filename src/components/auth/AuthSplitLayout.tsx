@@ -20,7 +20,7 @@ export function AuthSplitLayout({
       <div className="lg:col-span-6 flex flex-col justify-center px-4 py-8 sm:px-10 lg:px-14">
         <div className="w-full max-w-md mx-auto space-y-6">
           <Link href="/login" className="inline-flex items-center gap-2.5">
-            <div className="h-10 w-10 rounded-xl bg-[#14532d] text-white flex items-center justify-center shrink-0">
+            <div className="h-10 w-10 rounded-xl bg-[var(--tp-bg-14532D)] text-white flex items-center justify-center shrink-0">
               <Sprout className="h-5 w-5" />
             </div>
             <div>
@@ -41,7 +41,7 @@ export function AuthSplitLayout({
       </div>
 
       {/* Right: Desktop Geospatial Agronomy Showcase */}
-      <div className="hidden lg:flex lg:col-span-6 bg-[#0f291e] text-emerald-50 p-12 flex-col justify-between relative overflow-hidden">
+      <div className="hidden lg:flex lg:col-span-6 bg-[var(--tp-bg-0F291E)] text-emerald-50 p-12 flex-col justify-between relative overflow-hidden">
         <div
           className="absolute inset-0 opacity-20"
           style={{
@@ -70,28 +70,28 @@ export function AuthSplitLayout({
           </p>
 
           <div className="grid grid-cols-2 gap-3 pt-2">
-            <div className="p-3.5 rounded-xl bg-white/5 border border-white/10 space-y-1">
+            <div className="p-3.5 rounded-xl bg-[var(--tp-bg-FFFFFF)]/5 border border-white/10 space-y-1">
               <Compass className="h-4 w-4 text-emerald-400" />
               <p className="text-xs font-semibold text-white">Boundary & GPS Studio</p>
               <p className="text-[11px] text-emerald-100/75">
                 Multi-pin & Turf.js area/elevation profiling
               </p>
             </div>
-            <div className="p-3.5 rounded-xl bg-white/5 border border-white/10 space-y-1">
+            <div className="p-3.5 rounded-xl bg-[var(--tp-bg-FFFFFF)]/5 border border-white/10 space-y-1">
               <Droplets className="h-4 w-4 text-sky-400" />
               <p className="text-xs font-semibold text-white">FAO-56 & HydroSHEDS</p>
               <p className="text-[11px] text-emerald-100/75">
                 Multi-crop irrigation & hydraulic pump sizing
               </p>
             </div>
-            <div className="p-3.5 rounded-xl bg-white/5 border border-white/10 space-y-1">
+            <div className="p-3.5 rounded-xl bg-[var(--tp-bg-FFFFFF)]/5 border border-white/10 space-y-1">
               <Sun className="h-4 w-4 text-amber-400" />
               <p className="text-xs font-semibold text-white">PVGIS Solar Balance</p>
               <p className="text-[11px] text-emerald-100/75">
                 Monthly yield vs. peak summer pump load
               </p>
             </div>
-            <div className="p-3.5 rounded-xl bg-white/5 border border-white/10 space-y-1">
+            <div className="p-3.5 rounded-xl bg-[var(--tp-bg-FFFFFF)]/5 border border-white/10 space-y-1">
               <Satellite className="h-4 w-4 text-emerald-300" />
               <p className="text-xs font-semibold text-white">Offline PWA Sync</p>
               <p className="text-[11px] text-emerald-100/75">

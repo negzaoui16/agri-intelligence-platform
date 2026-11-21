@@ -271,26 +271,26 @@ export default function OnboardingPage() {
 
   if (authLoading || !loaded) {
     return (
-      <div className="min-h-screen bg-[#F6F4EE] flex items-center justify-center gap-3 text-[18px] text-[#4A5A4F]">
-        <Loader2 className="w-6 h-6 animate-spin text-[#2E6B3A]" />
+      <div className="min-h-screen bg-[var(--tp-bg-F6F4EE)] flex items-center justify-center gap-3 text-[18px] text-[var(--tp-fg-4A5A4F)]">
+        <Loader2 className="w-6 h-6 animate-spin text-[var(--tp-fg-2E6B3A)]" />
         <span>Loading your farm setup…</span>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-[#F6F4EE] text-[#17251C] px-5 py-6 lg:px-10 lg:py-8">
+    <div className="min-h-screen bg-[var(--tp-bg-F6F4EE)] text-[var(--tp-fg-17251C)] px-5 py-6 lg:px-10 lg:py-8">
       <div className="max-w-[1120px] mx-auto flex flex-col gap-5">
         <header className="flex flex-wrap items-center justify-between gap-3">
           <div className="flex items-center gap-3">
-            <span className="w-10 h-10 rounded-[12px] bg-[#2E6B3A] text-white flex items-center justify-center">
+            <span className="w-10 h-10 rounded-[12px] bg-[var(--tp-bg-2E6B3A)] text-white flex items-center justify-center">
               <Sprout className="w-5 h-5" aria-hidden="true" />
             </span>
             <div>
-              <h1 className="m-0 text-[28px] lg:text-[34px] font-bold text-[#17251C] leading-tight">
+              <h1 className="m-0 text-[28px] lg:text-[34px] font-bold text-[var(--tp-fg-17251C)] leading-tight">
                 {t.addFarmTitle}
               </h1>
-              <p className="m-0 text-[16px] lg:text-[18px] text-[#4A5A4F]">
+              <p className="m-0 text-[16px] lg:text-[18px] text-[var(--tp-fg-4A5A4F)]">
                 {t.threeShortSteps}
               </p>
             </div>
@@ -299,7 +299,7 @@ export default function OnboardingPage() {
           <div className="flex items-center gap-2">
             <Link
               href="/"
-              className="min-h-[44px] px-4 rounded-full border-[1.5px] border-[#C9C3B3] bg-white text-[15px] font-bold text-[#17251C] no-underline inline-flex items-center gap-1.5"
+              className="min-h-[44px] px-4 rounded-full border-[1.5px] border-[var(--tp-bd-C9C3B3)] bg-[var(--tp-bg-FFFFFF)] text-[15px] font-bold text-[var(--tp-fg-17251C)] no-underline inline-flex items-center gap-1.5"
             >
               <ArrowLeft className={isRtl ? "w-4 h-4 rotate-180" : "w-4 h-4"} />
               <span>Later</span>
@@ -307,7 +307,7 @@ export default function OnboardingPage() {
             <button
               type="button"
               onClick={logout}
-              className="min-h-[44px] px-4 rounded-full border-[1.5px] border-[#C9C3B3] bg-white text-[15px] font-bold text-[#17251C] inline-flex items-center gap-1.5"
+              className="min-h-[44px] px-4 rounded-full border-[1.5px] border-[var(--tp-bd-C9C3B3)] bg-[var(--tp-bg-FFFFFF)] text-[15px] font-bold text-[var(--tp-fg-17251C)] inline-flex items-center gap-1.5"
             >
               <LogOut className="w-4 h-4" />
               <span>{t.signOut}</span>
@@ -316,7 +316,7 @@ export default function OnboardingPage() {
         </header>
 
         {error && (
-          <div className="bg-[#FCEFD9] border-2 border-[#E2B66B] text-[#6B3A00] rounded-[16px] px-4 py-3 text-[16px] font-bold">
+          <div className="bg-[var(--tp-bg-FCEFD9)] border-2 border-[var(--tp-bd-E2B66B)] text-[var(--tp-fg-6B3A00)] rounded-[16px] px-4 py-3 text-[16px] font-bold">
             {error}
           </div>
         )}

@@ -185,8 +185,8 @@ export default function FarmsPage() {
               className={cn(
                 "min-h-[48px] px-5 rounded-full text-[16px] font-bold inline-flex items-center gap-2",
                 creatingNew
-                  ? "border-[1.5px] border-[#B8B1A0] bg-white text-[#17251C]"
-                  : "bg-[#2E6B3A] text-white"
+                  ? "border-[1.5px] border-[var(--tp-bd-B8B1A0)] bg-[var(--tp-bg-FFFFFF)] text-[var(--tp-fg-17251C)]"
+                  : "bg-[var(--tp-bg-2E6B3A)] text-white"
               )}
             >
               <Plus className="w-5 h-5" aria-hidden="true" />
@@ -194,7 +194,7 @@ export default function FarmsPage() {
             </button>
             <Link
               href="/map"
-              className="min-h-[48px] px-4 rounded-full border-[1.5px] border-[#B8B1A0] bg-white text-[15px] font-bold text-[#17251C] no-underline inline-flex items-center gap-2"
+              className="min-h-[48px] px-4 rounded-full border-[1.5px] border-[var(--tp-bd-B8B1A0)] bg-[var(--tp-bg-FFFFFF)] text-[15px] font-bold text-[var(--tp-fg-17251C)] no-underline inline-flex items-center gap-2"
             >
               <MapIcon className="w-4 h-4" aria-hidden="true" />
               <span>Full map</span>
@@ -213,8 +213,8 @@ export default function FarmsPage() {
               className={cn(
                 "rounded-[14px] border-[1.5px] flex items-center overflow-hidden",
                 isCurrent
-                  ? "bg-[#E3EFE2] border-[#2E6B3A] text-[#1F4D28]"
-                  : "bg-white border-[#E4DFD2] text-[#17251C]"
+                  ? "bg-[var(--tp-bg-E3EFE2)] border-[var(--tp-bd-2E6B3A)] text-[var(--tp-fg-1F4D28)]"
+                  : "bg-[var(--tp-bg-FFFFFF)] border-[var(--tp-bd-E4DFD2)] text-[var(--tp-fg-17251C)]"
               )}
             >
               <button
@@ -235,7 +235,7 @@ export default function FarmsPage() {
                   type="button"
                   onClick={() => setConfirmDeleteTarget(farm)}
                   aria-label={`Delete ${farm.name}`}
-                  className="min-h-[48px] min-w-[44px] px-2.5 flex items-center justify-center text-[#8A4B00] hover:bg-[#FCEFD9] border-s border-[#E4DFD2]"
+                  className="min-h-[48px] min-w-[44px] px-2.5 flex items-center justify-center text-[var(--tp-fg-8A4B00)] hover:bg-[var(--tp-bg-FCEFD9)] border-s border-[var(--tp-bd-E4DFD2)]"
                 >
                   <Trash2 className="w-4 h-4" aria-hidden="true" />
                 </button>
@@ -250,7 +250,7 @@ export default function FarmsPage() {
             setCreatingNew(true);
             setInitialStep(1);
           }}
-          className="lg:hidden min-h-[48px] px-4 rounded-full bg-[#2E6B3A] text-white text-[15px] font-bold inline-flex items-center gap-1.5"
+          className="lg:hidden min-h-[48px] px-4 rounded-full bg-[var(--tp-bg-2E6B3A)] text-white text-[15px] font-bold inline-flex items-center gap-1.5"
         >
           <Plus className="w-4 h-4" />
           <span>{t.addFarmTitle}</span>
@@ -258,7 +258,7 @@ export default function FarmsPage() {
       </div>
 
       {savedNotice && (
-        <div className="bg-[#E3EFE2] border border-[#7FB083] text-[#1F4D28] rounded-[14px] px-4 py-3 text-[16px] font-bold">
+        <div className="bg-[var(--tp-bg-E3EFE2)] border border-[var(--tp-bd-7FB083)] text-[var(--tp-fg-1F4D28)] rounded-[14px] px-4 py-3 text-[16px] font-bold">
           {savedNotice}
         </div>
       )}
@@ -271,21 +271,21 @@ export default function FarmsPage() {
           aria-labelledby="delete-dialog-title"
           className="fixed inset-0 z-50 bg-black/50 flex items-center justify-center p-4"
         >
-          <div className="w-full max-w-md bg-white border-2 border-[#E2B66B] rounded-[20px] p-6 flex flex-col gap-4 shadow-xl">
-            <div className="flex items-center gap-2.5 text-[#8A4B00]">
+          <div className="w-full max-w-md bg-[var(--tp-bg-FFFFFF)] border-2 border-[var(--tp-bd-E2B66B)] rounded-[20px] p-6 flex flex-col gap-4 shadow-xl">
+            <div className="flex items-center gap-2.5 text-[var(--tp-fg-8A4B00)]">
               <AlertTriangle className="w-7 h-7 shrink-0" aria-hidden="true" />
               <h2 id="delete-dialog-title" className="m-0 text-[22px] font-bold">
                 Delete {confirmDeleteTarget.name}?
               </h2>
             </div>
-            <p className="m-0 text-[16px] text-[#3B3020] leading-[1.45]">
+            <p className="m-0 text-[16px] text-[var(--tp-fg-3B3020)] leading-[1.45]">
               {fmt(t.deleteFarmConfirm, { name: confirmDeleteTarget.name })}
             </p>
             <div className="flex justify-end gap-3 pt-1">
               <button
                 type="button"
                 onClick={() => setConfirmDeleteTarget(null)}
-                className="min-h-[48px] px-5 rounded-full border-[1.5px] border-[#B8B1A0] bg-white text-[16px] font-bold text-[#17251C]"
+                className="min-h-[48px] px-5 rounded-full border-[1.5px] border-[var(--tp-bd-B8B1A0)] bg-[var(--tp-bg-FFFFFF)] text-[16px] font-bold text-[var(--tp-fg-17251C)]"
               >
                 Keep farm
               </button>
@@ -293,7 +293,7 @@ export default function FarmsPage() {
                 type="button"
                 onClick={handleConfirmedDelete}
                 disabled={deleteFarm.isPending}
-                className="min-h-[48px] px-6 rounded-full bg-[#8A4B00] text-white text-[16px] font-bold"
+                className="min-h-[48px] px-6 rounded-full bg-[var(--tp-bg-8A4B00)] text-white text-[16px] font-bold"
               >
                 {deleteFarm.isPending ? "Removing…" : `Yes, delete ${confirmDeleteTarget.name}`}
               </button>

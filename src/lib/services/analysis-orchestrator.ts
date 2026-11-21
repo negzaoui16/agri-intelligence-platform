@@ -19,6 +19,7 @@ import { fetchPVGISSolarAnalysis } from "./pvgis";
 import { fetchWaPORData } from "./wapor";
 import { fetchNearbyWaterSources } from "./water-sources";
 import { selectFarmerMetrics } from "./farmer-metrics";
+import { fullEnglishMonthName } from "@/lib/i18n/translations";
 
 export async function runCompleteFarmAnalysis(
   farm: FarmRecord
@@ -180,8 +181,8 @@ export function buildFeasibilityReport(
     risks.push({
       category: "ENERGY",
       severity: "MODERATE",
-      title: `Peak-Month Solar Shortfall (${bundle.solarVsPump.worstMonthName})`,
-      detail: `Solar array covers ${bundle.solarVsPump.worstMonthCoveragePct}% of pumping energy in ${bundle.solarVsPump.worstMonthName} (deficit ${bundle.solarVsPump.worstMonthDeficitKwh} kWh). Hybrid backup, larger PV array, or water storage is needed.`,
+      title: `Peak-Month Solar Shortfall (${fullEnglishMonthName(bundle.solarVsPump.worstMonthName)})`,
+      detail: `Solar array covers ${bundle.solarVsPump.worstMonthCoveragePct}% of pumping energy in ${fullEnglishMonthName(bundle.solarVsPump.worstMonthName)} (deficit ${bundle.solarVsPump.worstMonthDeficitKwh} kWh). Hybrid backup, larger PV array, or water storage is needed.`,
     });
   }
 
@@ -231,8 +232,8 @@ export function buildFeasibilityReport(
 
   const recommendations: string[] = [
     `Water Verification: Physically inspect ${nearest ? `${nearest.name} (${nearest.distanceFromBoundaryM} m ${nearest.cardinalDirection})` : "site groundwater potential"} for seasonal flow reliability, electrical conductivity (salinity), and legal water rights before purchasing pumping equipment.`,
-    `Irrigation Design: Maintain ${farm.irrigationConfig.irrigationMethod.toLowerCase().replace("_", " ")} irrigation (${bundle.irrigation.applicationEfficiencyPct}% efficiency) targeting ${crop.name}; peak demand reaches ${bundle.irrigation.peakDailyWaterM3} m³/day in ${bundle.irrigation.peakMonthName} with an estimated ${bundle.irrigation.peakIrrigationIntervalDays}-day soil depletion interval.`,
-    `Solar-Pump Integration: The ${farm.solarConfig.capacityKwp} kWp array produces an estimated ${bundle.solar.annualKwh.toLocaleString()} kWh/yr (PVGIS), covering ${bundle.solarVsPump.annualCoveragePct}% of annual irrigation demand and ${bundle.solarVsPump.worstMonthCoveragePct}% during peak ${bundle.solarVsPump.worstMonthName}. Add a ${bundle.solarVsPump.recommendedWaterStorageTankM3} m³ buffer tank or ${bundle.solarVsPump.recommendedBatteryKwh} kWh battery bank to avoid diurnal mismatch.`,
+    `Irrigation Design: Maintain ${farm.irrigationConfig.irrigationMethod.toLowerCase().replace("_", " ")} irrigation (${bundle.irrigation.applicationEfficiencyPct}% efficiency) targeting ${crop.name}; peak demand reaches ${bundle.irrigation.peakDailyWaterM3} m³/day in ${fullEnglishMonthName(bundle.irrigation.peakMonthName)} with an estimated ${bundle.irrigation.peakIrrigationIntervalDays}-day soil depletion interval.`,
+    `Solar-Pump Integration: The ${farm.solarConfig.capacityKwp} kWp array produces an estimated ${bundle.solar.annualKwh.toLocaleString()} kWh/yr (PVGIS), covering ${bundle.solarVsPump.annualCoveragePct}% of annual irrigation demand and ${bundle.solarVsPump.worstMonthCoveragePct}% during peak ${fullEnglishMonthName(bundle.solarVsPump.worstMonthName)}. Add a ${bundle.solarVsPump.recommendedWaterStorageTankM3} m³ buffer tank or ${bundle.solarVsPump.recommendedBatteryKwh} kWh battery bank to avoid diurnal mismatch.`,
     `Top Climatic Crop Alternatives: ${bundle.cropSuitability
       .slice(0, 3)
       .map((c) => `${c.cropName} (score ${c.score}/100)`)
@@ -266,7 +267,7 @@ export function buildFeasibilityReport(
     title: `Agricultural Land, Water & Solar Feasibility Report — ${farm.name}`,
     overallScore: score,
     verdict,
-    executiveSummary: `${metrics.isWaterShort && metrics.peakDailyDemandM3 !== null ? `Yes, if you solve summer water first: water supply too small in ${metrics.peakMonthName} (${metrics.pumpDailySupplyM3} m³/day vs ${metrics.peakDailyDemandM3} m³/day needed). ` : ""}${farm.name} (${farm.areaHectares.toFixed(2)} ha at ${farm.centerLat.toFixed(4)}°, ${farm.centerLon.toFixed(4)}°, ${bundle.elevation.farmElevationM} m ASL) falls in a ${bundle.climate.aridityClass} climate (${bundle.climate.annualPrecipMm} mm/yr rainfall vs. ${bundle.climate.annualEt0Mm} mm/yr ET₀). For ${crop.name} under ${farm.irrigationConfig.irrigationMethod.toLowerCase()} irrigation, annual gross demand is ${bundle.irrigation.annualGrossVolumeM3.toLocaleString()} m³/yr. A ${farm.solarConfig.capacityKwp} kWp PV installation generates an estimated ${bundle.solar.annualKwh.toLocaleString()} kWh/yr, covering ${bundle.solarVsPump.annualCoveragePct}% of annual pump energy (${bundle.solarVsPump.worstMonthCoveragePct}% in peak ${bundle.solarVsPump.worstMonthName}).`,
+    executiveSummary: `${metrics.isWaterShort && metrics.peakDailyDemandM3 !== null ? `Yes, if you solve summer water first: water supply too small in ${metrics.peakMonthName} (${metrics.pumpDailySupplyM3} m³/day vs ${metrics.peakDailyDemandM3} m³/day needed). ` : ""}${farm.name} (${farm.areaHectares.toFixed(2)} ha at ${farm.centerLat.toFixed(4)}°, ${farm.centerLon.toFixed(4)}°, ${bundle.elevation.farmElevationM} m ASL) falls in a ${bundle.climate.aridityClass} climate (${bundle.climate.annualPrecipMm} mm/yr rainfall vs. ${bundle.climate.annualEt0Mm} mm/yr ET₀). For ${crop.name} under ${farm.irrigationConfig.irrigationMethod.toLowerCase()} irrigation, annual gross demand is ${bundle.irrigation.annualGrossVolumeM3.toLocaleString()} m³/yr. A ${farm.solarConfig.capacityKwp} kWp PV installation generates an estimated ${bundle.solar.annualKwh.toLocaleString()} kWh/yr, covering ${bundle.solarVsPump.annualCoveragePct}% of annual pump energy (${bundle.solarVsPump.worstMonthCoveragePct}% in peak ${fullEnglishMonthName(bundle.solarVsPump.worstMonthName)}).`,
     propertyOverview: {
       coordinates: { latitude: farm.centerLat, longitude: farm.centerLon },
       areaHectares: farm.areaHectares,

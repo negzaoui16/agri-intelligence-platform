@@ -1,4 +1,5 @@
 import { getCropSpec } from "@/lib/engines/fao56-calculator";
+import { fullEnglishMonthName } from "@/lib/i18n/translations";
 import type {
   CompleteFarmAnalysisBundle,
   FarmRecord,
@@ -130,7 +131,7 @@ export function selectFarmerMetrics(
   const peakDailyDemandM3 = analysis
     ? Math.round(analysis.irrigation.peakDailyWaterM3)
     : null;
-  const peakMonthName = analysis?.irrigation.peakMonthName ?? "July";
+  const peakMonthName = fullEnglishMonthName(analysis?.irrigation.peakMonthName ?? "July");
 
   const rawWaterRatio =
     peakDailyDemandM3 && peakDailyDemandM3 > 0
@@ -180,7 +181,9 @@ export function selectFarmerMetrics(
     solarAnnualKwh !== null &&
     pumpAnnualKwh !== null &&
     solarAnnualKwh >= pumpAnnualKwh;
-  const worstMonthName = analysis?.solarVsPump.worstMonthName ?? peakMonthName;
+  const worstMonthName = fullEnglishMonthName(
+    analysis?.solarVsPump.worstMonthName ?? peakMonthName
+  );
   const worstMonthCoveragePct = analysis
     ? Math.round(analysis.solarVsPump.worstMonthCoveragePct)
     : null;

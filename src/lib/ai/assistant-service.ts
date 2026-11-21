@@ -1,4 +1,5 @@
 import { getFarmById } from "@/lib/db/repository";
+import { fullEnglishMonthName } from "@/lib/i18n/translations";
 import type {
   AIChatMessageRecord,
   AIToolExecutionTrace,
@@ -288,8 +289,8 @@ async function runDeterministicToolAssistant(params: {
     paragraphs.push(
       worstPct >= 95
         ? `**About ${currentPanels} solar panels (${cap} kW) are enough for your pump all year.**`
-        : `**About ${currentPanels} panels for most of the year. About ${peakPanels} panels for ${cmp.worstMonthName}.**`,
-      `You have ${cap} kW (${currentPanels} panels of 500 W), which makes ${Math.round(sol.annualKwh).toLocaleString()} kWh a year and covers ${Math.round(cmp.annualCoveragePct)}% over the whole year. In ${cmp.worstMonthName}, sun covers ${units10} of every 10 units your pump needs.`,
+        : `**About ${currentPanels} panels for most of the year. About ${peakPanels} panels for ${fullEnglishMonthName(cmp.worstMonthName)}.**`,
+      `You have ${cap} kW (${currentPanels} panels of 500 W), which makes ${Math.round(sol.annualKwh).toLocaleString()} kWh a year and covers ${Math.round(cmp.annualCoveragePct)}% over the whole year. In ${fullEnglishMonthName(cmp.worstMonthName)}, sun covers ${units10} of every 10 units your pump needs.`,
       `Cheaper choice: keep ${currentPanels} panels and add a ${Math.round(cmp.recommendedWaterStorageTankM3)} m³ water tank for summer.`
     );
   } else if (wantsWaterPointCheck && ws) {
@@ -307,16 +308,16 @@ async function runDeterministicToolAssistant(params: {
     const waterShort = pumpDailyM3 < peakM3 * 0.95;
     paragraphs.push(
       waterShort
-        ? `**Your biggest risk is not having enough water in ${irr.peakMonthName}.**`
+        ? `**Your biggest risk is not having enough water in ${fullEnglishMonthName(irr.peakMonthName)}.**`
         : `**Your main risk is checking summer water reliability before spending money.**`,
       waterShort
-        ? `Your pump gives ${pumpDailyM3} m³ a day, while your ${irr.crop.name.toLowerCase()} needs ${peakM3} m³ a day in ${irr.peakMonthName}. Get a bigger pump, pump more hours a day, or add a second water source.`
+        ? `Your pump gives ${pumpDailyM3} m³ a day, while your ${irr.crop.name.toLowerCase()} needs ${peakM3} m³ a day in ${fullEnglishMonthName(irr.peakMonthName)}. Get a bigger pump, pump more hours a day, or add a second water source.`
         : `Your land has ${cl ? `${Math.round(cl.annualPrecipMm)} mm of rain a year` : "dry summer months"}, so inspect water salinity and test soil drainage before planting.`
     );
   } else if (wantsPlanting && irr) {
     paragraphs.push(
       `**Plant in spring or early autumn when temperatures are mild and summer heat has not peaked yet.**`,
-      `Your ${irr.crop.name.toLowerCase()} drinks the most water in ${irr.peakMonthName} (about ${Math.round(irr.peakDailyWaterM3)} m³ a day across ${irr.irrigatedAreaHa.toFixed(1)} hectares). Planting before peak summer heat helps roots settle before dry weather starts.`
+      `Your ${irr.crop.name.toLowerCase()} drinks the most water in ${fullEnglishMonthName(irr.peakMonthName)} (about ${Math.round(irr.peakDailyWaterM3)} m³ a day across ${irr.irrigatedAreaHa.toFixed(1)} hectares). Planting before peak summer heat helps roots settle before dry weather starts.`
     );
   } else if (wantsCrop && irr) {
     const targetName = irr.crop.name.toLowerCase();
@@ -324,15 +325,15 @@ async function runDeterministicToolAssistant(params: {
     paragraphs.push(
       topMatch && topMatch.score >= 70
         ? `**Yes, your land and climate are good for ${targetName} (${topMatch.rating.toLowerCase()} match), as long as you have summer water.**`
-        : `**${irr.crop.name} can grow here, but check water supply in ${irr.peakMonthName} first.**`,
-      `In ${irr.peakMonthName}, ${irr.irrigatedAreaHa.toFixed(1)} hectares of ${targetName} need about ${Math.round(irr.peakDailyWaterM3)} m³ of water a day. ${topCrops.length ? `Top low-water choices for your climate: ${topCrops.slice(0, 3).map((c) => c.cropName).join(", ")}.` : ""}`
+        : `**${irr.crop.name} can grow here, but check water supply in ${fullEnglishMonthName(irr.peakMonthName)} first.**`,
+      `In ${fullEnglishMonthName(irr.peakMonthName)}, ${irr.irrigatedAreaHa.toFixed(1)} hectares of ${targetName} need about ${Math.round(irr.peakDailyWaterM3)} m³ of water a day. ${topCrops.length ? `Top low-water choices for your climate: ${topCrops.slice(0, 3).map((c) => c.cropName).join(", ")}.` : ""}`
     );
   } else if (wantsWater && irr) {
     const peakM3 = Math.round(irr.peakDailyWaterM3);
     paragraphs.push(
       pumpDailyM3 < peakM3 * 0.95
-        ? `**Not in ${irr.peakMonthName}: your pump gives ${pumpDailyM3} m³ a day, but your crops need ${peakM3} m³ a day.**`
-        : `**Yes, your pump (${pumpDailyM3} m³ a day) covers peak demand (${peakM3} m³ a day) in ${irr.peakMonthName}.**`,
+        ? `**Not in ${fullEnglishMonthName(irr.peakMonthName)}: your pump gives ${pumpDailyM3} m³ a day, but your crops need ${peakM3} m³ a day.**`
+        : `**Yes, your pump (${pumpDailyM3} m³ a day) covers peak demand (${peakM3} m³ a day) in ${fullEnglishMonthName(irr.peakMonthName)}.**`,
       ws?.nearestSource
         ? `The closest water point on the map is "${ws.nearestSource.name}" (${ws.nearestSource.distanceFromCentroidM} m away). Always visit it before buying a pump.`
         : "No mapped water source appeared within 10 km, so rely on verified on-site well yield."

@@ -15,6 +15,7 @@ import {
   Tractor,
   WifiOff,
 } from "lucide-react";
+import { ThemeToggle } from "@/components/farmer/FarmerUI";
 import { useLanguage } from "@/components/i18n/LanguageProvider";
 import { Button } from "@/components/ui/primitives";
 import { useAuthSession } from "@/hooks/useAuth";
@@ -136,33 +137,33 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   };
 
   return (
-    <div className="min-h-screen flex flex-col lg:flex-row bg-[#F6F4EE] text-[#17251C]">
+    <div className="min-h-screen flex flex-col lg:flex-row bg-[var(--tp-bg-F6F4EE)] text-[var(--tp-fg-17251C)]">
       {/* Desktop Left Sidebar */}
-      <aside className="no-print hidden lg:flex lg:w-[256px] lg:flex-col lg:fixed lg:inset-y-0 lg:start-0 border-e-[1.5px] border-[#E4DFD2] bg-white z-30 px-[18px] py-6 gap-[22px]">
+      <aside className="no-print hidden lg:flex lg:w-[256px] lg:flex-col lg:fixed lg:inset-y-0 lg:start-0 border-e-[1.5px] border-[var(--tp-bd-E4DFD2)] bg-[var(--tp-bg-FFFFFF)] z-30 px-[18px] py-6 gap-[22px]">
         {/* Logo */}
         <div className="flex items-center gap-2.5">
-          <span className="w-10 h-10 rounded-[12px] bg-[#2E6B3A] text-white flex items-center justify-center shrink-0">
+          <span className="w-10 h-10 rounded-[12px] bg-[var(--tp-bg-2E6B3A)] text-white flex items-center justify-center shrink-0">
             <Sprout className="w-[22px] h-[22px]" aria-hidden="true" />
           </span>
-          <b className="text-[20px] font-bold tracking-tight text-[#17251C]">
+          <b className="text-[20px] font-bold tracking-tight text-[var(--tp-fg-17251C)]">
             {t.appName}
           </b>
         </div>
 
         {/* Active Farm Selector */}
         <div className="relative">
-          <div className="min-h-[52px] rounded-[14px] border-[1.5px] border-[#C9C3B3] bg-[#F6F4EE] px-3.5 py-2 flex items-center justify-between gap-2 pointer-events-none">
+          <div className="min-h-[52px] rounded-[14px] border-[1.5px] border-[var(--tp-bd-C9C3B3)] bg-[var(--tp-bg-F6F4EE)] px-3.5 py-2 flex items-center justify-between gap-2 pointer-events-none">
             <span className="min-w-0 flex flex-col text-start">
-              <span className="text-[16px] font-bold text-[#17251C] truncate">
+              <span className="text-[16px] font-bold text-[var(--tp-fg-17251C)] truncate">
                 {activeFarm ? activeFarm.name : t.addFarmTitle}
               </span>
-              <span className="text-[13px] text-[#4A5A4F] truncate">
+              <span className="text-[13px] text-[var(--tp-fg-4A5A4F)] truncate">
                 {activeFarm
                   ? `${Number(activeFarm.areaHectares.toFixed(1))} ${t.hectaresShort} · ${t.changeFarm}`
                   : t.threeShortSteps}
               </span>
             </span>
-            <ChevronDown className="w-[18px] h-[18px] text-[#17251C] shrink-0" aria-hidden="true" />
+            <ChevronDown className="w-[18px] h-[18px] text-[var(--tp-fg-17251C)] shrink-0" aria-hidden="true" />
           </div>
           <select
             aria-label={t.changeFarm}
@@ -195,14 +196,14 @@ export function AppShell({ children }: { children: React.ReactNode }) {
                 className={cn(
                   "min-h-[48px] rounded-[12px] px-3.5 flex items-center gap-3 text-[17px] transition-colors",
                   active
-                    ? "bg-[#E3EFE2] text-[#1F4D28] font-bold"
-                    : "text-[#17251C] font-normal hover:bg-[#F6F4EE]"
+                    ? "bg-[var(--tp-bg-E3EFE2)] text-[var(--tp-fg-1F4D28)] font-bold"
+                    : "text-[var(--tp-fg-17251C)] font-normal hover:bg-[var(--tp-bg-F6F4EE)]"
                 )}
               >
                 <Icon
                   className={cn(
                     "w-[22px] h-[22px] shrink-0",
-                    active ? "text-[#1F4D28]" : "text-[#4A5A4F]"
+                    active ? "text-[var(--tp-fg-1F4D28)]" : "text-[var(--tp-fg-4A5A4F)]"
                   )}
                   aria-hidden="true"
                 />
@@ -214,7 +215,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
 
         {/* CHECK Group (Water, Sun power, Weather) */}
         <div className="flex flex-col gap-1">
-          <span className="text-[13px] font-bold text-[#4A5A4F] tracking-[0.06em] px-3.5 uppercase">
+          <span className="text-[13px] font-bold text-[var(--tp-fg-4A5A4F)] tracking-[0.06em] px-3.5 uppercase">
             {t.navCheckGroup}
           </span>
           <Link
@@ -223,15 +224,15 @@ export function AppShell({ children }: { children: React.ReactNode }) {
             className={cn(
               "min-h-[44px] rounded-[12px] px-3.5 flex items-center justify-between gap-2 text-[16px] transition-colors",
               pathname === "/water"
-                ? "bg-[#E6EEF9] text-[#123766] font-bold"
-                : "text-[#17251C] hover:bg-[#F6F4EE]"
+                ? "bg-[var(--tp-bg-E6EEF9)] text-[var(--tp-fg-123766)] font-bold"
+                : "text-[var(--tp-fg-17251C)] hover:bg-[var(--tp-bg-F6F4EE)]"
             )}
           >
             <span>{t.navWater}</span>
             <span
               className={cn(
                 "text-[13px] font-bold whitespace-nowrap",
-                metrics?.waterStatus === "PROBLEM" ? "text-[#8A4B00]" : "text-[#2E6B3A]"
+                metrics?.waterStatus === "PROBLEM" ? "text-[var(--tp-fg-8A4B00)]" : "text-[var(--tp-fg-2E6B3A)]"
               )}
             >
               {waterStatusText}
@@ -244,15 +245,15 @@ export function AppShell({ children }: { children: React.ReactNode }) {
             className={cn(
               "min-h-[44px] rounded-[12px] px-3.5 flex items-center justify-between gap-2 text-[16px] transition-colors",
               pathname === "/solar"
-                ? "bg-[#F6ECD6] text-[#5B3A00] font-bold"
-                : "text-[#17251C] hover:bg-[#F6F4EE]"
+                ? "bg-[var(--tp-bg-F6ECD6)] text-[var(--tp-fg-5B3A00)] font-bold"
+                : "text-[var(--tp-fg-17251C)] hover:bg-[var(--tp-bg-F6F4EE)]"
             )}
           >
             <span>{t.navSunPower}</span>
             <span
               className={cn(
                 "text-[13px] font-bold whitespace-nowrap",
-                metrics?.isSolarShortInSummer ? "text-[#8A4B00]" : "text-[#2E6B3A]"
+                metrics?.isSolarShortInSummer ? "text-[var(--tp-fg-8A4B00)]" : "text-[var(--tp-fg-2E6B3A)]"
               )}
             >
               {sunStatusText}
@@ -265,15 +266,15 @@ export function AppShell({ children }: { children: React.ReactNode }) {
             className={cn(
               "min-h-[44px] rounded-[12px] px-3.5 flex items-center justify-between gap-2 text-[16px] transition-colors",
               pathname === "/environmental"
-                ? "bg-[#E3EFE2] text-[#1F4D28] font-bold"
-                : "text-[#17251C] hover:bg-[#F6F4EE]"
+                ? "bg-[var(--tp-bg-E3EFE2)] text-[var(--tp-fg-1F4D28)] font-bold"
+                : "text-[var(--tp-fg-17251C)] hover:bg-[var(--tp-bg-F6F4EE)]"
             )}
           >
             <span>{t.navWeather}</span>
             <span
               className={cn(
                 "text-[13px] font-bold whitespace-nowrap",
-                metrics?.hasAnyWeatherAlert ? "text-[#8A4B00]" : "text-[#2E6B3A]"
+                metrics?.hasAnyWeatherAlert ? "text-[var(--tp-fg-8A4B00)]" : "text-[var(--tp-fg-2E6B3A)]"
               )}
             >
               {weatherStatusText}
@@ -284,7 +285,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
         {/* Footer Controls */}
         <div className="mt-auto flex flex-col gap-3">
           {(!isOnline || pendingSyncCount > 0) && (
-            <div className="rounded-[12px] border border-[#E2B66B] bg-[#FCEFD9] px-3 py-2 flex items-center justify-between gap-2 text-[14px] text-[#6B3A00]">
+            <div className="rounded-[12px] border border-[var(--tp-bd-E2B66B)] bg-[var(--tp-bg-FCEFD9)] px-3 py-2 flex items-center justify-between gap-2 text-[14px] text-[var(--tp-fg-6B3A00)]">
               <span className="inline-flex items-center gap-1.5 font-bold">
                 <WifiOff className="w-4 h-4 shrink-0" />
                 {!isOnline ? "Offline" : `${pendingSyncCount} saved`}
@@ -303,8 +304,8 @@ export function AppShell({ children }: { children: React.ReactNode }) {
           )}
 
           {user && (
-            <div className="pt-2 border-t border-[#E4DFD2] flex items-center justify-between gap-2">
-              <span className="text-[14px] text-[#4A5A4F] truncate">
+            <div className="pt-2 border-t border-[var(--tp-bd-E4DFD2)] flex items-center justify-between gap-2">
+              <span className="text-[14px] text-[var(--tp-fg-4A5A4F)] truncate">
                 {farmerProfile
                   ? `${farmerProfile.firstName} ${farmerProfile.lastName}`.trim()
                   : user.name}
@@ -314,47 +315,49 @@ export function AppShell({ children }: { children: React.ReactNode }) {
                 onClick={logout}
                 aria-label={t.signOut}
                 title={t.signOut}
-                className="min-h-[44px] min-w-[44px] rounded-full flex items-center justify-center text-[#4A5A4F] hover:bg-[#F6F4EE] hover:text-[#17251C]"
+                className="min-h-[44px] min-w-[44px] rounded-full flex items-center justify-center text-[var(--tp-fg-4A5A4F)] hover:bg-[var(--tp-bg-F6F4EE)] hover:text-[var(--tp-fg-17251C)]"
               >
                 <LogOut className="w-4 h-4" />
               </button>
             </div>
           )}
 
+          <ThemeToggle />
+
           {/* Language Switcher Pill matching DeskHome.dc.html */}
           <div
             role="group"
             aria-label={t.changeLanguageLabel}
-            className="min-h-[44px] rounded-full border-[1.5px] border-[#C9C3B3] bg-white px-2 flex items-center justify-around gap-1 text-[14px] font-bold"
+            className="min-h-[44px] rounded-full border-[1.5px] border-[var(--tp-bd-C9C3B3)] bg-[var(--tp-bg-FFFFFF)] px-2 flex items-center justify-around gap-1 text-[14px] font-bold"
           >
             <button
               type="button"
               onClick={() => setLang("en")}
               className={cn(
                 "min-h-[36px] px-2.5 rounded-full transition-colors",
-                lang === "en" ? "bg-[#E3EFE2] text-[#1F4D28]" : "text-[#4A5A4F] hover:text-[#17251C]"
+                lang === "en" ? "bg-[var(--tp-bg-E3EFE2)] text-[var(--tp-fg-1F4D28)]" : "text-[var(--tp-fg-4A5A4F)] hover:text-[var(--tp-fg-17251C)]"
               )}
             >
               English
             </button>
-            <span className="text-[#C9C3B3]" aria-hidden="true">·</span>
+            <span className="text-[var(--tp-fg-C9C3B3)]" aria-hidden="true">·</span>
             <button
               type="button"
               onClick={() => setLang("ar")}
               className={cn(
                 "min-h-[36px] px-2.5 rounded-full transition-colors",
-                lang === "ar" ? "bg-[#E3EFE2] text-[#1F4D28]" : "text-[#4A5A4F] hover:text-[#17251C]"
+                lang === "ar" ? "bg-[var(--tp-bg-E3EFE2)] text-[var(--tp-fg-1F4D28)]" : "text-[var(--tp-fg-4A5A4F)] hover:text-[var(--tp-fg-17251C)]"
               )}
             >
               العربية
             </button>
-            <span className="text-[#C9C3B3]" aria-hidden="true">·</span>
+            <span className="text-[var(--tp-fg-C9C3B3)]" aria-hidden="true">·</span>
             <button
               type="button"
               onClick={() => setLang("fr")}
               className={cn(
                 "min-h-[36px] px-2.5 rounded-full transition-colors",
-                lang === "fr" ? "bg-[#E3EFE2] text-[#1F4D28]" : "text-[#4A5A4F] hover:text-[#17251C]"
+                lang === "fr" ? "bg-[var(--tp-bg-E3EFE2)] text-[var(--tp-fg-1F4D28)]" : "text-[var(--tp-fg-4A5A4F)] hover:text-[var(--tp-fg-17251C)]"
               )}
             >
               Français
@@ -367,7 +370,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
       <main className="flex-1 lg:ps-[256px] pb-[88px] lg:pb-10 min-w-0">
         {/* Offline / Sync Queue Notice on Phone or Conflicts */}
         {(!isOnline || pendingSyncCount > 0) && (
-          <div className="no-print lg:hidden bg-[#FCEFD9] border-b border-[#E2B66B] px-4 py-2 flex items-center justify-between text-[14px] text-[#6B3A00]">
+          <div className="no-print lg:hidden bg-[var(--tp-bg-FCEFD9)] border-b border-[var(--tp-bd-E2B66B)] px-4 py-2 flex items-center justify-between text-[14px] text-[var(--tp-fg-6B3A00)]">
             <span className="flex items-center gap-2 font-bold">
               <WifiOff className="w-4 h-4 shrink-0" />
               {!isOnline ? "Working offline — changes saved on phone" : `${pendingSyncCount} change(s) waiting to save`}
@@ -382,9 +385,9 @@ export function AppShell({ children }: { children: React.ReactNode }) {
         )}
 
         {conflicts.length > 0 && (
-          <div className="no-print bg-[#FCEFD9] border-b border-[#E2B66B] px-4 py-3">
+          <div className="no-print bg-[var(--tp-bg-FCEFD9)] border-b border-[var(--tp-bd-E2B66B)] px-4 py-3">
             <div className="max-w-[1080px] mx-auto flex flex-col sm:flex-row sm:items-center justify-between gap-2 text-[15px]">
-              <div className="flex items-center gap-2 text-[#6B3A00]">
+              <div className="flex items-center gap-2 text-[var(--tp-fg-6B3A00)]">
                 <AlertTriangle className="h-5 w-5 shrink-0" />
                 <span>
                   {conflicts.length} offline edit(s) differ from your saved cloud data.
@@ -422,7 +425,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
       {/* Mobile 4-Tab Bottom Navigation Bar matching Main.dc.html */}
       <nav
         aria-label="Main"
-        className="no-print lg:hidden fixed bottom-0 inset-x-0 z-30 grid grid-cols-4 bg-white border-t-[1.5px] border-[#E4DFD2] px-1.5 pt-1.5 pb-[max(12px,env(safe-area-inset-bottom))]"
+        className="no-print lg:hidden fixed bottom-0 inset-x-0 z-30 grid grid-cols-4 bg-[var(--tp-bg-FFFFFF)] border-t-[1.5px] border-[var(--tp-bd-E4DFD2)] px-1.5 pt-1.5 pb-[max(12px,env(safe-area-inset-bottom))]"
       >
         {primaryNav.map((item) => {
           const Icon = item.icon;
@@ -434,13 +437,13 @@ export function AppShell({ children }: { children: React.ReactNode }) {
               aria-current={active ? "page" : undefined}
               className={cn(
                 "min-h-[56px] flex flex-col items-center justify-center gap-1 rounded-[12px] text-[14px] transition-colors",
-                active ? "text-[#2E6B3A] font-bold" : "text-[#4A5A4F] font-normal"
+                active ? "text-[var(--tp-fg-2E6B3A)] font-bold" : "text-[var(--tp-fg-4A5A4F)] font-normal"
               )}
             >
               <Icon
                 className={cn(
                   "w-[26px] h-[26px]",
-                  active ? "text-[#2E6B3A]" : "text-[#4A5A4F]"
+                  active ? "text-[var(--tp-fg-2E6B3A)]" : "text-[var(--tp-fg-4A5A4F)]"
                 )}
                 strokeWidth={active ? 2.2 : 1.9}
                 aria-hidden="true"

@@ -34,8 +34,8 @@ export default function WeatherPage() {
     return (
       <div className="flex flex-col gap-4">
         <FarmerPageHeader mobileLabel={t.navWeather} title={t.weatherQuestionTitle} />
-        <div className="bg-white border-[1.5px] border-[#E4DFD2] rounded-[20px] p-8 flex items-center gap-3 text-[17px] text-[#4A5A4F]">
-          <Loader2 className="w-6 h-6 animate-spin text-[#2E6B3A]" />
+        <div className="bg-[var(--tp-bg-FFFFFF)] border-[1.5px] border-[var(--tp-bd-E4DFD2)] rounded-[20px] p-8 flex items-center gap-3 text-[17px] text-[var(--tp-fg-4A5A4F)]">
+          <Loader2 className="w-6 h-6 animate-spin text-[var(--tp-fg-2E6B3A)]" />
           <span>Checking live 7-day forecast and rain…</span>
         </div>
       </div>
@@ -46,11 +46,11 @@ export default function WeatherPage() {
     return (
       <div className="flex flex-col gap-4">
         <FarmerPageHeader mobileLabel={t.navWeather} title={t.weatherQuestionTitle} />
-        <section className="bg-white border-[1.5px] border-[#E4DFD2] rounded-[20px] p-6 flex flex-col gap-3">
-          <p className="m-0 text-[18px] text-[#17251C]">{t.stepAddFarmPrompt}</p>
+        <section className="bg-[var(--tp-bg-FFFFFF)] border-[1.5px] border-[var(--tp-bd-E4DFD2)] rounded-[20px] p-6 flex flex-col gap-3">
+          <p className="m-0 text-[18px] text-[var(--tp-fg-17251C)]">{t.stepAddFarmPrompt}</p>
           <Link
             href="/farms?new=1"
-            className="min-h-[48px] px-6 rounded-full bg-[#2E6B3A] text-white font-bold text-[17px] inline-flex items-center w-fit"
+            className="min-h-[48px] px-6 rounded-full bg-[var(--tp-bg-2E6B3A)] text-white font-bold text-[17px] inline-flex items-center w-fit"
           >
             {t.addFarmTitle}
           </Link>
@@ -70,20 +70,20 @@ export default function WeatherPage() {
       <section
         className={
           m.shouldWaterToday
-            ? "bg-[#E3EFE2] border-2 border-[#7FB083] rounded-[20px] px-5 py-4 lg:px-6 lg:py-5 flex flex-col gap-2"
-            : "bg-[#E6EEF9] border-2 border-[#94B4DF] rounded-[20px] px-5 py-4 lg:px-6 lg:py-5 flex flex-col gap-2"
+            ? "bg-[var(--tp-bg-E3EFE2)] border-2 border-[var(--tp-bd-7FB083)] rounded-[20px] px-5 py-4 lg:px-6 lg:py-5 flex flex-col gap-2"
+            : "bg-[var(--tp-bg-E6EEF9)] border-2 border-[var(--tp-bd-94B4DF)] rounded-[20px] px-5 py-4 lg:px-6 lg:py-5 flex flex-col gap-2"
         }
       >
         <p
           className={
             m.shouldWaterToday
-              ? "m-0 text-[22px] lg:text-[26px] font-bold text-[#1F4D28]"
-              : "m-0 text-[22px] lg:text-[26px] font-bold text-[#123766]"
+              ? "m-0 text-[22px] lg:text-[26px] font-bold text-[var(--tp-fg-1F4D28)]"
+              : "m-0 text-[22px] lg:text-[26px] font-bold text-[var(--tp-fg-123766)]"
           }
         >
           {m.shouldWaterToday ? t.yesWaterAsNormal : t.skipRainComing}
         </p>
-        <p className="m-0 text-[16px] lg:text-[17px] leading-[1.45] text-[#22392A]">
+        <p className="m-0 text-[16px] lg:text-[17px] leading-[1.45] text-[var(--tp-fg-22392A)]">
           {m.shouldWaterToday
             ? fmt(t.soilLosesMmDay, { mm: m.todayEt0Mm })
             : fmt(t.rainComingTodayDetail, { mm: Math.round(m.todayPrecipMm) })}
@@ -91,19 +91,19 @@ export default function WeatherPage() {
       </section>
 
       {/* Next 4 Days Forecast */}
-      <section className="bg-white border-[1.5px] border-[#E4DFD2] rounded-[20px] px-5 py-3 flex flex-col">
-        <h2 className="my-2 text-[19px] lg:text-[21px] font-bold text-[#17251C]">
+      <section className="bg-[var(--tp-bg-FFFFFF)] border-[1.5px] border-[var(--tp-bd-E4DFD2)] rounded-[20px] px-5 py-3 flex flex-col">
+        <h2 className="my-2 text-[19px] lg:text-[21px] font-bold text-[var(--tp-fg-17251C)]">
           {t.next4Days}
         </h2>
         {next4Days.map((day, idx) => (
           <div
             key={day.date}
-            className="grid grid-cols-[76px_1fr_auto] items-center gap-3 py-3 border-b-[1.5px] border-[#EFEBE1] last:border-b-0"
+            className="grid grid-cols-[76px_1fr_auto] items-center gap-3 py-3 border-b-[1.5px] border-[var(--tp-bd-EFEBE1)] last:border-b-0"
           >
-            <b className="text-[17px] text-[#17251C]">
+            <b className="text-[17px] text-[var(--tp-fg-17251C)]">
               {formatShortDay(day.date, idx, t.todayLabel, lang)}
             </b>
-            <span className="text-[16px] text-[#4A5A4F]">
+            <span className="text-[16px] text-[var(--tp-fg-4A5A4F)]">
               {idx === 0 && m.weatherSummary
                 ? `${m.weatherSummary} · ${day.precipMm < 1 ? "No rain" : `${Math.round(day.precipMm)} mm`}`
                 : plainDayWeather(day.precipMm, day.et0Mm)}
@@ -116,8 +116,8 @@ export default function WeatherPage() {
       </section>
 
       {/* Plain-Word Warnings Card */}
-      <section className="bg-white border-[1.5px] border-[#E4DFD2] rounded-[20px] p-5 flex flex-col gap-3">
-        <h2 className="m-0 text-[19px] lg:text-[21px] font-bold text-[#17251C]">
+      <section className="bg-[var(--tp-bg-FFFFFF)] border-[1.5px] border-[var(--tp-bd-E4DFD2)] rounded-[20px] p-5 flex flex-col gap-3">
+        <h2 className="m-0 text-[19px] lg:text-[21px] font-bold text-[var(--tp-fg-17251C)]">
           {t.warningsTitle}
         </h2>
         <div className="flex flex-wrap gap-2">
@@ -125,8 +125,8 @@ export default function WeatherPage() {
             className={cn(
               "min-h-[36px] px-3.5 rounded-full text-[15px] font-bold inline-flex items-center",
               m.hasFrostAlert
-                ? "bg-[#FCEFD9] text-[#8A4B00]"
-                : "bg-[#E3EFE2] text-[#1F4D28]"
+                ? "bg-[var(--tp-bg-FCEFD9)] text-[var(--tp-fg-8A4B00)]"
+                : "bg-[var(--tp-bg-E3EFE2)] text-[var(--tp-fg-1F4D28)]"
             )}
           >
             {m.hasFrostAlert ? t.frostAlert : t.noFrost}
@@ -135,8 +135,8 @@ export default function WeatherPage() {
             className={cn(
               "min-h-[36px] px-3.5 rounded-full text-[15px] font-bold inline-flex items-center",
               m.hasHeatAlert
-                ? "bg-[#FCEFD9] text-[#8A4B00]"
-                : "bg-[#E3EFE2] text-[#1F4D28]"
+                ? "bg-[var(--tp-bg-FCEFD9)] text-[var(--tp-fg-8A4B00)]"
+                : "bg-[var(--tp-bg-E3EFE2)] text-[var(--tp-fg-1F4D28)]"
             )}
           >
             {m.hasHeatAlert ? t.heatAlert : t.noHeatWave}
@@ -145,19 +145,19 @@ export default function WeatherPage() {
             className={cn(
               "min-h-[36px] px-3.5 rounded-full text-[15px] font-bold inline-flex items-center",
               m.hasWindAlert
-                ? "bg-[#FCEFD9] text-[#8A4B00]"
-                : "bg-[#E3EFE2] text-[#1F4D28]"
+                ? "bg-[var(--tp-bg-FCEFD9)] text-[var(--tp-fg-8A4B00)]"
+                : "bg-[var(--tp-bg-E3EFE2)] text-[var(--tp-fg-1F4D28)]"
             )}
           >
             {m.hasWindAlert ? t.windAlert : t.noStrongWind}
           </span>
         </div>
-        <p className="m-0 text-[15px] text-[#4A5A4F]">{t.alertNoticeHint}</p>
+        <p className="m-0 text-[15px] text-[var(--tp-fg-4A5A4F)]">{t.alertNoticeHint}</p>
       </section>
 
       {/* Last Year Plain Rain Note */}
-      <p className="m-0 text-[16px] leading-[1.5] text-[#4A5A4F] px-1">
-        <b className="text-[#17251C]">{t.lastYearLabel}</b>{" "}
+      <p className="m-0 text-[16px] leading-[1.5] text-[var(--tp-fg-4A5A4F)] px-1">
+        <b className="text-[var(--tp-fg-17251C)]">{t.lastYearLabel}</b>{" "}
         {fmt(t.lastYearRainSummary, {
           annual: m.annualPrecipMm ?? 0,
           summer: m.summerPrecipMm ?? 0,
@@ -165,11 +165,11 @@ export default function WeatherPage() {
       </p>
 
       {/* Collapsed Technical Details (WaPOR, ET0, Aridity Index, DEM) */}
-      <details className="bg-white border-[1.5px] border-[#E4DFD2] rounded-[18px] px-5 py-1">
-        <summary className="min-h-[56px] flex items-center cursor-pointer text-[17px] font-bold text-[#1D4F91]">
+      <details className="bg-[var(--tp-bg-FFFFFF)] border-[1.5px] border-[var(--tp-bd-E4DFD2)] rounded-[18px] px-5 py-1">
+        <summary className="min-h-[56px] flex items-center cursor-pointer text-[17px] font-bold text-[var(--tp-fg-1D4F91)]">
           {t.forYourEngineerTitle}
         </summary>
-        <div className="pb-5 pt-1 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2.5 text-[15px] text-[#22392A]">
+        <div className="pb-5 pt-1 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2.5 text-[15px] text-[var(--tp-fg-22392A)]">
           <span>Reference ET₀: {analysis.climate.annualEt0Mm} mm/yr (Open-Meteo ERA5)</span>
           <span>Aridity index: {analysis.climate.aridityIndex} ({analysis.climate.aridityClass})</span>
           <span>Elevation: {analysis.elevation.farmElevationM} m · Slope: {analysis.elevation.estimatedSlopePct}% (Copernicus DEM)</span>

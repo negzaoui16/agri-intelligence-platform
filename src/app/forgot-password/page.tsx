@@ -171,7 +171,7 @@ export default function ForgotPasswordPage() {
 
       <p className="text-xs text-center text-muted-foreground">
         Remembered your password?{" "}
-        <Link href="/login" className="text-[#14532d] dark:text-emerald-400 font-semibold hover:underline">
+        <Link href="/login" className="text-[var(--tp-fg-14532D)] dark:text-emerald-400 font-semibold hover:underline">
           Back to Sign In
         </Link>
       </p>

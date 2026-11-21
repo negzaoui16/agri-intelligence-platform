@@ -53,7 +53,7 @@ interface SpeechRecognitionInstance {
 }
 
 export default function AskPage() {
-  const { lang, t, fmt, cropLabel } = useLanguage();
+  const { lang, t, fmt, cropLabel, monthLabel } = useLanguage();
   const { activeFarm } = useFarms();
   const { data: analysis } = useFarmAnalysis(activeFarm);
 
@@ -203,24 +203,24 @@ export default function AskPage() {
         {/* Conversation Column matching DeskAsk.dc.html */}
         <section className="flex-[3_1_520px] min-w-0 w-full flex flex-col gap-4">
           <header className="hidden lg:flex flex-col gap-1">
-            <h1 className="m-0 text-[34px] font-bold text-[#17251C] leading-[1.15]">
+            <h1 className="m-0 text-[34px] font-bold text-[var(--tp-fg-17251C)] leading-[1.15]">
               {t.askTitle}
             </h1>
-            <span className="text-[17px] text-[#4A5A4F]">{t.askSubtitle}</span>
+            <span className="text-[17px] text-[var(--tp-fg-4A5A4F)]">{t.askSubtitle}</span>
           </header>
 
           {/* Messages */}
           <div className="flex flex-col gap-3.5 min-h-[240px]">
             {messages.length === 0 && activeFarm && m && (
-              <div className="bg-white border-[1.5px] border-[#E4DFD2] rounded-[20px] p-5 flex flex-col gap-2">
-                <p className="m-0 text-[20px] font-bold text-[#17251C]">
+              <div className="bg-[var(--tp-bg-FFFFFF)] border-[1.5px] border-[var(--tp-bd-E4DFD2)] rounded-[20px] p-5 flex flex-col gap-2">
+                <p className="m-0 text-[20px] font-bold text-[var(--tp-fg-17251C)]">
                   {m.isWaterShort && m.peakDailyDemandM3 !== null
-                    ? fmt(t.waterWillBeShortInMonth, { month: m.peakMonthName })
+                    ? fmt(t.waterWillBeShortInMonth, { month: monthLabel(m.peakMonthName) })
                     : t.waterFineTitle}
                 </p>
-                <p className="m-0 text-[16px] text-[#4A5A4F] leading-[1.45]">
+                <p className="m-0 text-[16px] text-[var(--tp-fg-4A5A4F)] leading-[1.45]">
                   Ask anything about water, pumps, solar panels, crops, or weather for{" "}
-                  <b className="text-[#17251C]">{activeFarm.name}</b>. Tap a question or tap the green microphone to speak.
+                  <b className="text-[var(--tp-fg-17251C)]">{activeFarm.name}</b>. Tap a question or tap the green microphone to speak.
                 </p>
               </div>
             )}
@@ -230,7 +230,7 @@ export default function AskPage() {
                 return (
                   <div
                     key={msg.id}
-                    className="self-end max-w-[85%] lg:max-w-[70%] bg-[#17251C] text-white rounded-[20px] rounded-ee-[6px] px-4 py-3 text-[17px] lg:text-[18px] leading-[1.4]"
+                    className="self-end max-w-[85%] lg:max-w-[70%] bg-[var(--tp-bg-17251C)] text-[var(--tp-on-inverse)] rounded-[20px] rounded-ee-[6px] px-4 py-3 text-[17px] lg:text-[18px] leading-[1.4]"
                   >
                     {msg.content}
                   </div>
@@ -247,24 +247,24 @@ export default function AskPage() {
               return (
                 <div
                   key={msg.id}
-                  className="self-start max-w-[96%] lg:max-w-[88%] bg-white border-[1.5px] border-[#E4DFD2] rounded-[20px] rounded-es-[6px] px-5 py-4 flex flex-col gap-2.5"
+                  className="self-start max-w-[96%] lg:max-w-[88%] bg-[var(--tp-bg-FFFFFF)] border-[1.5px] border-[var(--tp-bd-E4DFD2)] rounded-[20px] rounded-es-[6px] px-5 py-4 flex flex-col gap-2.5"
                 >
-                  <p className="m-0 text-[20px] lg:text-[22px] font-bold leading-[1.3] text-[#17251C]">
+                  <p className="m-0 text-[20px] lg:text-[22px] font-bold leading-[1.3] text-[var(--tp-fg-17251C)]">
                     {parsed.headline}
                   </p>
 
                   {parsed.bodyParagraphs.map((para, i) => (
                     <p
                       key={i}
-                      className="m-0 text-[16px] lg:text-[17px] leading-[1.5] text-[#17251C]"
+                      className="m-0 text-[16px] lg:text-[17px] leading-[1.5] text-[var(--tp-fg-17251C)]"
                     >
                       {para}
                     </p>
                   ))}
 
                   {parsed.howWeKnow && (
-                    <details className="text-[15px] lg:text-[16px] text-[#4A5A4F]">
-                      <summary className="min-h-[44px] flex items-center cursor-pointer font-bold text-[#1D4F91]">
+                    <details className="text-[15px] lg:text-[16px] text-[var(--tp-fg-4A5A4F)]">
+                      <summary className="min-h-[44px] flex items-center cursor-pointer font-bold text-[var(--tp-fg-1D4F91)]">
                         {t.howDoWeKnowTitle}
                       </summary>
                       <span className="leading-[1.5] block pb-1">{parsed.howWeKnow}</span>
@@ -277,10 +277,10 @@ export default function AskPage() {
                       onClick={() => handleToggleSpeech(msg)}
                       aria-label={isSpeaking ? t.stopListeningBtn : "Read the answer out loud"}
                       className={cn(
-                        "min-h-[44px] px-4 rounded-full border-[1.5px] border-[#C9C3B3] text-[15px] font-bold inline-flex items-center gap-2 transition-colors",
+                        "min-h-[44px] px-4 rounded-full border-[1.5px] border-[var(--tp-bd-C9C3B3)] text-[15px] font-bold inline-flex items-center gap-2 transition-colors",
                         isSpeaking
-                          ? "bg-[#E3EFE2] text-[#1F4D28] border-[#2E6B3A]"
-                          : "bg-white text-[#17251C]"
+                          ? "bg-[var(--tp-bg-E3EFE2)] text-[var(--tp-fg-1F4D28)] border-[var(--tp-bd-2E6B3A)]"
+                          : "bg-[var(--tp-bg-FFFFFF)] text-[var(--tp-fg-17251C)]"
                       )}
                     >
                       {isSpeaking ? (
@@ -293,7 +293,7 @@ export default function AskPage() {
 
                     <Link
                       href={mentionsSolar ? "/solar" : "/water"}
-                      className="min-h-[44px] px-4 rounded-full border-[1.5px] border-[#C9C3B3] bg-white text-[15px] font-bold text-[#17251C] no-underline inline-flex items-center"
+                      className="min-h-[44px] px-4 rounded-full border-[1.5px] border-[var(--tp-bd-C9C3B3)] bg-[var(--tp-bg-FFFFFF)] text-[15px] font-bold text-[var(--tp-fg-17251C)] no-underline inline-flex items-center"
                     >
                       {mentionsSolar ? t.seeSunPowerLink : t.seeWaterLink}
                     </Link>
@@ -303,8 +303,8 @@ export default function AskPage() {
             })}
 
             {loading && (
-              <div className="self-start bg-white border-[1.5px] border-[#E4DFD2] rounded-[20px] px-5 py-4 flex items-center gap-3 text-[16px] text-[#4A5A4F]">
-                <Loader2 className="w-5 h-5 animate-spin text-[#2E6B3A]" />
+              <div className="self-start bg-[var(--tp-bg-FFFFFF)] border-[1.5px] border-[var(--tp-bd-E4DFD2)] rounded-[20px] px-5 py-4 flex items-center gap-3 text-[16px] text-[var(--tp-fg-4A5A4F)]">
+                <Loader2 className="w-5 h-5 animate-spin text-[var(--tp-fg-2E6B3A)]" />
                 <span>Checking your farm numbers…</span>
               </div>
             )}
@@ -312,14 +312,14 @@ export default function AskPage() {
 
           {/* Mobile Quick Prompts right above composer */}
           <div className="lg:hidden flex flex-col gap-2">
-            <span className="text-[15px] text-[#4A5A4F]">{t.otherFarmersAsk}:</span>
+            <span className="text-[15px] text-[var(--tp-fg-4A5A4F)]">{t.otherFarmersAsk}:</span>
             <div className="flex flex-wrap gap-2">
               {sampleQuestions.slice(0, 3).map((q) => (
                 <button
                   key={q}
                   type="button"
                   onClick={() => sendMessage(q)}
-                  className="min-h-[44px] px-3.5 rounded-full border-[1.5px] border-[#C9C3B3] bg-white text-[15px] text-[#17251C]"
+                  className="min-h-[44px] px-3.5 rounded-full border-[1.5px] border-[var(--tp-bd-C9C3B3)] bg-[var(--tp-bg-FFFFFF)] text-[15px] text-[var(--tp-fg-17251C)]"
                 >
                   {q}
                 </button>
@@ -328,7 +328,7 @@ export default function AskPage() {
           </div>
 
           {micNote && (
-            <p className="m-0 text-[15px] text-[#8A4B00] bg-[#FCEFD9] border border-[#E2B66B] rounded-[12px] px-4 py-2">
+            <p className="m-0 text-[15px] text-[var(--tp-fg-8A4B00)] bg-[var(--tp-bg-FCEFD9)] border border-[var(--tp-bd-E2B66B)] rounded-[12px] px-4 py-2">
               {micNote}
             </p>
           )}
@@ -339,7 +339,7 @@ export default function AskPage() {
               e.preventDefault();
               sendMessage(input);
             }}
-            className="flex gap-2.5 items-center bg-white border-[1.5px] border-[#E4DFD2] rounded-[34px] p-2 ps-5"
+            className="flex gap-2.5 items-center bg-[var(--tp-bg-FFFFFF)] border-[1.5px] border-[var(--tp-bd-E4DFD2)] rounded-[34px] p-2 ps-5"
           >
             <label htmlFor="farmer-question" className="sr-only">
               {t.typeYourQuestion}
@@ -350,7 +350,7 @@ export default function AskPage() {
               value={input}
               onChange={(e) => setInput(e.target.value)}
               placeholder={listening ? "Listening…" : t.typeYourQuestion}
-              className="flex-1 min-w-0 min-h-[52px] border-none bg-transparent text-[17px] lg:text-[18px] text-[#17251C] placeholder:text-[#4A5A4F] focus:outline-none"
+              className="flex-1 min-w-0 min-h-[52px] border-none bg-transparent text-[17px] lg:text-[18px] text-[var(--tp-fg-17251C)] placeholder:text-[var(--tp-fg-4A5A4F)] focus:outline-none"
             />
 
             {input.trim().length > 0 && (
@@ -358,7 +358,7 @@ export default function AskPage() {
                 type="submit"
                 disabled={loading}
                 aria-label="Send question"
-                className="w-12 h-12 rounded-full bg-[#17251C] text-white flex items-center justify-center shrink-0"
+                className="w-12 h-12 rounded-full bg-[var(--tp-bg-17251C)] text-[var(--tp-on-inverse)] flex items-center justify-center shrink-0"
               >
                 <Send className="w-5 h-5" aria-hidden="true" />
               </button>
@@ -371,8 +371,8 @@ export default function AskPage() {
               className={cn(
                 "w-[60px] h-[60px] rounded-full flex items-center justify-center shrink-0 transition-colors",
                 listening
-                  ? "bg-[#8A4B00] animate-pulse"
-                  : "bg-[#2E6B3A] hover:bg-[#23542d]"
+                  ? "bg-[var(--tp-bg-8A4B00)] animate-pulse"
+                  : "bg-[var(--tp-bg-2E6B3A)] hover:bg-[var(--tp-bg-23542D)]"
               )}
             >
               {listening ? (
@@ -387,33 +387,33 @@ export default function AskPage() {
         {/* Right Aside Panel matching DeskAsk.dc.html */}
         <aside className="flex-[1_1_280px] min-w-0 w-full flex flex-col gap-4">
           {activeFarm && m && (
-            <section className="bg-white border-[1.5px] border-[#E4DFD2] rounded-[20px] px-5 py-4.5 flex flex-col gap-2.5">
-              <h2 className="m-0 text-[19px] font-bold text-[#17251C]">
+            <section className="bg-[var(--tp-bg-FFFFFF)] border-[1.5px] border-[var(--tp-bd-E4DFD2)] rounded-[20px] px-5 py-4.5 flex flex-col gap-2.5">
+              <h2 className="m-0 text-[19px] font-bold text-[var(--tp-fg-17251C)]">
                 {t.whatIKnowAboutFarm}
               </h2>
               <dl className="m-0 grid grid-cols-[auto_1fr] gap-x-3.5 gap-y-2 text-[15px]">
-                <dt className="text-[#4A5A4F]">Land</dt>
+                <dt className="text-[var(--tp-fg-4A5A4F)]">Land</dt>
                 <dd className="m-0 font-bold">
                   {Number(activeFarm.areaHectares.toFixed(1))} {t.hectaresShort},{" "}
                   {cropLabel(m.cropName, m.cropCode).toLowerCase()}
                 </dd>
 
-                <dt className="text-[#4A5A4F]">Watering</dt>
+                <dt className="text-[var(--tp-fg-4A5A4F)]">Watering</dt>
                 <dd className="m-0 font-bold capitalize">
                   {activeFarm.irrigationConfig.irrigationMethod.toLowerCase().replace("_", " ")}
                 </dd>
 
-                <dt className="text-[#4A5A4F]">Pump</dt>
+                <dt className="text-[var(--tp-fg-4A5A4F)]">Pump</dt>
                 <dd className="m-0 font-bold">
                   {m.pumpFlowM3Hr} m³/hour, {m.pumpHoursDay} hours a day
                 </dd>
 
-                <dt className="text-[#4A5A4F]">Panels</dt>
+                <dt className="text-[var(--tp-fg-4A5A4F)]">Panels</dt>
                 <dd className="m-0 font-bold">
                   {m.solarKwp} kW (about {m.solarPanelCount500W})
                 </dd>
 
-                <dt className="text-[#4A5A4F]">Water</dt>
+                <dt className="text-[var(--tp-fg-4A5A4F)]">Water</dt>
                 <dd className="m-0 font-bold">
                   {m.nearestSourceDistanceM !== null
                     ? `Nearest point ${m.nearestSourceDistanceM} m`
@@ -422,7 +422,7 @@ export default function AskPage() {
               </dl>
               <Link
                 href="/farms"
-                className="text-[15px] font-bold text-[#1D4F91] hover:text-[#123766] min-h-[44px] inline-flex items-center"
+                className="text-[15px] font-bold text-[var(--tp-fg-1D4F91)] hover:text-[var(--tp-fg-123766)] min-h-[44px] inline-flex items-center"
               >
                 {t.somethingWrongFixIt}
               </Link>
@@ -430,7 +430,7 @@ export default function AskPage() {
           )}
 
           <section className="hidden lg:flex flex-col gap-2.5">
-            <h2 className="m-0 text-[19px] font-bold text-[#17251C]">
+            <h2 className="m-0 text-[19px] font-bold text-[var(--tp-fg-17251C)]">
               {t.otherFarmersAsk}
             </h2>
             {sampleQuestions.map((q) => (
@@ -438,7 +438,7 @@ export default function AskPage() {
                 key={q}
                 type="button"
                 onClick={() => sendMessage(q)}
-                className="min-h-[48px] px-4 rounded-[14px] border-[1.5px] border-[#C9C3B3] bg-white text-[16px] text-[#17251C] text-start hover:bg-[#F6F4EE]"
+                className="min-h-[48px] px-4 rounded-[14px] border-[1.5px] border-[var(--tp-bd-C9C3B3)] bg-[var(--tp-bg-FFFFFF)] text-[16px] text-[var(--tp-fg-17251C)] text-start hover:bg-[var(--tp-bg-F6F4EE)]"
               >
                 {q}
               </button>

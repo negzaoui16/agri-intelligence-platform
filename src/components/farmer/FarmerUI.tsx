@@ -2,7 +2,8 @@
 
 import * as React from "react";
 import Link from "next/link";
-import { AlertTriangle, ArrowLeft, CheckCircle2, MinusCircle } from "lucide-react";
+import { AlertTriangle, ArrowLeft, CheckCircle2, MinusCircle, Moon, Sun } from "lucide-react";
+import { useTheme } from "next-themes";
 import { useLanguage } from "@/components/i18n/LanguageProvider";
 import type { FarmerStatusLevel } from "@/lib/services/farmer-metrics";
 import { cn } from "@/lib/utils";
@@ -30,7 +31,7 @@ export function FarmerPageHeader({
           <Link
             href={backHref}
             aria-label={t.backToHome}
-            className="w-11 h-11 rounded-full bg-white border-[1.5px] border-[#E4DFD2] flex items-center justify-center shrink-0 text-[#17251C]"
+            className="w-11 h-11 rounded-full bg-[var(--tp-bg-FFFFFF)] border-[1.5px] border-[var(--tp-bd-E4DFD2)] flex items-center justify-center shrink-0 text-[var(--tp-fg-17251C)]"
           >
             <ArrowLeft
               className={cn("w-[22px] h-[22px]", isRtl && "rotate-180")}
@@ -39,11 +40,11 @@ export function FarmerPageHeader({
             />
           </Link>
           <div className="min-w-0">
-            <span className="text-[17px] font-bold text-[#17251C] block truncate">
+            <span className="text-[17px] font-bold text-[var(--tp-fg-17251C)] block truncate">
               {mobileLabel}
             </span>
             {subtitle && (
-              <span className="text-[14px] text-[#4A5A4F] block truncate">
+              <span className="text-[14px] text-[var(--tp-fg-4A5A4F)] block truncate">
                 {subtitle}
               </span>
             )}
@@ -57,7 +58,7 @@ export function FarmerPageHeader({
         <div className="flex flex-col gap-1.5 min-w-0">
           <Link
             href={backHref}
-            className="hidden lg:inline-flex items-center gap-1.5 text-[16px] font-bold text-[#1D4F91] hover:text-[#123766] w-fit min-h-[44px]"
+            className="hidden lg:inline-flex items-center gap-1.5 text-[16px] font-bold text-[var(--tp-fg-1D4F91)] hover:text-[var(--tp-fg-123766)] w-fit min-h-[44px]"
           >
             <ArrowLeft
               className={cn("w-4 h-4", isRtl && "rotate-180")}
@@ -66,11 +67,11 @@ export function FarmerPageHeader({
             />
             <span>{t.backToHome}</span>
           </Link>
-          <h1 className="m-0 text-[26px] lg:text-[34px] font-bold leading-[1.2] text-[#17251C]">
+          <h1 className="m-0 text-[26px] lg:text-[34px] font-bold leading-[1.2] text-[var(--tp-fg-17251C)]">
             {title}
           </h1>
           {subtitle && (
-            <p className="hidden lg:block m-0 text-[18px] text-[#4A5A4F] leading-[1.45]">
+            <p className="hidden lg:block m-0 text-[18px] text-[var(--tp-fg-4A5A4F)] leading-[1.45]">
               {subtitle}
             </p>
           )}
@@ -78,6 +79,39 @@ export function FarmerPageHeader({
         {rightAction && <div className="hidden lg:flex flex-wrap gap-2.5">{rightAction}</div>}
       </div>
     </header>
+  );
+}
+
+/**
+ * Light / dark mode switch. `compact` is a 44px round icon button (phone headers);
+ * the default shows the icon plus the mode it switches to (desktop sidebar).
+ */
+export function ThemeToggle({ compact = false }: { compact?: boolean }) {
+  const { t } = useLanguage();
+  const { resolvedTheme, setTheme } = useTheme();
+  const [mounted, setMounted] = React.useState(false);
+  React.useEffect(() => setMounted(true), []);
+
+  // Theme is only known in the browser; render a stable placeholder first to avoid a hydration mismatch.
+  const isDark = mounted && resolvedTheme === "dark";
+  const nextLabel = isDark ? t.themeLight : t.themeDark;
+  const Icon = isDark ? Sun : Moon;
+
+  return (
+    <button
+      type="button"
+      onClick={() => setTheme(isDark ? "light" : "dark")}
+      aria-label={t.themeSwitchLabel}
+      aria-pressed={isDark}
+      title={nextLabel}
+      className={cn(
+        "shrink-0 rounded-full border-[1.5px] border-[var(--tp-bd-C9C3B3)] bg-[var(--tp-bg-FFFFFF)] text-[var(--tp-fg-17251C)] inline-flex items-center justify-center gap-2 font-bold hover:bg-[var(--tp-bg-F6F4EE)] transition-colors",
+        compact ? "w-11 h-11" : "min-h-[44px] w-full px-4 text-[15px]"
+      )}
+    >
+      <Icon className="w-5 h-5 shrink-0" strokeWidth={2.2} aria-hidden="true" />
+      {!compact && <span>{nextLabel}</span>}
+    </button>
   );
 }
 
@@ -95,7 +129,7 @@ export function FarmerStatusBadge({
 
   if (level === "GOOD") {
     return (
-      <span className="inline-flex items-center gap-1.5 text-[15px] font-bold text-[#2E6B3A]">
+      <span className="inline-flex items-center gap-1.5 text-[15px] font-bold text-[var(--tp-fg-2E6B3A)]">
         <CheckCircle2 className="w-[22px] h-[22px] shrink-0" strokeWidth={2.4} aria-hidden="true" />
         <span>{resolvedLabel}</span>
       </span>
@@ -103,14 +137,14 @@ export function FarmerStatusBadge({
   }
   if (level === "PROBLEM") {
     return (
-      <span className="inline-flex items-center gap-1.5 text-[15px] font-bold text-[#8A4B00]">
+      <span className="inline-flex items-center gap-1.5 text-[15px] font-bold text-[var(--tp-fg-8A4B00)]">
         <AlertTriangle className="w-[22px] h-[22px] shrink-0" strokeWidth={2.4} aria-hidden="true" />
         <span>{resolvedLabel}</span>
       </span>
     );
   }
   return (
-    <span className="inline-flex items-center gap-1.5 text-[15px] font-bold text-[#5B4A2A]">
+    <span className="inline-flex items-center gap-1.5 text-[15px] font-bold text-[var(--tp-fg-5B4A2A)]">
       <MinusCircle className="w-[22px] h-[22px] shrink-0" strokeWidth={2.4} aria-hidden="true" />
       <span>{resolvedLabel}</span>
     </span>

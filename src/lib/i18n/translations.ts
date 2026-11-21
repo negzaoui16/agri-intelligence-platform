@@ -31,15 +31,64 @@ export const FRENCH_MONTHS: Record<string, string> = {
   December: "décembre",
 };
 
-export function localizeMonthName(monthName: string, lang: AppLanguage): string {
-  const normalized = monthName.trim();
+/**
+ * Analysis data uses 3-letter month codes ("Jul"); farmers should always see the full name.
+ * Accepts "Jul", "jul", "July" or "july" and returns the English full name, or the input unchanged.
+ */
+export function fullEnglishMonthName(monthName: string): string {
+  const normalized = monthName.trim().toLowerCase();
+  if (normalized.length < 3) return monthName;
   const key = Object.keys(MAGHREB_ARABIC_MONTHS).find(
-    (m) => m.toLowerCase() === normalized.toLowerCase()
+    (m) => m.toLowerCase() === normalized || m.toLowerCase().slice(0, 3) === normalized
   );
-  if (!key) return monthName;
+  return key ?? monthName;
+}
+
+export function localizeMonthName(monthName: string, lang: AppLanguage): string {
+  const key = fullEnglishMonthName(monthName);
+  if (!(key in MAGHREB_ARABIC_MONTHS)) return monthName;
   if (lang === "ar") return MAGHREB_ARABIC_MONTHS[key];
   if (lang === "fr") return FRENCH_MONTHS[key];
   return key;
+}
+
+// REVIEW: native Arabic / French speaker review recommended
+const WATER_SOURCE_LABELS: Record<
+  string,
+  { en: [string, string]; fr: [string, string]; ar: [string, string] }
+> = {
+  // [short farmer name, one-line description]
+  WATER_INFRASTRUCTURE: {
+    en: ["Water point", "Pipe or tank on the map"],
+    fr: ["Point d'eau", "Conduite ou réservoir sur la carte"],
+    ar: ["نقطة ماء", "قناة أو خزان على الخريطة"],
+  },
+  WELL: { en: ["Well", "Well"], fr: ["Puits", "Puits"], ar: ["بئر", "بئر"] },
+  BOREHOLE: { en: ["Borehole", "Deep well"], fr: ["Forage", "Puits profond"], ar: ["بئر عميقة", "بئر عميقة"] },
+  RIVER: { en: ["River", "River"], fr: ["Oued", "Rivière"], ar: ["وادي", "وادي"] },
+  STREAM: { en: ["Stream", "Small stream"], fr: ["Ruisseau", "Petit cours d'eau"], ar: ["ساقية", "مجرى ماء صغير"] },
+  CANAL: { en: ["Canal", "Irrigation canal"], fr: ["Canal", "Canal d'irrigation"], ar: ["قناة", "قناة ري"] },
+  RESERVOIR: { en: ["Dam", "Dam or reservoir"], fr: ["Barrage", "Barrage ou retenue"], ar: ["سد", "سد أو خزان"] },
+  LAKE: { en: ["Lake", "Lake or pond"], fr: ["Lac", "Lac ou bassin"], ar: ["بحيرة", "بحيرة أو بركة"] },
+  SPRING: { en: ["Spring", "Natural spring"], fr: ["Source", "Source naturelle"], ar: ["عين", "عين ماء"] },
+  HYDRO_RIVER_REACH: { en: ["River", "River channel"], fr: ["Oued", "Lit de rivière"], ar: ["وادي", "مجرى وادي"] },
+};
+
+/**
+ * Farmer-facing name for a mapped water place. Map data often has no real name
+ * ("Unnamed Water Infrastructure"); show a plain translated name instead, and keep real names
+ * like "Oued El Terro" as they are.
+ */
+export function localizeWaterSource(
+  name: string,
+  sourceType: string,
+  lang: AppLanguage
+): { title: string; kind: string } {
+  const labels = WATER_SOURCE_LABELS[sourceType] ?? WATER_SOURCE_LABELS.WATER_INFRASTRUCTURE;
+  const [shortName, kind] = labels[lang];
+  const trimmed = name.trim();
+  const isUnnamed = !trimmed || /^unnamed\b/i.test(trimmed);
+  return { title: isUnnamed ? shortName : trimmed, kind };
 }
 
 export function localizeCropLabel(cropName: string, cropCode: string, lang: AppLanguage): string {
@@ -247,6 +296,14 @@ export interface TranslationStrings {
   reportQuestionTitle: string; // "Is this farm a good choice?"
   landAndClimate: string;
   bestCropsForPlace: string;
+  themeDark: string;
+  themeLight: string;
+  themeSwitchLabel: string;
+  cropWaterLow: string;
+  cropWaterMedium: string;
+  cropWaterHigh: string;
+  cropWaterVeryHigh: string;
+  cropHandlesDrySummers: string;
   checkInPersonTitle: string;
   checkPointAllYear: string;
   checkSoilTest: string;
@@ -429,6 +486,14 @@ const EN_STRINGS: TranslationStrings = {
   reportQuestionTitle: "Is this farm a good choice?",
   landAndClimate: "Land and climate",
   bestCropsForPlace: "Best crops for this place",
+  themeDark: "Dark mode",
+  themeLight: "Light mode",
+  themeSwitchLabel: "Switch between light and dark mode",
+  cropWaterLow: "needs little water",
+  cropWaterMedium: "needs an average amount of water",
+  cropWaterHigh: "needs a lot of water",
+  cropWaterVeryHigh: "needs a very large amount of water",
+  cropHandlesDrySummers: "handles dry summers",
   checkInPersonTitle: "Check in person before you buy",
   checkPointAllYear: "Does the water point have water all year?",
   checkSoilTest: "Soil test: how salty, how well it holds water",
@@ -611,6 +676,14 @@ const FR_STRINGS: TranslationStrings = {
   reportQuestionTitle: "Cette ferme est-elle un bon choix ?",
   landAndClimate: "Terre et climat",
   bestCropsForPlace: "Meilleures cultures pour ce lieu",
+  themeDark: "Mode sombre",
+  themeLight: "Mode clair",
+  themeSwitchLabel: "Basculer entre mode clair et mode sombre",
+  cropWaterLow: "demande peu d'eau",
+  cropWaterMedium: "demande une quantité moyenne d'eau",
+  cropWaterHigh: "demande beaucoup d'eau",
+  cropWaterVeryHigh: "demande énormément d'eau",
+  cropHandlesDrySummers: "supporte les étés secs",
   checkInPersonTitle: "À vérifier sur place avant d'acheter",
   checkPointAllYear: "Le point d'eau a-t-il de l'eau toute l'année ?",
   checkSoilTest: "Analyse du sol : salinité et rétention d'eau",
@@ -793,6 +866,14 @@ const AR_STRINGS: TranslationStrings = {
   reportQuestionTitle: "هل هذه المزرعة اختيار جيد؟",
   landAndClimate: "الأرض والمناخ",
   bestCropsForPlace: "أفضل المحاصيل لهذا المكان",
+  themeDark: "الوضع الداكن",
+  themeLight: "الوضع الفاتح",
+  themeSwitchLabel: "التبديل بين الوضع الفاتح والداكن",
+  cropWaterLow: "يحتاج القليل من الماء",
+  cropWaterMedium: "يحتاج كمية متوسطة من الماء",
+  cropWaterHigh: "يحتاج الكثير من الماء",
+  cropWaterVeryHigh: "يحتاج كمية كبيرة جداً من الماء",
+  cropHandlesDrySummers: "يتحمل الصيف الجاف",
   checkInPersonTitle: "تأكّد بنفسك قبل الشراء",
   checkPointAllYear: "هل يوجد ماء في نقطة الماء طول العام؟",
   checkSoilTest: "تحليل التربة: نسبة الملوحة واحتفاظها بالماء",

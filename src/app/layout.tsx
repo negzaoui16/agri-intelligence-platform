@@ -56,7 +56,7 @@ export default function RootLayout({
       className={`${atkinson.variable} ${notoArabic.variable}`}
       suppressHydrationWarning
     >
-      <body className="antialiased min-h-screen bg-[#F6F4EE] text-[#17251C]">
+      <body className="antialiased min-h-screen bg-[var(--tp-bg-F6F4EE)] text-[var(--tp-fg-17251C)]">
         <AppProviders>
           <AppShell>{children}</AppShell>
         </AppProviders>

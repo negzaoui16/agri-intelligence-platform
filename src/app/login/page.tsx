@@ -183,7 +183,7 @@ export default function LoginPage() {
             </label>
             <Link
               href="/forgot-password"
-              className="text-xs text-[#14532d] dark:text-emerald-400 hover:underline font-medium"
+              className="text-xs text-[var(--tp-fg-14532D)] dark:text-emerald-400 hover:underline font-medium"
             >
               Forgot password?
             </Link>
@@ -221,7 +221,7 @@ export default function LoginPage() {
           New to TerraPulse?{" "}
           <Link
             href="/register"
-            className="text-[#14532d] dark:text-emerald-400 font-semibold hover:underline"
+            className="text-[var(--tp-fg-14532D)] dark:text-emerald-400 font-semibold hover:underline"
           >
             Create a farmer account
           </Link>

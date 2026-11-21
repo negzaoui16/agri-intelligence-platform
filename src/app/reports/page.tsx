@@ -10,6 +10,7 @@ import { useLanguage } from "@/components/i18n/LanguageProvider";
 import { useFarmAnalysis, useFarms, useReports } from "@/hooks/useFarms";
 import { cacheReportsLocally } from "@/lib/offline/sync-engine";
 import { selectFarmerMetrics } from "@/lib/services/farmer-metrics";
+import { getCropSpec } from "@/lib/engines/fao56-calculator";
 import { useAppStore } from "@/lib/store/app-store";
 import { formatTimestamp } from "@/lib/utils";
 import type { FeasibilityReportPayload } from "@/types/agri";
@@ -197,8 +198,8 @@ export default function ReportsPage() {
     return (
       <div className="flex flex-col gap-4">
         <FarmerPageHeader mobileLabel={t.navReport} title={t.reportQuestionTitle} />
-        <div className="bg-white border-[1.5px] border-[#E4DFD2] rounded-[20px] p-8 flex items-center gap-3 text-[17px] text-[#4A5A4F]">
-          <Loader2 className="w-6 h-6 animate-spin text-[#2E6B3A]" />
+        <div className="bg-[var(--tp-bg-FFFFFF)] border-[1.5px] border-[var(--tp-bd-E4DFD2)] rounded-[20px] p-8 flex items-center gap-3 text-[17px] text-[var(--tp-fg-4A5A4F)]">
+          <Loader2 className="w-6 h-6 animate-spin text-[var(--tp-fg-2E6B3A)]" />
           <span>Preparing your farm report…</span>
         </div>
       </div>
@@ -209,11 +210,11 @@ export default function ReportsPage() {
     return (
       <div className="flex flex-col gap-4">
         <FarmerPageHeader mobileLabel={t.navReport} title={t.reportQuestionTitle} />
-        <section className="bg-white border-[1.5px] border-[#E4DFD2] rounded-[20px] p-6 flex flex-col gap-3">
-          <p className="m-0 text-[18px] text-[#17251C]">{t.stepAddFarmPrompt}</p>
+        <section className="bg-[var(--tp-bg-FFFFFF)] border-[1.5px] border-[var(--tp-bd-E4DFD2)] rounded-[20px] p-6 flex flex-col gap-3">
+          <p className="m-0 text-[18px] text-[var(--tp-fg-17251C)]">{t.stepAddFarmPrompt}</p>
           <Link
             href="/farms?new=1"
-            className="min-h-[48px] px-6 rounded-full bg-[#2E6B3A] text-white font-bold text-[17px] inline-flex items-center w-fit"
+            className="min-h-[48px] px-6 rounded-full bg-[var(--tp-bg-2E6B3A)] text-white font-bold text-[17px] inline-flex items-center w-fit"
           >
             {t.addFarmTitle}
           </Link>
@@ -232,7 +233,7 @@ export default function ReportsPage() {
         type="button"
         onClick={() => ensureReportAndRun("pdf")}
         disabled={generating}
-        className="flex-1 lg:flex-initial min-h-[52px] lg:min-h-[52px] px-5 rounded-full border-[1.5px] border-[#B8B1A0] bg-white text-[16px] font-bold text-[#17251C] hover:bg-[#F6F4EE]"
+        className="flex-1 lg:flex-initial min-h-[52px] lg:min-h-[52px] px-5 rounded-full border-[1.5px] border-[var(--tp-bd-B8B1A0)] bg-[var(--tp-bg-FFFFFF)] text-[16px] font-bold text-[var(--tp-fg-17251C)] hover:bg-[var(--tp-bg-F6F4EE)]"
       >
         {generating ? "…" : t.savePdfBtn}
       </button>
@@ -240,7 +241,7 @@ export default function ReportsPage() {
         type="button"
         onClick={() => ensureReportAndRun("engineer")}
         disabled={generating}
-        className="flex-[1.4] lg:flex-initial min-h-[52px] lg:min-h-[52px] px-6 rounded-full bg-[#2E6B3A] text-white text-[16px] font-bold hover:bg-[#23542d]"
+        className="flex-[1.4] lg:flex-initial min-h-[52px] lg:min-h-[52px] px-6 rounded-full bg-[var(--tp-bg-2E6B3A)] text-white text-[16px] font-bold hover:bg-[var(--tp-bg-23542D)]"
       >
         {t.sendToEngineerBtn}
       </button>
@@ -248,6 +249,21 @@ export default function ReportsPage() {
   );
 
   const topCrops = (analysis?.cropSuitability ?? []).slice(0, 3);
+  // Plain wording for the crop list; exact m³/ha figures stay in the engineer section.
+  // Bands match the water score in fao56-calculator (4,500 / 7,500 / 11,000 m³ per ha a year).
+  const cropWaterPhrase = (m3PerHa: number, cropCode: string): string => {
+    const water =
+      m3PerHa <= 4500
+        ? t.cropWaterLow
+        : m3PerHa <= 7500
+          ? t.cropWaterMedium
+          : m3PerHa <= 11000
+            ? t.cropWaterHigh
+            : t.cropWaterVeryHigh;
+    return getCropSpec(cropCode).droughtTolerance === "High"
+      ? `${water}, ${t.cropHandlesDrySummers}`
+      : water;
+  };
 
   return (
     <div className="flex flex-col gap-5">
@@ -259,19 +275,19 @@ export default function ReportsPage() {
       />
 
       {notice && (
-        <div className="bg-[#E3EFE2] border border-[#7FB083] text-[#1F4D28] rounded-[14px] px-4 py-3 text-[15px] font-bold">
+        <div className="bg-[var(--tp-bg-E3EFE2)] border border-[var(--tp-bd-7FB083)] text-[var(--tp-fg-1F4D28)] rounded-[14px] px-4 py-3 text-[15px] font-bold">
           {notice}
         </div>
       )}
 
       {/* Dark Verdict Banner matching Report.dc.html / DeskReport.dc.html */}
-      <section className="bg-[#17251C] text-white rounded-[20px] lg:rounded-[22px] p-5 lg:px-7 lg:py-6 flex flex-col gap-2">
+      <section className="bg-[var(--tp-bg-17251C)] text-[var(--tp-on-inverse)] rounded-[20px] lg:rounded-[22px] p-5 lg:px-7 lg:py-6 flex flex-col gap-2">
         <p className="m-0 text-[22px] lg:text-[30px] font-bold leading-[1.25]">
           {m.isWaterShort
             ? "Yes, if you solve summer water first."
             : "Yes, good land for your crops."}
         </p>
-        <p className="m-0 text-[16px] lg:text-[18px] leading-[1.45] text-[#D5DDD7]">
+        <p className="m-0 text-[16px] lg:text-[18px] leading-[1.45] text-[var(--tp-fg-D5DDD7)]">
           {m.isWaterShort && m.peakDailyDemandM3 !== null
             ? `Good land and climate for ${localizedCrop.toLowerCase()}. Your pump gives ${m.pumpDailySupplyM3} m³ a day, while ${localizedPeak} needs ${m.peakDailyDemandM3} m³ a day.`
             : `Good land and climate for ${localizedCrop.toLowerCase()}. Your water and sun estimates match your farm needs.`}
@@ -280,12 +296,12 @@ export default function ReportsPage() {
 
       {/* 3 Status Cards (Word + Icon + Color) */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-3.5">
-        <section className="bg-white border-[1.5px] border-[#E4DFD2] rounded-[18px] p-5 flex flex-col gap-2">
+        <section className="bg-[var(--tp-bg-FFFFFF)] border-[1.5px] border-[var(--tp-bd-E4DFD2)] rounded-[18px] p-5 flex flex-col gap-2">
           <div className="flex items-center justify-between gap-2">
             <b className="text-[19px]">{t.landAndClimate}</b>
             <FarmerStatusBadge level={m.landStatus} />
           </div>
-          <span className="text-[16px] text-[#4A5A4F] leading-[1.45]">
+          <span className="text-[16px] text-[var(--tp-fg-4A5A4F)] leading-[1.45]">
             {m.slopePct !== null && m.slopePct <= 5 ? "Flat land." : "Sloped land."}{" "}
             {m.annualPrecipMm !== null ? `${m.annualPrecipMm} mm of rain a year.` : ""}
           </span>
@@ -294,34 +310,34 @@ export default function ReportsPage() {
         <section
           className={
             m.waterStatus === "PROBLEM"
-              ? "bg-[#FCEFD9] border-2 border-[#E2B66B] rounded-[18px] p-5 flex flex-col gap-2"
-              : "bg-white border-[1.5px] border-[#E4DFD2] rounded-[18px] p-5 flex flex-col gap-2"
+              ? "bg-[var(--tp-bg-FCEFD9)] border-2 border-[var(--tp-bd-E2B66B)] rounded-[18px] p-5 flex flex-col gap-2"
+              : "bg-[var(--tp-bg-FFFFFF)] border-[1.5px] border-[var(--tp-bd-E4DFD2)] rounded-[18px] p-5 flex flex-col gap-2"
           }
         >
           <div className="flex items-center justify-between gap-2">
             <b className="text-[19px]">{t.navWater}</b>
             <FarmerStatusBadge level={m.waterStatus} />
           </div>
-          <span className="text-[16px] text-[#3B3020] leading-[1.45]">
+          <span className="text-[16px] text-[var(--tp-fg-3B3020)] leading-[1.45]">
             {m.isWaterShort && m.peakDailyDemandM3 !== null
               ? `Pump gives ${m.pumpDailySupplyM3} m³ a day. ${localizedPeak} needs ${m.peakDailyDemandM3} m³. `
               : `Pump covers your peak ${localizedPeak} needs. `}
-            <Link href="/water" className="font-bold text-[#1D4F91]">
+            <Link href="/water" className="font-bold text-[var(--tp-fg-1D4F91)]">
               {m.isWaterShort ? "See fixes" : "See details"}
             </Link>
           </span>
         </section>
 
-        <section className="bg-white border-[1.5px] border-[#E4DFD2] rounded-[18px] p-5 flex flex-col gap-2">
+        <section className="bg-[var(--tp-bg-FFFFFF)] border-[1.5px] border-[var(--tp-bd-E4DFD2)] rounded-[18px] p-5 flex flex-col gap-2">
           <div className="flex items-center justify-between gap-2">
             <b className="text-[19px]">{t.navSunPower}</b>
             <FarmerStatusBadge level={m.sunStatus} />
           </div>
-          <span className="text-[16px] text-[#4A5A4F] leading-[1.45]">
+          <span className="text-[16px] text-[var(--tp-fg-4A5A4F)] leading-[1.45]">
             {m.isSolarShortInSummer
               ? `Enough over the year. Covers ${m.solarUnitsOutOf10} of 10 units in ${monthLabel(m.worstMonthName)}. `
               : "Covers pump energy all year. "}
-            <Link href="/solar" className="font-bold text-[#1D4F91]">
+            <Link href="/solar" className="font-bold text-[var(--tp-fg-1D4F91)]">
               See details
             </Link>
           </span>
@@ -330,37 +346,37 @@ export default function ReportsPage() {
 
       {/* Best Crops + Check In Person */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 lg:gap-5">
-        <section className="bg-white border-[1.5px] border-[#E4DFD2] rounded-[20px] p-5 flex flex-col gap-3">
-          <h2 className="m-0 text-[19px] lg:text-[20px] font-bold text-[#17251C]">
+        <section className="bg-[var(--tp-bg-FFFFFF)] border-[1.5px] border-[var(--tp-bd-E4DFD2)] rounded-[20px] p-5 flex flex-col gap-3">
+          <h2 className="m-0 text-[19px] lg:text-[20px] font-bold text-[var(--tp-fg-17251C)]">
             {t.bestCropsForPlace}
           </h2>
           {topCrops.length > 0 ? (
-            <ol className="m-0 ps-5 text-[17px] leading-[1.7] text-[#17251C]">
+            <ol className="m-0 ps-5 text-[17px] leading-[1.7] text-[var(--tp-fg-17251C)]">
               {topCrops.map((crop) => {
                 const isYours = crop.cropCode === activeFarm.irrigationConfig.cropCode;
                 return (
                   <li key={crop.cropCode}>
                     <b>{cropLabel(crop.cropName, crop.cropCode)}</b>{" "}
                     {isYours && (
-                      <span className="text-[#2E6B3A] font-bold">{t.yourCropTag}</span>
+                      <span className="text-[var(--tp-fg-2E6B3A)] font-bold">{t.yourCropTag}</span>
                     )}
-                    : {crop.waterDemandNote || crop.thermalMatchNote}
+                    : {cropWaterPhrase(crop.estimatedAnnualIrrigationM3Ha, crop.cropCode)}
                   </li>
                 );
               })}
             </ol>
           ) : (
-            <p className="m-0 text-[16px] text-[#4A5A4F]">
+            <p className="m-0 text-[16px] text-[var(--tp-fg-4A5A4F)]">
               {localizedCrop} is selected for your land.
             </p>
           )}
         </section>
 
-        <section className="bg-white border-[1.5px] border-[#E4DFD2] rounded-[20px] p-5 flex flex-col gap-3">
-          <h2 className="m-0 text-[19px] lg:text-[20px] font-bold text-[#17251C]">
+        <section className="bg-[var(--tp-bg-FFFFFF)] border-[1.5px] border-[var(--tp-bd-E4DFD2)] rounded-[20px] p-5 flex flex-col gap-3">
+          <h2 className="m-0 text-[19px] lg:text-[20px] font-bold text-[var(--tp-fg-17251C)]">
             {t.checkInPersonTitle}
           </h2>
-          <ul className="m-0 ps-5 text-[16px] lg:text-[17px] leading-[1.65] text-[#22392A]">
+          <ul className="m-0 ps-5 text-[16px] lg:text-[17px] leading-[1.65] text-[var(--tp-fg-22392A)]">
             <li>{t.checkPointAllYear}</li>
             <li>{t.checkSoilTest}</li>
             <li>{t.checkGroundwaterDepth}</li>
@@ -373,11 +389,11 @@ export default function ReportsPage() {
 
       {/* Collapsed Engineer Technical Section */}
       {analysis && (
-        <details className="bg-white border-[1.5px] border-[#E4DFD2] rounded-[18px] px-5 py-1">
-          <summary className="min-h-[56px] flex items-center cursor-pointer text-[17px] font-bold text-[#1D4F91]">
+        <details className="bg-[var(--tp-bg-FFFFFF)] border-[1.5px] border-[var(--tp-bd-E4DFD2)] rounded-[18px] px-5 py-1">
+          <summary className="min-h-[56px] flex items-center cursor-pointer text-[17px] font-bold text-[var(--tp-fg-1D4F91)]">
             {t.forYourEngineerTitle}
           </summary>
-          <div className="pb-5 pt-1 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2.5 text-[15px] text-[#22392A]">
+          <div className="pb-5 pt-1 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2.5 text-[15px] text-[var(--tp-fg-22392A)]">
             <span>Reference ET₀: {analysis.climate.annualEt0Mm.toLocaleString()} mm/yr (Open-Meteo ERA5)</span>
             <span>
               Gross irrigation: {analysis.irrigation.annualGrossVolumeM3.toLocaleString()} m³/yr (FAO-56,{" "}

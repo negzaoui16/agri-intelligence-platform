@@ -559,7 +559,7 @@ export function InteractiveFarmMap(props: InteractiveFarmMapProps) {
             onClick={() => props.onBaseLayerChange(id)}
             className={`px-2 py-1 rounded text-[11px] font-medium cursor-pointer transition-colors ${
               props.baseLayer === id
-                ? "bg-[#14532d] text-white"
+                ? "bg-[var(--tp-bg-14532D)] text-white"
                 : "text-muted-foreground hover:bg-muted"
             }`}
           >
