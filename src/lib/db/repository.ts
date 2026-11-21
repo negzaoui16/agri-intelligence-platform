@@ -569,6 +569,18 @@ export async function upsertFarmerProfile(
 }
 
 function defaultOnboardingProgress(userId: string): OnboardingProgressRecord {
+  if (userId === "user_demo_agronomist") {
+    return {
+      id: `onb_${userId}`,
+      userId,
+      activeFarmId: "farm_mitidja_01",
+      currentStep: 6,
+      completedSteps: [1, 2, 3, 4, 5],
+      isCompleted: true,
+      completedAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+    };
+  }
   return {
     id: `onb_${userId}`,
     userId,

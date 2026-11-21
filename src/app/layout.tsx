@@ -19,9 +19,9 @@ const notoArabic = Noto_Sans_Arabic({
 });
 
 export const metadata: Metadata = {
-  title: "TerraPulse Agri Intelligence — Field Land, Water & Solar Feasibility",
+  title: "TerraPulse — Your Farm, Water & Sun Power",
   description:
-    "Mobile-first offline-capable agricultural decision-support platform integrating Open-Meteo, JRC PVGIS, OpenStreetMap, HydroSHEDS, Copernicus DEM, and FAO WaPOR v3.",
+    "Simple mobile-first farm advisor to check water supply, solar pump power, daily weather, and suitable crops for your land.",
   manifest: "/manifest.webmanifest",
   appleWebApp: {
     capable: true,
