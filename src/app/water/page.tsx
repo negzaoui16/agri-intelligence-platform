@@ -23,7 +23,7 @@ function sourceTypeLabel(type: string): string {
     RESERVOIR: "Reservoir",
     LAKE: "Lake",
     SPRING: "Spring",
-    WATER_POINT: "Water point on the map",
+    WATER_INFRASTRUCTURE: "Pipe or tank on the map",
     HYDRO_RIVER_REACH: "River channel",
   };
   return map[type] ?? "Water point";
