@@ -1,41 +1,28 @@
 "use client";
 
 import * as React from "react";
+import Link from "next/link";
 import { jsPDF } from "jspdf";
 import autoTable from "jspdf-autotable";
-import {
-  Badge,
-  Button,
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/primitives";
-import { useFarms, useReports } from "@/hooks/useFarms";
+import { Loader2 } from "lucide-react";
+import { FarmerPageHeader, FarmerStatusBadge } from "@/components/farmer/FarmerUI";
+import { useLanguage } from "@/components/i18n/LanguageProvider";
+import { useFarmAnalysis, useFarms, useReports } from "@/hooks/useFarms";
 import { cacheReportsLocally } from "@/lib/offline/sync-engine";
+import { selectFarmerMetrics } from "@/lib/services/farmer-metrics";
 import { useAppStore } from "@/lib/store/app-store";
-import { formatDistance, formatNumber, formatTimestamp } from "@/lib/utils";
+import { formatTimestamp } from "@/lib/utils";
 import type { FeasibilityReportPayload } from "@/types/agri";
 import { useQueryClient } from "@tanstack/react-query";
-import {
-  AlertTriangle,
-  Download,
-  FileJson,
-  FileText,
-  Printer,
-  Share2,
-  Sparkles,
-} from "lucide-react";
 
 function exportFeasibilityPdf(report: FeasibilityReportPayload) {
   const doc = new jsPDF({ unit: "mm", format: "a4" });
 
-  doc.setFillColor(20, 83, 45);
+  doc.setFillColor(46, 107, 58);
   doc.rect(0, 0, 210, 28, "F");
   doc.setTextColor(255, 255, 255);
   doc.setFontSize(16);
-  doc.text("TerraPulse Agri Intelligence — Feasibility Report", 14, 13);
+  doc.text("TerraPulse Agri Intelligence — Engineer Feasibility Report", 14, 13);
   doc.setFontSize(10);
   doc.text(
     `${report.farmName} | Score: ${report.overallScore}/100 (${report.verdict}) | Generated ${formatTimestamp(report.createdAt)}`,
@@ -50,7 +37,7 @@ function exportFeasibilityPdf(report: FeasibilityReportPayload) {
   const splitSummary = doc.splitTextToSize(report.executiveSummary, 182);
   doc.text(splitSummary, 14, 44);
 
-  let yPos = 44 + splitSummary.length * 4.6 + 6;
+  const yPos = 44 + splitSummary.length * 4.6 + 6;
 
   autoTable(doc, {
     startY: yPos,
@@ -79,12 +66,12 @@ function exportFeasibilityPdf(report: FeasibilityReportPayload) {
       [
         "Nearest Mapped Water",
         report.waterSummary.nearestSourceName
-          ? `${report.waterSummary.nearestSourceName} (${report.waterSummary.nearestSourceType}) • ${report.waterSummary.nearestDistanceM} m • ΔZ ${report.waterSummary.elevationDiffM ?? "N/A"} m [UNVERIFIED FLOW]`
+          ? `${report.waterSummary.nearestSourceName} (${report.waterSummary.nearestSourceType}) · ${report.waterSummary.nearestDistanceM} m · dZ ${report.waterSummary.elevationDiffM ?? "N/A"} m [UNVERIFIED FLOW]`
           : "None mapped within 10 km",
       ],
       [
         "Irrigation & Pump Load",
-        `${report.irrigationAndPumpSummary.annualGrossWaterM3.toLocaleString()} m³/yr • Peak ${report.irrigationAndPumpSummary.peakDailyWaterM3} m³/day • ${report.irrigationAndPumpSummary.electricalPowerKw} kW (${report.irrigationAndPumpSummary.totalDynamicHeadM} m TDH)`,
+        `${report.irrigationAndPumpSummary.annualGrossWaterM3.toLocaleString()} m3/yr · Peak ${report.irrigationAndPumpSummary.peakDailyWaterM3} m3/day · ${report.irrigationAndPumpSummary.electricalPowerKw} kW (${report.irrigationAndPumpSummary.totalDynamicHeadM} m TDH)`,
       ],
       [
         "Solar PVGIS Balance",
@@ -92,7 +79,7 @@ function exportFeasibilityPdf(report: FeasibilityReportPayload) {
       ],
     ],
     styles: { fontSize: 8.5, cellPadding: 2.5 },
-    headStyles: { fillColor: [20, 83, 45] },
+    headStyles: { fillColor: [46, 107, 58] },
   });
 
   const afterMainTable =
@@ -100,7 +87,7 @@ function exportFeasibilityPdf(report: FeasibilityReportPayload) {
 
   autoTable(doc, {
     startY: afterMainTable + 8,
-    head: [["Crop", "Score", "Rating", "Water Demand (m³/ha/yr)"]],
+    head: [["Crop", "Score", "Rating", "Water Demand (m3/ha/yr)"]],
     body: report.cropSuitability.map((c) => [
       c.cropName,
       `${c.score}/100`,
@@ -108,7 +95,7 @@ function exportFeasibilityPdf(report: FeasibilityReportPayload) {
       c.estimatedAnnualIrrigationM3Ha.toLocaleString(),
     ]),
     styles: { fontSize: 8.5, cellPadding: 2 },
-    headStyles: { fillColor: [2, 132, 199] },
+    headStyles: { fillColor: [29, 79, 145] },
   });
 
   doc.addPage();
@@ -120,7 +107,7 @@ function exportFeasibilityPdf(report: FeasibilityReportPayload) {
     head: [["Severity", "Risk", "Engineering Detail"]],
     body: report.risks.map((r) => [r.severity, r.title, r.detail]),
     styles: { fontSize: 8, cellPadding: 2.5 },
-    headStyles: { fillColor: [180, 83, 9] },
+    headStyles: { fillColor: [138, 75, 0] },
   });
 
   const afterRisk =
@@ -136,382 +123,279 @@ function exportFeasibilityPdf(report: FeasibilityReportPayload) {
       formatTimestamp(s.retrievedAt),
     ]),
     styles: { fontSize: 8, cellPadding: 2 },
-    headStyles: { fillColor: [20, 83, 45] },
+    headStyles: { fillColor: [46, 107, 58] },
   });
-
-  const afterSources =
-    (doc as unknown as { lastAutoTable?: { finalY: number } }).lastAutoTable?.finalY ?? 170;
-  doc.setFontSize(10);
-  doc.text("Key Uncertainties & Field Verification Requirements", 14, afterSources + 10);
-  doc.setFontSize(8.5);
-  const uncText = doc.splitTextToSize(
-    report.uncertainties.map((u) => `• ${u}`).join("\n"),
-    182
-  );
-  doc.text(uncText, 14, afterSources + 16);
 
   doc.save(`TerraPulse_Feasibility_${report.farmName.replace(/[^a-z0-9]/gi, "_")}.pdf`);
 }
 
 export default function ReportsPage() {
   const queryClient = useQueryClient();
-  const { activeFarm } = useFarms();
-  const { data: reports = [], isLoading } = useReports(activeFarm?.id);
+  const { t, monthLabel, cropLabel } = useLanguage();
+  const { activeFarm, isLoading: farmsLoading } = useFarms();
+  const { data: analysis, isLoading: analysisLoading } = useFarmAnalysis(activeFarm);
+  const { data: reports = [], isLoading: reportsLoading } = useReports(activeFarm?.id);
   const isOnline = useAppStore((s) => s.isOnline);
-  const [selectedId, setSelectedId] = React.useState<string | null>(null);
   const [generating, setGenerating] = React.useState(false);
+  const [notice, setNotice] = React.useState<string | null>(null);
 
-  const activeReport =
-    reports.find((r) => r.id === selectedId) ?? reports[0] ?? null;
+  const activeReport = reports[0] ?? null;
 
-  const handleGenerate = async () => {
-    if (!activeFarm || !isOnline) return;
-    setGenerating(true);
-    try {
-      const res = await fetch("/api/reports", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ farmId: activeFarm.id, refresh: true }),
-      });
-      if (res.ok) {
-        const json = (await res.json()) as { report: FeasibilityReportPayload };
-        await cacheReportsLocally([json.report]);
-        setSelectedId(json.report.id);
-        queryClient.invalidateQueries({ queryKey: ["reports"] });
+  const ensureReportAndRun = async (mode: "pdf" | "engineer") => {
+    let report = activeReport;
+    if (!report && activeFarm && isOnline) {
+      setGenerating(true);
+      try {
+        const res = await fetch("/api/reports", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ farmId: activeFarm.id, refresh: true }),
+        });
+        if (res.ok) {
+          const json = (await res.json()) as { report: FeasibilityReportPayload };
+          await cacheReportsLocally([json.report]);
+          queryClient.invalidateQueries({ queryKey: ["reports"] });
+          report = json.report;
+        }
+      } finally {
+        setGenerating(false);
       }
-    } finally {
-      setGenerating(false);
     }
-  };
 
-  const handleShare = async () => {
-    if (!activeReport) return;
-    if (navigator.share) {
-      await navigator
-        .share({
-          title: activeReport.title,
-          text: activeReport.executiveSummary,
-        })
-        .catch(() => undefined);
-    } else {
-      await navigator.clipboard?.writeText(activeReport.executiveSummary).catch(() => undefined);
+    if (!report) {
+      setNotice("Connect to the internet once to prepare the downloadable PDF for your engineer.");
+      return;
     }
+
+    if (mode === "pdf") {
+      exportFeasibilityPdf(report);
+      setNotice("PDF saved to your device.");
+      return;
+    }
+
+    // Share or copy technical summary + export PDF
+    const summaryText = `TerraPulse Report — ${report.farmName} (${report.overallScore}/100): ${report.executiveSummary}`;
+    if (typeof navigator !== "undefined" && navigator.share) {
+      try {
+        await navigator.share({
+          title: `Farm Report — ${report.farmName}`,
+          text: summaryText,
+        });
+        return;
+      } catch {
+        // user cancelled or unavailable; fall through to PDF + clipboard
+      }
+    }
+    if (typeof navigator !== "undefined" && navigator.clipboard) {
+      await navigator.clipboard.writeText(JSON.stringify(report, null, 2)).catch(() => undefined);
+    }
+    exportFeasibilityPdf(report);
+    setNotice("Engineer PDF downloaded and technical summary copied to clipboard.");
   };
 
-  const handleDownloadJson = () => {
-    if (!activeReport) return;
-    const blob = new Blob([JSON.stringify(activeReport, null, 2)], {
-      type: "application/json",
-    });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = `${activeReport.id}.json`;
-    a.click();
-    URL.revokeObjectURL(url);
-  };
-
-  return (
-    <div className="space-y-5">
-      <div className="no-print flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-        <div>
-          <h1 className="text-xl sm:text-2xl font-bold tracking-tight">
-            Agricultural Feasibility Reports & PDF Export
-          </h1>
-          <p className="text-xs sm:text-sm text-muted-foreground">
-            Comprehensive property evaluation citing observed data, modeled simulations, and field uncertainties.
-          </p>
-        </div>
-        <div className="flex flex-wrap gap-2">
-          {activeFarm && (
-            <Button
-              size="sm"
-              variant="primary"
-              disabled={!isOnline || generating}
-              onClick={handleGenerate}
-            >
-              <Sparkles className="h-3.5 w-3.5" />
-              {generating ? "Generating..." : "Generate Report"}
-            </Button>
-          )}
-          {activeReport && (
-            <>
-              <Button
-                size="sm"
-                variant="outline"
-                onClick={() => exportFeasibilityPdf(activeReport)}
-              >
-                <Download className="h-3.5 w-3.5" />
-                Export PDF
-              </Button>
-              <Button size="sm" variant="outline" onClick={handleDownloadJson}>
-                <FileJson className="h-3.5 w-3.5" />
-                JSON
-              </Button>
-              <Button size="sm" variant="outline" onClick={() => window.print()}>
-                <Printer className="h-3.5 w-3.5" />
-                Print
-              </Button>
-              <Button size="sm" variant="ghost" onClick={handleShare}>
-                <Share2 className="h-3.5 w-3.5" />
-              </Button>
-            </>
-          )}
+  if (farmsLoading || analysisLoading || reportsLoading) {
+    return (
+      <div className="flex flex-col gap-4">
+        <FarmerPageHeader mobileLabel={t.navReport} title={t.reportQuestionTitle} />
+        <div className="bg-white border-[1.5px] border-[#E4DFD2] rounded-[20px] p-8 flex items-center gap-3 text-[17px] text-[#4A5A4F]">
+          <Loader2 className="w-6 h-6 animate-spin text-[#2E6B3A]" />
+          <span>Preparing your farm report…</span>
         </div>
       </div>
+    );
+  }
 
-      {/* Saved Reports Selector */}
-      {reports.length > 1 && (
-        <div className="no-print flex gap-2 overflow-x-auto pb-1">
-          {reports.map((r) => (
-            <button
-              key={r.id}
-              onClick={() => setSelectedId(r.id)}
-              className={`shrink-0 px-3 py-2 rounded-xl border text-xs cursor-pointer ${
-                activeReport?.id === r.id
-                  ? "bg-[#14532d] text-white border-[#14532d]"
-                  : "bg-card border-border"
-              }`}
-            >
-              {r.farmName} • {r.overallScore}/100 ({formatTimestamp(r.createdAt)})
-            </button>
-          ))}
+  if (!activeFarm) {
+    return (
+      <div className="flex flex-col gap-4">
+        <FarmerPageHeader mobileLabel={t.navReport} title={t.reportQuestionTitle} />
+        <section className="bg-white border-[1.5px] border-[#E4DFD2] rounded-[20px] p-6 flex flex-col gap-3">
+          <p className="m-0 text-[18px] text-[#17251C]">{t.stepAddFarmPrompt}</p>
+          <Link
+            href="/farms?new=1"
+            className="min-h-[48px] px-6 rounded-full bg-[#2E6B3A] text-white font-bold text-[17px] inline-flex items-center w-fit"
+          >
+            {t.addFarmTitle}
+          </Link>
+        </section>
+      </div>
+    );
+  }
+
+  const m = selectFarmerMetrics(activeFarm, analysis);
+  const localizedPeak = monthLabel(m.peakMonthName);
+  const localizedCrop = cropLabel(m.cropName, m.cropCode);
+
+  const actionButtons = (
+    <>
+      <button
+        type="button"
+        onClick={() => ensureReportAndRun("pdf")}
+        disabled={generating}
+        className="flex-1 lg:flex-initial min-h-[52px] lg:min-h-[52px] px-5 rounded-full border-[1.5px] border-[#B8B1A0] bg-white text-[16px] font-bold text-[#17251C] hover:bg-[#F6F4EE]"
+      >
+        {generating ? "…" : t.savePdfBtn}
+      </button>
+      <button
+        type="button"
+        onClick={() => ensureReportAndRun("engineer")}
+        disabled={generating}
+        className="flex-[1.4] lg:flex-initial min-h-[52px] lg:min-h-[52px] px-6 rounded-full bg-[#2E6B3A] text-white text-[16px] font-bold hover:bg-[#23542d]"
+      >
+        {t.sendToEngineerBtn}
+      </button>
+    </>
+  );
+
+  const topCrops = (analysis?.cropSuitability ?? []).slice(0, 3);
+
+  return (
+    <div className="flex flex-col gap-5">
+      <FarmerPageHeader
+        mobileLabel={t.navReport}
+        title={t.reportQuestionTitle}
+        subtitle={`${t.navReport} · ${activeFarm.name}`}
+        rightAction={actionButtons}
+      />
+
+      {notice && (
+        <div className="bg-[#E3EFE2] border border-[#7FB083] text-[#1F4D28] rounded-[14px] px-4 py-3 text-[15px] font-bold">
+          {notice}
         </div>
       )}
 
-      {isLoading ? (
-        <Card>
-          <CardContent className="p-8 text-center text-sm text-muted-foreground">
-            Loading cached & server feasibility reports...
-          </CardContent>
-        </Card>
-      ) : !activeReport ? (
-        <Card>
-          <CardContent className="p-10 text-center space-y-3">
-            <FileText className="h-10 w-10 mx-auto text-muted-foreground" />
-            <p className="font-semibold text-sm">
-              No feasibility report generated for {activeFarm?.name ?? "this farm"} yet.
-            </p>
-            <p className="text-xs text-muted-foreground">
-              Click “Generate Report” above to compile weather, water, elevation, FAO-56 irrigation, pump hydraulics, and PVGIS solar estimates into an exportable PDF report.
-            </p>
-          </CardContent>
-        </Card>
-      ) : (
-        <div className="space-y-4">
-          {/* Executive Header */}
-          <Card>
-            <CardHeader>
-              <div className="flex flex-wrap items-center justify-between gap-2">
-                <div>
-                  <CardTitle className="text-lg sm:text-xl">{activeReport.title}</CardTitle>
-                  <CardDescription>
-                    Generated {formatTimestamp(activeReport.createdAt)} •{" "}
-                    {activeReport.propertyOverview.coordinates.latitude.toFixed(5)}°,{" "}
-                    {activeReport.propertyOverview.coordinates.longitude.toFixed(5)}°
-                  </CardDescription>
-                </div>
-                <div className="flex items-center gap-2">
-                  <Badge
-                    variant={
-                      activeReport.overallScore >= 75
-                        ? "green"
-                        : activeReport.overallScore >= 55
-                        ? "amber"
-                        : "red"
-                    }
-                  >
-                    Score: {activeReport.overallScore}/100 • {activeReport.verdict}
-                  </Badge>
-                </div>
-              </div>
-            </CardHeader>
-            <CardContent className="text-sm leading-relaxed">
-              {activeReport.executiveSummary}
-            </CardContent>
-          </Card>
+      {/* Dark Verdict Banner matching Report.dc.html / DeskReport.dc.html */}
+      <section className="bg-[#17251C] text-white rounded-[20px] lg:rounded-[22px] p-5 lg:px-7 lg:py-6 flex flex-col gap-2">
+        <p className="m-0 text-[22px] lg:text-[30px] font-bold leading-[1.25]">
+          {m.isWaterShort
+            ? "Yes, if you solve summer water first."
+            : "Yes, good land for your crops."}
+        </p>
+        <p className="m-0 text-[16px] lg:text-[18px] leading-[1.45] text-[#D5DDD7]">
+          {m.isWaterShort && m.peakDailyDemandM3 !== null
+            ? `Good land and climate for ${localizedCrop.toLowerCase()}. Your pump gives ${m.pumpDailySupplyM3} m³ a day, while ${localizedPeak} needs ${m.peakDailyDemandM3} m³ a day.`
+            : `Good land and climate for ${localizedCrop.toLowerCase()}. Your water and sun estimates match your farm needs.`}
+        </p>
+      </section>
 
-          {/* 4 Engineering Pillars */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
-            <Card>
-              <CardHeader className="pb-2">
-                <CardDescription>Property & Terrain</CardDescription>
-                <CardTitle className="text-base">
-                  {activeReport.propertyOverview.areaHectares.toFixed(2)} ha
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="text-xs text-muted-foreground space-y-1">
-                <p>Elevation: {activeReport.propertyOverview.elevationM} m ASL</p>
-                <p>Slope: {activeReport.propertyOverview.slopePct}%</p>
-                <p>Soil: {activeReport.propertyOverview.soilTexture}</p>
-              </CardContent>
-            </Card>
-
-            <Card>
-              <CardHeader className="pb-2">
-                <CardDescription>Climate & Aridity</CardDescription>
-                <CardTitle className="text-base">{activeReport.weatherSummary.aridityClass}</CardTitle>
-              </CardHeader>
-              <CardContent className="text-xs text-muted-foreground space-y-1">
-                <p>Rain: {activeReport.weatherSummary.annualPrecipMm} mm/yr</p>
-                <p>ET₀: {activeReport.weatherSummary.annualEt0Mm} mm/yr</p>
-                <p>Aridity Index: {activeReport.weatherSummary.aridityIndex}</p>
-              </CardContent>
-            </Card>
-
-            <Card>
-              <CardHeader className="pb-2">
-                <CardDescription>Water & Pump Energy</CardDescription>
-                <CardTitle className="text-base">
-                  {activeReport.irrigationAndPumpSummary.electricalPowerKw} kW Pump
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="text-xs text-muted-foreground space-y-1">
-                <p>
-                  Nearest:{" "}
-                  {activeReport.waterSummary.nearestSourceName
-                    ? `${activeReport.waterSummary.nearestSourceName} (${formatDistance(activeReport.waterSummary.nearestDistanceM)})`
-                    : "None in 10 km"}
-                </p>
-                <p>
-                  ΔZ: {formatNumber(activeReport.waterSummary.elevationDiffM, 1)} m • TDH{" "}
-                  {activeReport.irrigationAndPumpSummary.totalDynamicHeadM} m
-                </p>
-                <p>
-                  Gross Water: {activeReport.irrigationAndPumpSummary.annualGrossWaterM3.toLocaleString()} m³/yr
-                </p>
-              </CardContent>
-            </Card>
-
-            <Card>
-              <CardHeader className="pb-2">
-                <CardDescription>PVGIS Solar Coverage</CardDescription>
-                <CardTitle className="text-base text-amber-600 dark:text-amber-400">
-                  {activeReport.solarSummary.annualCoveragePct}% Annual
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="text-xs text-muted-foreground space-y-1">
-                <p>
-                  {activeReport.solarSummary.capacityKwp} kWp →{" "}
-                  {activeReport.solarSummary.annualSolarKwh.toLocaleString()} kWh/yr
-                </p>
-                <p>
-                  Peak {activeReport.solarSummary.worstMonthName}:{" "}
-                  {activeReport.solarSummary.worstMonthCoveragePct}%
-                </p>
-                <p>Buffer: {activeReport.solarSummary.recommendedTankM3} m³ tank</p>
-              </CardContent>
-            </Card>
+      {/* 3 Status Cards (Word + Icon + Color) */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-3.5">
+        <section className="bg-white border-[1.5px] border-[#E4DFD2] rounded-[18px] p-5 flex flex-col gap-2">
+          <div className="flex items-center justify-between gap-2">
+            <b className="text-[19px]">{t.landAndClimate}</b>
+            <FarmerStatusBadge level={m.landStatus} />
           </div>
+          <span className="text-[16px] text-[#4A5A4F] leading-[1.45]">
+            {m.slopePct !== null && m.slopePct <= 5 ? "Flat land." : "Sloped land."}{" "}
+            {m.annualPrecipMm !== null ? `${m.annualPrecipMm} mm of rain a year.` : ""}
+          </span>
+        </section>
 
-          {/* Risks & Recommendations */}
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <AlertTriangle className="h-4 w-4 text-amber-600" />
-                  Identified Risks & Constraints
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-2 text-xs">
-                {activeReport.risks.map((risk, idx) => (
-                  <div key={idx} className="p-2.5 rounded-lg border border-border">
-                    <div className="flex items-center justify-between gap-2">
-                      <span className="font-semibold">{risk.title}</span>
-                      <Badge
-                        variant={
-                          risk.severity === "HIGH"
-                            ? "red"
-                            : risk.severity === "MODERATE"
-                            ? "amber"
-                            : "neutral"
-                        }
-                      >
-                        {risk.severity}
-                      </Badge>
-                    </div>
-                    <p className="text-muted-foreground mt-1">{risk.detail}</p>
-                  </div>
-                ))}
-              </CardContent>
-            </Card>
-
-            <Card>
-              <CardHeader>
-                <CardTitle>Actionable Recommendations & Crop Ranking</CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-3 text-xs">
-                <ul className="space-y-2">
-                  {activeReport.recommendations.map((rec, idx) => (
-                    <li key={idx} className="p-2 rounded-lg bg-muted">
-                      {rec}
-                    </li>
-                  ))}
-                </ul>
-                <div className="pt-2 border-t border-border">
-                  <p className="font-semibold mb-1.5">Top Climatic Crop Suitability</p>
-                  <div className="grid grid-cols-2 gap-2">
-                    {activeReport.cropSuitability.slice(0, 4).map((c) => (
-                      <div key={c.cropCode} className="p-2 rounded border border-border">
-                        <div className="flex justify-between font-medium">
-                          <span>{c.cropName}</span>
-                          <span>{c.score}/100</span>
-                        </div>
-                        <span className="text-[10px] text-muted-foreground">
-                          {c.estimatedAnnualIrrigationM3Ha.toLocaleString()} m³/ha/yr
-                        </span>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
+        <section
+          className={
+            m.waterStatus === "PROBLEM"
+              ? "bg-[#FCEFD9] border-2 border-[#E2B66B] rounded-[18px] p-5 flex flex-col gap-2"
+              : "bg-white border-[1.5px] border-[#E4DFD2] rounded-[18px] p-5 flex flex-col gap-2"
+          }
+        >
+          <div className="flex items-center justify-between gap-2">
+            <b className="text-[19px]">{t.navWater}</b>
+            <FarmerStatusBadge level={m.waterStatus} />
           </div>
+          <span className="text-[16px] text-[#3B3020] leading-[1.45]">
+            {m.isWaterShort && m.peakDailyDemandM3 !== null
+              ? `Pump gives ${m.pumpDailySupplyM3} m³ a day. ${localizedPeak} needs ${m.peakDailyDemandM3} m³. `
+              : `Pump covers your peak ${localizedPeak} needs. `}
+            <Link href="/water" className="font-bold text-[#1D4F91]">
+              {m.isWaterShort ? "See fixes" : "See details"}
+            </Link>
+          </span>
+        </section>
 
-          {/* Data Sources & Uncertainties */}
-          <Card>
-            <CardHeader>
-              <CardTitle>Data Sources, Provenance & Key Uncertainties</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-4 text-xs">
-              <div className="overflow-x-auto">
-                <table className="w-full">
-                  <thead>
-                    <tr className="border-b border-border text-left text-muted-foreground">
-                      <th className="py-1.5 pr-3">Dataset</th>
-                      <th className="py-1.5 pr-3">Provider</th>
-                      <th className="py-1.5 pr-3">Provenance</th>
-                      <th className="py-1.5">Retrieved</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {activeReport.sources.map((s, idx) => (
-                      <tr key={`${s.id}_${idx}`} className="border-b border-border/50">
-                        <td className="py-1.5 pr-3 font-medium">{s.name}</td>
-                        <td className="py-1.5 pr-3 text-muted-foreground">{s.provider}</td>
-                        <td className="py-1.5 pr-3">
-                          <Badge variant={s.provenance === "OBSERVED" ? "blue" : "amber"}>
-                            {s.provenance}
-                          </Badge>
-                        </td>
-                        <td className="py-1.5 font-mono text-[11px]">
-                          {formatTimestamp(s.retrievedAt)}
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
+        <section className="bg-white border-[1.5px] border-[#E4DFD2] rounded-[18px] p-5 flex flex-col gap-2">
+          <div className="flex items-center justify-between gap-2">
+            <b className="text-[19px]">{t.navSunPower}</b>
+            <FarmerStatusBadge level={m.sunStatus} />
+          </div>
+          <span className="text-[16px] text-[#4A5A4F] leading-[1.45]">
+            {m.isSolarShortInSummer
+              ? `Enough over the year. Covers ${m.solarUnitsOutOf10} of 10 units in ${monthLabel(m.worstMonthName)}. `
+              : "Covers pump energy all year. "}
+            <Link href="/solar" className="font-bold text-[#1D4F91]">
+              See details
+            </Link>
+          </span>
+        </section>
+      </div>
 
-              <div className="space-y-1 text-muted-foreground border-t border-border pt-3">
-                <p className="font-semibold text-foreground">Explicit Uncertainties:</p>
-                {activeReport.uncertainties.map((u, i) => (
-                  <p key={i}>• {u}</p>
-                ))}
-              </div>
-            </CardContent>
-          </Card>
-        </div>
+      {/* Best Crops + Check In Person */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 lg:gap-5">
+        <section className="bg-white border-[1.5px] border-[#E4DFD2] rounded-[20px] p-5 flex flex-col gap-3">
+          <h2 className="m-0 text-[19px] lg:text-[20px] font-bold text-[#17251C]">
+            {t.bestCropsForPlace}
+          </h2>
+          {topCrops.length > 0 ? (
+            <ol className="m-0 ps-5 text-[17px] leading-[1.7] text-[#17251C]">
+              {topCrops.map((crop) => {
+                const isYours = crop.cropCode === activeFarm.irrigationConfig.cropCode;
+                return (
+                  <li key={crop.cropCode}>
+                    <b>{cropLabel(crop.cropName, crop.cropCode)}</b>{" "}
+                    {isYours && (
+                      <span className="text-[#2E6B3A] font-bold">{t.yourCropTag}</span>
+                    )}
+                    : {crop.waterDemandNote || crop.thermalMatchNote}
+                  </li>
+                );
+              })}
+            </ol>
+          ) : (
+            <p className="m-0 text-[16px] text-[#4A5A4F]">
+              {localizedCrop} is selected for your land.
+            </p>
+          )}
+        </section>
+
+        <section className="bg-white border-[1.5px] border-[#E4DFD2] rounded-[20px] p-5 flex flex-col gap-3">
+          <h2 className="m-0 text-[19px] lg:text-[20px] font-bold text-[#17251C]">
+            {t.checkInPersonTitle}
+          </h2>
+          <ul className="m-0 ps-5 text-[16px] lg:text-[17px] leading-[1.65] text-[#22392A]">
+            <li>{t.checkPointAllYear}</li>
+            <li>{t.checkSoilTest}</li>
+            <li>{t.checkGroundwaterDepth}</li>
+          </ul>
+        </section>
+      </div>
+
+      {/* Mobile Action Buttons matching Report.dc.html footer */}
+      <div className="flex lg:hidden gap-2.5">{actionButtons}</div>
+
+      {/* Collapsed Engineer Technical Section */}
+      {analysis && (
+        <details className="bg-white border-[1.5px] border-[#E4DFD2] rounded-[18px] px-5 py-1">
+          <summary className="min-h-[56px] flex items-center cursor-pointer text-[17px] font-bold text-[#1D4F91]">
+            {t.forYourEngineerTitle}
+          </summary>
+          <div className="pb-5 pt-1 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2.5 text-[15px] text-[#22392A]">
+            <span>Reference ET₀: {analysis.climate.annualEt0Mm.toLocaleString()} mm/yr (Open-Meteo ERA5)</span>
+            <span>
+              Gross irrigation: {analysis.irrigation.annualGrossVolumeM3.toLocaleString()} m³/yr (FAO-56,{" "}
+              {analysis.irrigation.applicationEfficiencyPct}%)
+            </span>
+            <span>
+              Total dynamic head: {analysis.pump.totalDynamicHeadM} m · {analysis.pump.electricalPowerKw} kW pump
+            </span>
+            <span>
+              PV yield: {analysis.solar.annualKwh.toLocaleString()} kWh/yr, {analysis.solar.capacityKwp} kWp (JRC PVGIS 5.3)
+            </span>
+            <span>Aridity index: {analysis.climate.aridityIndex} (UNEP)</span>
+            <span>
+              Elevation {analysis.elevation.farmElevationM} m, slope {analysis.elevation.estimatedSlopePct}% (Copernicus DEM)
+            </span>
+            {activeReport && <span>Composite score: {activeReport.overallScore}/100 ({activeReport.verdict})</span>}
+          </div>
+        </details>
       )}
     </div>
   );
