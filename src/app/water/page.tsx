@@ -5,6 +5,7 @@ import Link from "next/link";
 import { Info, Loader2 } from "lucide-react";
 import { FarmerPageHeader } from "@/components/farmer/FarmerUI";
 import { useLanguage } from "@/components/i18n/LanguageProvider";
+import { SCREEN_STRINGS } from "@/lib/i18n/screen-strings";
 import { useFarmAnalysis, useFarms } from "@/hooks/useFarms";
 import { selectFarmerMetrics } from "@/lib/services/farmer-metrics";
 import { localizeWaterSource } from "@/lib/i18n/translations";
@@ -16,6 +17,7 @@ function formatDist(m: number): string {
 
 export default function WaterPage() {
   const { t, fmt, monthLabel, lang } = useLanguage();
+  const s = SCREEN_STRINGS[lang];
   const { activeFarm, isLoading: farmsLoading } = useFarms();
   const { data: analysis, isLoading: analysisLoading } = useFarmAnalysis(activeFarm);
 
@@ -211,7 +213,7 @@ export default function WaterPage() {
 
         {m.topWaterSources.length === 0 ? (
           <p className="m-0 text-[16px] text-[var(--tp-fg-4A5A4F)]">
-            No river, lake, reservoir, or mapped well appeared within 10 km on open maps. Check with neighbors or dig a borehole after testing groundwater.
+            {s.noWaterNearby}
           </p>
         ) : (
           <div className="overflow-x-auto">
@@ -283,16 +285,20 @@ export default function WaterPage() {
             {t.forYourEngineerTitle}
           </summary>
           <div className="pb-5 pt-1 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2.5 text-[15px] text-[var(--tp-fg-22392A)]">
-            <span>Total Dynamic Head (TDH): {analysis.pump.totalDynamicHeadM} m</span>
-            <span>Static head: {analysis.pump.staticHeadM} m · Friction: {analysis.pump.frictionLossM} m</span>
-            <span>Shaft / Electrical power: {analysis.pump.electricalPowerKw} kW</span>
-            <span>Pump daily energy: {analysis.pump.dailyEnergyKwh} kWh/day</span>
-            <span>FAO-56 Annual ETc: {analysis.irrigation.annualEtcMm} mm</span>
-            <span>Gross annual irrigation: {analysis.irrigation.annualGrossVolumeM3.toLocaleString()} m³/yr</span>
+            <span>{s.engTdh}: {analysis.pump.totalDynamicHeadM} m</span>
             <span>
-              HydroBASINS watershed: {analysis.waterSources.hydroBasin?.hybasId ?? "Unavailable"}
+              {s.engStaticHead}: {analysis.pump.staticHeadM} m · {s.engFriction}: {analysis.pump.frictionLossM} m
             </span>
-            <span>Sources: OpenStreetMap Overpass, HydroSHEDS, Copernicus DEM</span>
+            <span>{s.engElectricalPower}: {analysis.pump.electricalPowerKw} kW</span>
+            <span>{s.engDailyEnergy}: {analysis.pump.dailyEnergyKwh} kWh {s.perDay}</span>
+            <span>{s.engAnnualEtc}: {analysis.irrigation.annualEtcMm} mm {s.perYear}</span>
+            <span>
+              {s.engGrossIrrigation}: {analysis.irrigation.annualGrossVolumeM3.toLocaleString()} m³ {s.perYear}
+            </span>
+            <span>
+              {s.engWatershed}: {analysis.waterSources.hydroBasin?.hybasId ?? s.notAvailable}
+            </span>
+            <span>{s.sources}: OpenStreetMap Overpass, HydroSHEDS, Copernicus DEM</span>
           </div>
         </details>
       )}

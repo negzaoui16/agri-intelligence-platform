@@ -4,6 +4,8 @@ import * as React from "react";
 import Link from "next/link";
 import { Loader2, Mic, MicOff, Send, Volume2, VolumeX } from "lucide-react";
 import { FarmerPageHeader } from "@/components/farmer/FarmerUI";
+import { FARM_UI_STRINGS, fillTemplate } from "@/lib/i18n/farm-ui-strings";
+import { SCREEN_STRINGS } from "@/lib/i18n/screen-strings";
 import { useLanguage } from "@/components/i18n/LanguageProvider";
 import { useFarmAnalysis, useFarms } from "@/hooks/useFarms";
 import { selectFarmerMetrics } from "@/lib/services/farmer-metrics";
@@ -54,6 +56,7 @@ interface SpeechRecognitionInstance {
 
 export default function AskPage() {
   const { lang, t, fmt, cropLabel, monthLabel } = useLanguage();
+  const s = SCREEN_STRINGS[lang];
   const { activeFarm } = useFarms();
   const { data: analysis } = useFarmAnalysis(activeFarm);
 
@@ -177,7 +180,7 @@ export default function AskPage() {
     };
     rec.onerror = () => {
       setListening(false);
-      setMicNote("Could not hear microphone clearly. Please try again or type.");
+      setMicNote(s.micError);
     };
     rec.onend = () => setListening(false);
 
@@ -219,8 +222,14 @@ export default function AskPage() {
                     : t.waterFineTitle}
                 </p>
                 <p className="m-0 text-[16px] text-[var(--tp-fg-4A5A4F)] leading-[1.45]">
-                  Ask anything about water, pumps, solar panels, crops, or weather for{" "}
-                  <b className="text-[var(--tp-fg-17251C)]">{activeFarm.name}</b>. Tap a question or tap the green microphone to speak.
+                  {s.askIntro.split("{farm}").map((part, i, parts) => (
+                    <React.Fragment key={i}>
+                      {part}
+                      {i < parts.length - 1 && (
+                        <bdi className="font-bold text-[var(--tp-fg-17251C)]">{activeFarm.name}</bdi>
+                      )}
+                    </React.Fragment>
+                  ))}
                 </p>
               </div>
             )}
@@ -349,7 +358,7 @@ export default function AskPage() {
               type="text"
               value={input}
               onChange={(e) => setInput(e.target.value)}
-              placeholder={listening ? "Listening…" : t.typeYourQuestion}
+              placeholder={listening ? s.listening : t.typeYourQuestion}
               className="flex-1 min-w-0 min-h-[52px] border-none bg-transparent text-[17px] lg:text-[18px] text-[var(--tp-fg-17251C)] placeholder:text-[var(--tp-fg-4A5A4F)] focus:outline-none"
             />
 
@@ -357,7 +366,7 @@ export default function AskPage() {
               <button
                 type="submit"
                 disabled={loading}
-                aria-label="Send question"
+                aria-label={s.sendQuestion}
                 className="w-12 h-12 rounded-full bg-[var(--tp-bg-17251C)] text-[var(--tp-on-inverse)] flex items-center justify-center shrink-0"
               >
                 <Send className="w-5 h-5" aria-hidden="true" />
@@ -392,32 +401,33 @@ export default function AskPage() {
                 {t.whatIKnowAboutFarm}
               </h2>
               <dl className="m-0 grid grid-cols-[auto_1fr] gap-x-3.5 gap-y-2 text-[15px]">
-                <dt className="text-[var(--tp-fg-4A5A4F)]">Land</dt>
+                <dt className="text-[var(--tp-fg-4A5A4F)]">{s.factLand}</dt>
                 <dd className="m-0 font-bold">
                   {Number(activeFarm.areaHectares.toFixed(1))} {t.hectaresShort},{" "}
                   {cropLabel(m.cropName, m.cropCode).toLowerCase()}
                 </dd>
 
-                <dt className="text-[var(--tp-fg-4A5A4F)]">Watering</dt>
-                <dd className="m-0 font-bold capitalize">
-                  {activeFarm.irrigationConfig.irrigationMethod.toLowerCase().replace("_", " ")}
-                </dd>
-
-                <dt className="text-[var(--tp-fg-4A5A4F)]">Pump</dt>
+                <dt className="text-[var(--tp-fg-4A5A4F)]">{s.factWatering}</dt>
                 <dd className="m-0 font-bold">
-                  {m.pumpFlowM3Hr} m³/hour, {m.pumpHoursDay} hours a day
+                  {FARM_UI_STRINGS[lang].wateringMethods[activeFarm.irrigationConfig.irrigationMethod] ??
+                    activeFarm.irrigationConfig.irrigationMethod}
                 </dd>
 
-                <dt className="text-[var(--tp-fg-4A5A4F)]">Panels</dt>
+                <dt className="text-[var(--tp-fg-4A5A4F)]">{s.factPump}</dt>
                 <dd className="m-0 font-bold">
-                  {m.solarKwp} kW (about {m.solarPanelCount500W})
+                  {fillTemplate(s.pumpFlowLine, { flow: m.pumpFlowM3Hr, hours: m.pumpHoursDay })}
                 </dd>
 
-                <dt className="text-[var(--tp-fg-4A5A4F)]">Water</dt>
+                <dt className="text-[var(--tp-fg-4A5A4F)]">{s.factPanels}</dt>
+                <dd className="m-0 font-bold">
+                  {fillTemplate(s.panelsLine, { kw: m.solarKwp, count: m.solarPanelCount500W })}
+                </dd>
+
+                <dt className="text-[var(--tp-fg-4A5A4F)]">{s.factWater}</dt>
                 <dd className="m-0 font-bold">
                   {m.nearestSourceDistanceM !== null
-                    ? `Nearest point ${m.nearestSourceDistanceM} m`
-                    : "None nearby on map"}
+                    ? fillTemplate(s.nearestWater, { m: m.nearestSourceDistanceM })
+                    : s.noWaterOnMap}
                 </dd>
               </dl>
               <Link

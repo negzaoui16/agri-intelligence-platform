@@ -10,7 +10,8 @@ import {
   type WizardSubmitPayload,
 } from "@/components/farmer/ThreeStepFarmWizard";
 import { useLanguage } from "@/components/i18n/LanguageProvider";
-import { FARM_UI_STRINGS } from "@/lib/i18n/farm-ui-strings";
+import { FARM_UI_STRINGS, fillTemplate } from "@/lib/i18n/farm-ui-strings";
+import { SCREEN_STRINGS } from "@/lib/i18n/screen-strings";
 import { useDeleteFarm, useFarms, useSaveFarm } from "@/hooks/useFarms";
 import {
   IRRIGATION_EFFICIENCY_DEFAULTS,
@@ -123,6 +124,7 @@ function buildFarmRecordFromDraft(
 export default function FarmsPage() {
   const router = useRouter();
   const { t, fmt, lang } = useLanguage();
+  const s = SCREEN_STRINGS[lang];
   const { farms, activeFarm, setActiveFarmId } = useFarms();
   const saveFarm = useSaveFarm();
   const deleteFarm = useDeleteFarm();
@@ -148,9 +150,7 @@ export default function FarmsPage() {
     await saveFarm.mutateAsync({ farm: record, isNew });
     setCreatingNew(false);
     setSavedNotice(
-      isOnline
-        ? "Saved and updated your farm numbers."
-        : "Saved on your phone. It will sync automatically when online."
+      isOnline ? s.farmSavedOnline : s.farmSavedOffline
     );
     if (isNew) {
       router.push("/");
@@ -226,7 +226,7 @@ export default function FarmsPage() {
                 }}
                 className="min-h-[48px] px-4 py-2 text-start flex flex-col justify-center"
               >
-                <b className="text-[16px] leading-tight">{farm.name}</b>
+                <bdi className="text-[16px] font-bold leading-tight">{farm.name}</bdi>
                 <span className="text-[13px] opacity-85">
                   {Number(farm.areaHectares.toFixed(1))} {t.hectaresShort}
                 </span>
@@ -235,7 +235,7 @@ export default function FarmsPage() {
                 <button
                   type="button"
                   onClick={() => setConfirmDeleteTarget(farm)}
-                  aria-label={`Delete ${farm.name}`}
+                  aria-label={fillTemplate(s.deleteFarmTitle, { name: farm.name }).replace(/[?؟]\s*$/, "")}
                   className="min-h-[48px] min-w-[44px] px-2.5 flex items-center justify-center text-[var(--tp-fg-8A4B00)] hover:bg-[var(--tp-bg-FCEFD9)] border-s border-[var(--tp-bd-E4DFD2)]"
                 >
                   <Trash2 className="w-4 h-4" aria-hidden="true" />
@@ -276,7 +276,7 @@ export default function FarmsPage() {
             <div className="flex items-center gap-2.5 text-[var(--tp-fg-8A4B00)]">
               <AlertTriangle className="w-7 h-7 shrink-0" aria-hidden="true" />
               <h2 id="delete-dialog-title" className="m-0 text-[22px] font-bold">
-                Delete {confirmDeleteTarget.name}?
+                {fillTemplate(s.deleteFarmTitle, { name: confirmDeleteTarget.name })}
               </h2>
             </div>
             <p className="m-0 text-[16px] text-[var(--tp-fg-3B3020)] leading-[1.45]">
@@ -288,7 +288,7 @@ export default function FarmsPage() {
                 onClick={() => setConfirmDeleteTarget(null)}
                 className="min-h-[48px] px-5 rounded-full border-[1.5px] border-[var(--tp-bd-B8B1A0)] bg-[var(--tp-bg-FFFFFF)] text-[16px] font-bold text-[var(--tp-fg-17251C)]"
               >
-                Keep farm
+                {s.keepFarm}
               </button>
               <button
                 type="button"
@@ -296,7 +296,9 @@ export default function FarmsPage() {
                 disabled={deleteFarm.isPending}
                 className="min-h-[48px] px-6 rounded-full bg-[var(--tp-bg-8A4B00)] text-white text-[16px] font-bold"
               >
-                {deleteFarm.isPending ? "Removing…" : `Yes, delete ${confirmDeleteTarget.name}`}
+                {deleteFarm.isPending
+                  ? s.removing
+                  : fillTemplate(s.yesDelete, { name: confirmDeleteTarget.name })}
               </button>
             </div>
           </div>

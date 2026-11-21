@@ -12,6 +12,8 @@ import { cacheReportsLocally } from "@/lib/offline/sync-engine";
 import { selectFarmerMetrics } from "@/lib/services/farmer-metrics";
 import { getCropSpec } from "@/lib/engines/fao56-calculator";
 import { useAppStore } from "@/lib/store/app-store";
+import { fillTemplate } from "@/lib/i18n/farm-ui-strings";
+import { SCREEN_STRINGS } from "@/lib/i18n/screen-strings";
 import { formatTimestamp } from "@/lib/utils";
 import type { FeasibilityReportPayload } from "@/types/agri";
 import { useQueryClient } from "@tanstack/react-query";
@@ -132,7 +134,8 @@ function exportFeasibilityPdf(report: FeasibilityReportPayload) {
 
 export default function ReportsPage() {
   const queryClient = useQueryClient();
-  const { t, monthLabel, cropLabel } = useLanguage();
+  const { lang, t, monthLabel, cropLabel } = useLanguage();
+  const s = SCREEN_STRINGS[lang];
   const { activeFarm, isLoading: farmsLoading } = useFarms();
   const { data: analysis, isLoading: analysisLoading } = useFarmAnalysis(activeFarm);
   const { data: reports = [], isLoading: reportsLoading } = useReports(activeFarm?.id);
@@ -164,13 +167,13 @@ export default function ReportsPage() {
     }
 
     if (!report) {
-      setNotice("Connect to the internet once to prepare the downloadable PDF for your engineer.");
+      setNotice(s.needInternetForPdf);
       return;
     }
 
     if (mode === "pdf") {
       exportFeasibilityPdf(report);
-      setNotice("PDF saved to your device.");
+      setNotice(s.pdfSaved);
       return;
     }
 
@@ -188,10 +191,11 @@ export default function ReportsPage() {
       }
     }
     if (typeof navigator !== "undefined" && navigator.clipboard) {
-      await navigator.clipboard.writeText(JSON.stringify(report, null, 2)).catch(() => undefined);
+      // A short readable summary to paste in a message; the full detail is in the PDF.
+      await navigator.clipboard.writeText(summaryText).catch(() => undefined);
     }
     exportFeasibilityPdf(report);
-    setNotice("Engineer PDF downloaded and technical summary copied to clipboard.");
+    setNotice(s.engineerPdfReady);
   };
 
   if (farmsLoading || analysisLoading || reportsLoading) {
@@ -200,7 +204,7 @@ export default function ReportsPage() {
         <FarmerPageHeader mobileLabel={t.navReport} title={t.reportQuestionTitle} />
         <div className="bg-[var(--tp-bg-FFFFFF)] border-[1.5px] border-[var(--tp-bd-E4DFD2)] rounded-[20px] p-8 flex items-center gap-3 text-[17px] text-[var(--tp-fg-4A5A4F)]">
           <Loader2 className="w-6 h-6 animate-spin text-[var(--tp-fg-2E6B3A)]" />
-          <span>Preparing your farm report…</span>
+          <span>{s.preparingReport}</span>
         </div>
       </div>
     );
@@ -226,6 +230,8 @@ export default function ReportsPage() {
   const m = selectFarmerMetrics(activeFarm, analysis);
   const localizedPeak = monthLabel(m.peakMonthName);
   const localizedCrop = cropLabel(m.cropName, m.cropCode);
+  // Lower-case only in English and French ("for citrus"); Arabic has no case.
+  const cropInSentence = lang === "ar" ? localizedCrop : localizedCrop.toLowerCase();
 
   const actionButtons = (
     <>
@@ -283,14 +289,17 @@ export default function ReportsPage() {
       {/* Dark Verdict Banner matching Report.dc.html / DeskReport.dc.html */}
       <section className="bg-[var(--tp-bg-17251C)] text-[var(--tp-on-inverse)] rounded-[20px] lg:rounded-[22px] p-5 lg:px-7 lg:py-6 flex flex-col gap-2">
         <p className="m-0 text-[22px] lg:text-[30px] font-bold leading-[1.25]">
-          {m.isWaterShort
-            ? "Yes, if you solve summer water first."
-            : "Yes, good land for your crops."}
+          {m.isWaterShort ? s.verdictYesIfWater : s.verdictYesGood}
         </p>
         <p className="m-0 text-[16px] lg:text-[18px] leading-[1.45] text-[var(--tp-fg-D5DDD7)]">
           {m.isWaterShort && m.peakDailyDemandM3 !== null
-            ? `Good land and climate for ${localizedCrop.toLowerCase()}. Your pump gives ${m.pumpDailySupplyM3} m³ a day, while ${localizedPeak} needs ${m.peakDailyDemandM3} m³ a day.`
-            : `Good land and climate for ${localizedCrop.toLowerCase()}. Your water and sun estimates match your farm needs.`}
+            ? fillTemplate(s.verdictShortDetail, {
+                crop: cropInSentence,
+                supply: m.pumpDailySupplyM3,
+                month: localizedPeak,
+                demand: m.peakDailyDemandM3,
+              })
+            : fillTemplate(s.verdictOkDetail, { crop: cropInSentence })}
         </p>
       </section>
 
@@ -302,8 +311,8 @@ export default function ReportsPage() {
             <FarmerStatusBadge level={m.landStatus} />
           </div>
           <span className="text-[16px] text-[var(--tp-fg-4A5A4F)] leading-[1.45]">
-            {m.slopePct !== null && m.slopePct <= 5 ? "Flat land." : "Sloped land."}{" "}
-            {m.annualPrecipMm !== null ? `${m.annualPrecipMm} mm of rain a year.` : ""}
+            {m.slopePct !== null && m.slopePct <= 5 ? s.flatLand : s.slopedLand}{" "}
+            {m.annualPrecipMm !== null ? fillTemplate(s.rainPerYear, { mm: m.annualPrecipMm }) : ""}
           </span>
         </section>
 
@@ -320,10 +329,17 @@ export default function ReportsPage() {
           </div>
           <span className="text-[16px] text-[var(--tp-fg-3B3020)] leading-[1.45]">
             {m.isWaterShort && m.peakDailyDemandM3 !== null
-              ? `Pump gives ${m.pumpDailySupplyM3} m³ a day. ${localizedPeak} needs ${m.peakDailyDemandM3} m³. `
-              : `Pump covers your peak ${localizedPeak} needs. `}
-            <Link href="/water" className="font-bold text-[var(--tp-fg-1D4F91)]">
-              {m.isWaterShort ? "See fixes" : "See details"}
+              ? fillTemplate(s.pumpGivesVsNeed, {
+                  supply: m.pumpDailySupplyM3,
+                  month: localizedPeak,
+                  demand: m.peakDailyDemandM3,
+                })
+              : fillTemplate(s.pumpCoversPeak, { month: localizedPeak })}{" "}
+            <Link
+              href="/water"
+              className="inline-flex items-center min-h-[44px] font-bold text-[var(--tp-fg-1D4F91)] underline underline-offset-2"
+            >
+              {m.isWaterShort ? s.seeFixes : s.seeDetails}
             </Link>
           </span>
         </section>
@@ -335,10 +351,16 @@ export default function ReportsPage() {
           </div>
           <span className="text-[16px] text-[var(--tp-fg-4A5A4F)] leading-[1.45]">
             {m.isSolarShortInSummer
-              ? `Enough over the year. Covers ${m.solarUnitsOutOf10} of 10 units in ${monthLabel(m.worstMonthName)}. `
-              : "Covers pump energy all year. "}
-            <Link href="/solar" className="font-bold text-[var(--tp-fg-1D4F91)]">
-              See details
+              ? fillTemplate(s.sunCoversUnits, {
+                  units: m.solarUnitsOutOf10,
+                  month: monthLabel(m.worstMonthName),
+                })
+              : s.sunCoversAllYear}{" "}
+            <Link
+              href="/solar"
+              className="inline-flex items-center min-h-[44px] font-bold text-[var(--tp-fg-1D4F91)] underline underline-offset-2"
+            >
+              {s.seeDetails}
             </Link>
           </span>
         </section>
@@ -367,7 +389,7 @@ export default function ReportsPage() {
             </ol>
           ) : (
             <p className="m-0 text-[16px] text-[var(--tp-fg-4A5A4F)]">
-              {localizedCrop} is selected for your land.
+              {fillTemplate(s.cropSelectedForLand, { crop: localizedCrop })}
             </p>
           )}
         </section>
@@ -394,22 +416,24 @@ export default function ReportsPage() {
             {t.forYourEngineerTitle}
           </summary>
           <div className="pb-5 pt-1 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2.5 text-[15px] text-[var(--tp-fg-22392A)]">
-            <span>Reference ET₀: {analysis.climate.annualEt0Mm.toLocaleString()} mm/yr (Open-Meteo ERA5)</span>
             <span>
-              Gross irrigation: {analysis.irrigation.annualGrossVolumeM3.toLocaleString()} m³/yr (FAO-56,{" "}
-              {analysis.irrigation.applicationEfficiencyPct}%)
+              {s.engEt0}: {analysis.climate.annualEt0Mm.toLocaleString()} mm {s.perYear} (Open-Meteo ERA5)
             </span>
             <span>
-              Total dynamic head: {analysis.pump.totalDynamicHeadM} m · {analysis.pump.electricalPowerKw} kW pump
+              {s.engGrossIrrigation}: {analysis.irrigation.annualGrossVolumeM3.toLocaleString()} m³ {s.perYear} (FAO-56,{" "}
+              {s.engApplicationEfficiency} {analysis.irrigation.applicationEfficiencyPct}%)
             </span>
             <span>
-              PV yield: {analysis.solar.annualKwh.toLocaleString()} kWh/yr, {analysis.solar.capacityKwp} kWp (JRC PVGIS 5.3)
+              {s.engTdh}: {analysis.pump.totalDynamicHeadM} m · {s.engPumpPower}: {analysis.pump.electricalPowerKw} kW
             </span>
-            <span>Aridity index: {analysis.climate.aridityIndex} (UNEP)</span>
             <span>
-              Elevation {analysis.elevation.farmElevationM} m, slope {analysis.elevation.estimatedSlopePct}% (Copernicus DEM)
+              {s.engPvAnnual}: {analysis.solar.annualKwh.toLocaleString()} kWh {s.perYear}, {analysis.solar.capacityKwp} kWp (JRC PVGIS 5.3)
             </span>
-            {activeReport && <span>Composite score: {activeReport.overallScore}/100 ({activeReport.verdict})</span>}
+            <span>{s.engAridity}: {analysis.climate.aridityIndex} (UNEP)</span>
+            <span>
+              {s.engElevation}: {analysis.elevation.farmElevationM} m · {s.engSlope}: {analysis.elevation.estimatedSlopePct}% (Copernicus DEM)
+            </span>
+            {activeReport && <span>{s.engScore}: {activeReport.overallScore}/100</span>}
           </div>
         </details>
       )}

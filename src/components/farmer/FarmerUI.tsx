@@ -82,6 +82,47 @@ export function FarmerPageHeader({
   );
 }
 
+const LANGUAGE_CHOICES = [
+  { code: "en", short: "EN", name: "English" },
+  { code: "ar", short: "ع", name: "العربية" },
+  { code: "fr", short: "FR", name: "Français" },
+] as const;
+
+/** Compact EN · ع · FR switch with 40px tap targets (phone headers and sign-in screens). */
+export function LanguageSwitch({ className }: { className?: string }) {
+  const { lang, setLang, t } = useLanguage();
+  return (
+    <div
+      role="group"
+      aria-label={t.changeLanguageLabel}
+      className={cn(
+        "min-h-[44px] px-1 rounded-full border-[1.5px] border-[var(--tp-bd-C9C3B3)] bg-[var(--tp-bg-FFFFFF)] inline-flex items-center gap-0.5 text-[15px] font-bold text-[var(--tp-fg-17251C)] shrink-0",
+        className
+      )}
+    >
+      {LANGUAGE_CHOICES.map((choice) => (
+        <button
+          key={choice.code}
+          type="button"
+          lang={choice.code}
+          onClick={() => setLang(choice.code)}
+          aria-pressed={lang === choice.code}
+          aria-label={choice.name}
+          title={choice.name}
+          className={cn(
+            "min-h-[40px] min-w-[40px] px-2 rounded-full",
+            lang === choice.code
+              ? "bg-[var(--tp-bg-E3EFE2)] text-[var(--tp-fg-1F4D28)]"
+              : "text-[var(--tp-fg-4A5A4F)] hover:text-[var(--tp-fg-17251C)]"
+          )}
+        >
+          {choice.short}
+        </button>
+      ))}
+    </div>
+  );
+}
+
 /**
  * Light / dark mode switch. `compact` is a 44px round icon button (phone headers);
  * the default shows the icon plus the mode it switches to (desktop sidebar).

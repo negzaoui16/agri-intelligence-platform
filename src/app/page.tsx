@@ -12,7 +12,7 @@ import {
   RefreshCw,
   Sun,
 } from "lucide-react";
-import { ThemeToggle } from "@/components/farmer/FarmerUI";
+import { LanguageSwitch, ThemeToggle } from "@/components/farmer/FarmerUI";
 import { useLanguage } from "@/components/i18n/LanguageProvider";
 import { useAuthSession } from "@/hooks/useAuth";
 import {
@@ -21,11 +21,13 @@ import {
   useRefreshFarmAnalysis,
 } from "@/hooks/useFarms";
 import { selectFarmerMetrics } from "@/lib/services/farmer-metrics";
+import { SCREEN_STRINGS } from "@/lib/i18n/screen-strings";
 import { localizeWeatherCondition } from "@/lib/i18n/translations";
 import { cn } from "@/lib/utils";
 
 export default function HomePage() {
-  const { lang, setLang, isRtl, t, fmt, monthLabel, cropLabel } = useLanguage();
+  const { lang, isRtl, t, fmt, monthLabel, cropLabel } = useLanguage();
+  const s = SCREEN_STRINGS[lang];
   const { farmerProfile, user } = useAuthSession();
   const { farms, activeFarm, isLoading: farmsLoading } = useFarms();
   const {
@@ -87,7 +89,7 @@ export default function HomePage() {
           </div>
           <div className="flex items-center gap-2 shrink-0">
             <ThemeToggle compact />
-            <MobileLanguageButton lang={lang} setLang={setLang} label={t.changeLanguageLabel} />
+            <LanguageSwitch />
           </div>
         </div>
 
@@ -142,13 +144,7 @@ export default function HomePage() {
     m.todayPrecipMm < 1 && !m.hasFrostAlert && !m.hasWindAlert
       ? t.noRainNoFrostLightWind
       : [
-          m.todayPrecipMm < 1
-            ? lang === "ar"
-              ? "لا مطر"
-              : lang === "fr"
-                ? "Pas de pluie"
-                : "No rain"
-            : `${Math.round(m.todayPrecipMm)} mm`,
+          m.todayPrecipMm < 1 ? s.noRain : `${Math.round(m.todayPrecipMm)} mm`,
           m.hasFrostAlert ? t.frostAlert : t.noFrost,
           m.hasWindAlert
             ? t.windAlert
@@ -167,17 +163,17 @@ export default function HomePage() {
           <span className="text-[15px] text-[var(--tp-fg-4A5A4F)]">
             {firstName ? `${t.goodMorning}, ${firstName}` : t.goodMorning}
           </span>
-          <span className="text-[22px] font-bold text-[var(--tp-fg-17251C)] truncate">
+          <h1 dir="auto" className="m-0 text-[22px] font-bold text-[var(--tp-fg-17251C)] truncate text-start rtl:text-right">
             {activeFarm.name}
-          </span>
+          </h1>
           <span className="text-[15px] text-[var(--tp-fg-4A5A4F)] truncate">
             {Number(activeFarm.areaHectares.toFixed(1))} {t.hectaresFull} · {localizedCrop}
           </span>
         </div>
         <div className="flex items-center gap-2 shrink-0">
             <ThemeToggle compact />
-            <MobileLanguageButton lang={lang} setLang={setLang} label={t.changeLanguageLabel} />
-          </div>
+          <LanguageSwitch />
+        </div>
       </header>
 
       {/* Desktop Header matching DeskHome.dc.html */}
@@ -192,7 +188,7 @@ export default function HomePage() {
         </div>
         <div className="flex items-center gap-3">
           <span className="text-[15px] text-[var(--tp-fg-4A5A4F)]">
-            {analysisLoading ? "Checking live weather and sun…" : t.liveDataLabel}
+            {analysisLoading ? s.checkingLiveData : t.liveDataLabel}
           </span>
           <button
             type="button"
@@ -458,57 +454,6 @@ export default function HomePage() {
           </div>
         </section>
       </div>
-    </div>
-  );
-}
-
-function MobileLanguageButton({
-  lang,
-  setLang,
-  label,
-}: {
-  lang: "en" | "fr" | "ar";
-  setLang: (next: "en" | "fr" | "ar") => void;
-  label: string;
-}) {
-  return (
-    <div
-      role="group"
-      aria-label={label}
-      className="min-h-[44px] px-2 rounded-full border-[1.5px] border-[var(--tp-bd-C9C3B3)] bg-[var(--tp-bg-FFFFFF)] inline-flex items-center gap-1 text-[15px] font-bold text-[var(--tp-fg-17251C)] shrink-0"
-    >
-      <button
-        type="button"
-        onClick={() => setLang("en")}
-        className={cn(
-          "min-h-[36px] px-2 rounded-full",
-          lang === "en" ? "bg-[var(--tp-bg-E3EFE2)] text-[var(--tp-fg-1F4D28)]" : "text-[var(--tp-fg-4A5A4F)]"
-        )}
-      >
-        EN
-      </button>
-      <span className="text-[var(--tp-fg-C9C3B3)]" aria-hidden="true">·</span>
-      <button
-        type="button"
-        onClick={() => setLang("ar")}
-        className={cn(
-          "min-h-[36px] px-2 rounded-full",
-          lang === "ar" ? "bg-[var(--tp-bg-E3EFE2)] text-[var(--tp-fg-1F4D28)]" : "text-[var(--tp-fg-4A5A4F)]"
-        )}
-      >
-        ع
-      </button>
-      <span className="text-[var(--tp-fg-C9C3B3)]" aria-hidden="true">·</span>
-      <button
-        type="button"
-        onClick={() => setLang("fr")}
-        className={cn(
-          "min-h-[36px] px-2 rounded-full",
-          lang === "fr" ? "bg-[var(--tp-bg-E3EFE2)] text-[var(--tp-fg-1F4D28)]" : "text-[var(--tp-fg-4A5A4F)]"
-        )}
-      >
-        FR
-      </button>
     </div>
   );
 }

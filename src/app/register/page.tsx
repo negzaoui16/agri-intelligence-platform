@@ -7,6 +7,8 @@ import { AuthSplitLayout } from "@/components/auth/AuthSplitLayout";
 import { Button, Input } from "@/components/ui/primitives";
 import { useAppStore } from "@/lib/store/app-store";
 import { useAuthOptions } from "@/hooks/useAuthOptions";
+import { useLanguage } from "@/components/i18n/LanguageProvider";
+import { SCREEN_STRINGS } from "@/lib/i18n/screen-strings";
 import { clearUserLocalCacheOnLogout } from "@/lib/offline/sync-engine";
 import { useQueryClient } from "@tanstack/react-query";
 import { AlertCircle, Check, Eye, EyeOff, Loader2, UserPlus, WifiOff } from "lucide-react";
@@ -17,6 +19,8 @@ export default function RegisterPage() {
   const isOnline = useAppStore((s) => s.isOnline);
 
   const authOptions = useAuthOptions();
+  const { lang } = useLanguage();
+  const s = SCREEN_STRINGS[lang];
   const [firstName, setFirstName] = React.useState("");
   const [lastName, setLastName] = React.useState("");
   const [email, setEmail] = React.useState("");
@@ -26,10 +30,10 @@ export default function RegisterPage() {
   const [error, setError] = React.useState<string | null>(null);
 
   const checks = [
-    { label: "8+ characters", ok: password.length >= 8 },
-    { label: "Uppercase letter", ok: /[A-Z]/.test(password) },
-    { label: "Lowercase letter", ok: /[a-z]/.test(password) },
-    { label: "Number", ok: /[0-9]/.test(password) },
+    { label: s.ruleLength, ok: password.length >= 8 },
+    { label: s.ruleUpper, ok: /[A-Z]/.test(password) },
+    { label: s.ruleLower, ok: /[a-z]/.test(password) },
+    { label: s.ruleNumber, ok: /[0-9]/.test(password) },
   ];
   const allChecksValid = checks.every((c) => c.ok);
 
@@ -37,11 +41,11 @@ export default function RegisterPage() {
     e.preventDefault();
     setError(null);
     if (!isOnline) {
-      setError("Account registration requires an active internet connection.");
+      setError(s.offlineRegister);
       return;
     }
     if (!allChecksValid) {
-      setError("Please satisfy all password security requirements.");
+      setError(s.passwordRulesNotMet);
       return;
     }
     setLoading(true);
@@ -56,9 +60,17 @@ export default function RegisterPage() {
           password,
         }),
       });
-      const json = await res.json();
+      const json = await res.json().catch(() => ({}));
       if (!res.ok) {
-        setError(json.error || "Could not create account.");
+        setError(
+          res.status === 409
+            ? s.emailTaken
+            : res.status === 429
+              ? s.tooManyTries
+              : res.status === 400
+                ? s.checkWhatYouTyped
+                : s.somethingWentWrong
+        );
         return;
       }
       await clearUserLocalCacheOnLogout().catch(() => undefined);
@@ -68,7 +80,7 @@ export default function RegisterPage() {
       router.push(json.redirectTo || "/onboarding");
       router.refresh();
     } catch {
-      setError("Network error while creating your account.");
+      setError(s.noConnection);
     } finally {
       setLoading(false);
     }
@@ -76,22 +88,22 @@ export default function RegisterPage() {
 
   return (
     <AuthSplitLayout
-      title="Create your farmer account"
-      subtitle="Register to map your fields, calculate crop water needs, and evaluate solar irrigation."
+      title={s.registerTitle}
+      subtitle={s.registerSubtitle}
     >
       {!isOnline && (
-        <div className="p-3 rounded-xl bg-amber-50 dark:bg-amber-950/50 border border-amber-300 dark:border-amber-800 text-xs flex items-start gap-2 text-amber-900 dark:text-amber-200">
-          <WifiOff className="h-4 w-4 shrink-0 mt-0.5" />
-          <span>Account registration and Google OAuth require internet connectivity.</span>
+        <div className="p-3.5 rounded-xl bg-amber-50 dark:bg-amber-950/50 border border-amber-300 dark:border-amber-800 text-[15px] flex items-start gap-2 text-amber-900 dark:text-amber-200">
+          <WifiOff className="h-5 w-5 shrink-0 mt-0.5" aria-hidden="true" />
+          <span>{s.offlineRegister}</span>
         </div>
       )}
 
       {error && (
         <div
           role="alert"
-          className="p-3 rounded-xl bg-red-50 dark:bg-red-950/50 border border-red-300 dark:border-red-800 text-xs flex items-start gap-2 text-red-900 dark:text-red-200"
+          className="p-3.5 rounded-xl bg-red-50 dark:bg-red-950/50 border border-red-300 dark:border-red-800 text-[15px] flex items-start gap-2 text-red-900 dark:text-red-200"
         >
-          <AlertCircle className="h-4 w-4 shrink-0 mt-0.5" />
+          <AlertCircle className="h-5 w-5 shrink-0 mt-0.5" aria-hidden="true" />
           <span>{error}</span>
         </div>
       )}
@@ -103,10 +115,10 @@ export default function RegisterPage() {
           onClick={(e) => {
             if (!isOnline) {
               e.preventDefault();
-              setError("Google Sign-Up requires an active internet connection.");
+              setError(s.googleNeedsInternet);
             }
           }}
-          className="w-full h-11 rounded-xl border border-border bg-card hover:bg-muted transition-colors flex items-center justify-center gap-2.5 text-sm font-medium"
+          className="w-full h-12 rounded-xl border border-border bg-card hover:bg-muted transition-colors flex items-center justify-center gap-2.5 text-[16px] font-semibold"
         >
           <svg className="h-4 w-4" viewBox="0 0 24 24" aria-hidden="true">
             <path
@@ -126,15 +138,15 @@ export default function RegisterPage() {
               d="M12 4.75c1.77 0 3.35.61 4.6 1.8l3.42-3.42C17.95 1.19 15.24 0 12 0 7.31 0 3.26 2.7 1.29 6.62l3.99 3.14c.95-2.85 3.6-4.96 6.72-4.96Z"
             />
           </svg>
-          <span>Sign up with Google</span>
+          <span>{s.signUpWithGoogle}</span>
         </a>
   
         <div className="relative">
           <div className="absolute inset-0 flex items-center">
             <span className="w-full border-t border-border" />
           </div>
-          <div className="relative flex justify-center text-[11px] uppercase">
-            <span className="bg-background px-2 text-muted-foreground">Or register with email</span>
+          <div className="relative flex justify-center text-[14px]">
+            <span className="bg-background px-2 text-muted-foreground">{s.orUseEmail}</span>
           </div>
         </div>
         </>
@@ -143,8 +155,8 @@ export default function RegisterPage() {
       <form onSubmit={handleSubmit} className="space-y-4">
         <div className="grid grid-cols-2 gap-3">
           <div className="space-y-1.5">
-            <label htmlFor="reg-first" className="text-xs font-medium">
-              First name
+            <label htmlFor="reg-first" className="text-[15px] font-semibold">
+              {s.firstName}
             </label>
             <Input
               id="reg-first"
@@ -152,13 +164,12 @@ export default function RegisterPage() {
               placeholder="Amine"
               value={firstName}
               onChange={(e) => setFirstName(e.target.value)}
-              className="h-11"
               required
             />
           </div>
           <div className="space-y-1.5">
-            <label htmlFor="reg-last" className="text-xs font-medium">
-              Last name
+            <label htmlFor="reg-last" className="text-[15px] font-semibold">
+              {s.lastName}
             </label>
             <Input
               id="reg-last"
@@ -166,62 +177,63 @@ export default function RegisterPage() {
               placeholder="Ben Ali"
               value={lastName}
               onChange={(e) => setLastName(e.target.value)}
-              className="h-11"
               required
             />
           </div>
         </div>
 
         <div className="space-y-1.5">
-          <label htmlFor="reg-email" className="text-xs font-medium">
-            Email address
+          <label htmlFor="reg-email" className="text-[15px] font-semibold">
+            {s.email}
           </label>
           <Input
             id="reg-email"
             type="email"
             inputMode="email"
             autoComplete="email"
+            dir="ltr"
             placeholder="amine@farm.tn"
             value={email}
             onChange={(e) => setEmail(e.target.value)}
-            className="h-11"
             required
           />
         </div>
 
         <div className="space-y-1.5">
-          <label htmlFor="reg-password" className="text-xs font-medium">
-            Create password
+          <label htmlFor="reg-password" className="text-[15px] font-semibold">
+            {s.choosePassword}
           </label>
           <div className="relative">
             <Input
               id="reg-password"
               type={showPassword ? "text" : "password"}
               autoComplete="new-password"
-              placeholder="Min. 8 chars with upper, lower & number"
+              placeholder={s.passwordHint}
+              aria-describedby="reg-password-rules"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
-              className="h-11 pr-10"
+              className="pe-12"
               required
             />
             <button
               type="button"
               onClick={() => setShowPassword((v) => !v)}
-              aria-label={showPassword ? "Hide password" : "Show password"}
-              className="absolute right-2.5 top-1/2 -translate-y-1/2 p-1 text-muted-foreground hover:text-foreground cursor-pointer"
+              aria-label={showPassword ? s.hidePassword : s.showPassword}
+              aria-pressed={showPassword}
+              className="absolute end-1 top-1/2 -translate-y-1/2 w-10 h-10 inline-flex items-center justify-center rounded-lg text-muted-foreground hover:text-foreground cursor-pointer"
             >
-              {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+              {showPassword ? <EyeOff className="h-5 w-5" aria-hidden="true" /> : <Eye className="h-5 w-5" aria-hidden="true" />}
             </button>
           </div>
-          <div className="grid grid-cols-2 gap-1.5 pt-1">
+          <div id="reg-password-rules" className="grid grid-cols-2 gap-1.5 pt-1">
             {checks.map((c) => (
               <div
                 key={c.label}
-                className={`flex items-center gap-1.5 text-[11px] ${
-                  c.ok ? "text-emerald-700 dark:text-emerald-400" : "text-muted-foreground"
+                className={`flex items-center gap-1.5 text-[14px] ${
+                  c.ok ? "text-emerald-700 dark:text-emerald-400 font-semibold" : "text-muted-foreground"
                 }`}
               >
-                <Check className="h-3 w-3" />
+                <Check className={`h-4 w-4 shrink-0 ${c.ok ? "" : "opacity-40"}`} aria-hidden="true" />
                 <span>{c.label}</span>
               </div>
             ))}
@@ -230,21 +242,21 @@ export default function RegisterPage() {
 
         <Button type="submit" size="lg" variant="primary" className="w-full" disabled={loading}>
           {loading ? (
-            <Loader2 className="h-4 w-4 animate-spin" />
+            <Loader2 className="h-5 w-5 animate-spin" aria-hidden="true" />
           ) : (
-            <UserPlus className="h-4 w-4" />
+            <UserPlus className="h-5 w-5" aria-hidden="true" />
           )}
-          <span>{loading ? "Creating account..." : "Create Account & Start Onboarding"}</span>
+          <span>{loading ? s.creatingAccount : s.createAccountBtn}</span>
         </Button>
       </form>
 
-      <p className="text-xs text-center text-muted-foreground">
-        Already have an account?{" "}
+      <p className="text-[15px] text-center text-muted-foreground">
+        {s.haveAccount}{" "}
         <Link
           href="/login"
-          className="text-[var(--tp-fg-14532D)] dark:text-emerald-400 font-semibold hover:underline"
+          className="min-h-[40px] inline-flex items-center text-[var(--tp-fg-14532D)] dark:text-emerald-400 font-semibold hover:underline"
         >
-          Sign in
+          {s.signIn}
         </Link>
       </p>
     </AuthSplitLayout>

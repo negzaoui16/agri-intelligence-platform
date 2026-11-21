@@ -57,7 +57,9 @@ export interface ButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElemen
 }
 
 export const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
-  ({ className, variant = "primary", size = "md", ...props }, ref) => {
+  // type defaults to "button" so a button inside a form (map tools in the farm wizard)
+  // never submits it by accident; pass type="submit" for real submit buttons.
+  ({ className, variant = "primary", size = "md", type = "button", ...props }, ref) => {
     const variants = {
       primary:
         "bg-[var(--tp-bg-2E6B3A)] text-white hover:bg-[var(--tp-bg-23542D)] shadow-xs",
@@ -69,15 +71,16 @@ export const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
       danger: "bg-red-700 text-white hover:bg-red-800",
     };
     const sizes = {
-      sm: "h-8 px-3 text-xs rounded-lg gap-1.5",
-      md: "h-10 px-4 text-sm rounded-lg gap-2",
-      lg: "h-11 px-5 text-sm rounded-xl gap-2",
+      sm: "h-10 px-3.5 text-[14px] rounded-lg gap-1.5",
+      md: "h-11 px-4 text-[15px] rounded-lg gap-2",
+      lg: "h-12 px-5 text-[16px] rounded-xl gap-2",
     };
     return (
       <button
         ref={ref}
+        type={type}
         className={cn(
-          "inline-flex items-center justify-center font-medium transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--tp-bd-15803D)] disabled:pointer-events-none disabled:opacity-50 cursor-pointer",
+          "inline-flex items-center justify-center font-semibold transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--tp-bd-15803D)] disabled:pointer-events-none disabled:opacity-50 cursor-pointer",
           variants[variant],
           sizes[size],
           className
@@ -124,7 +127,7 @@ export const Input = React.forwardRef<
   <input
     ref={ref}
     className={cn(
-      "flex h-10 w-full rounded-lg border border-border bg-card px-3 py-2 text-sm text-foreground placeholder:text-muted-foreground focus-visible:outline-2 focus-visible:outline-[var(--tp-bd-15803D)] disabled:opacity-50",
+      "flex h-12 w-full rounded-lg border border-border bg-card px-3.5 py-2 text-[16px] text-foreground placeholder:text-muted-foreground focus-visible:outline-2 focus-visible:outline-[var(--tp-bd-15803D)] disabled:opacity-50",
       className
     )}
     {...props}

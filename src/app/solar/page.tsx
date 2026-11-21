@@ -5,6 +5,7 @@ import Link from "next/link";
 import { AlertTriangle, CheckCircle2, Loader2 } from "lucide-react";
 import { FarmerPageHeader } from "@/components/farmer/FarmerUI";
 import { useLanguage } from "@/components/i18n/LanguageProvider";
+import { SCREEN_STRINGS } from "@/lib/i18n/screen-strings";
 import { useFarmAnalysis, useFarms } from "@/hooks/useFarms";
 import { selectFarmerMetrics } from "@/lib/services/farmer-metrics";
 
@@ -16,7 +17,8 @@ function facingLabel(azimuthDeg: number, southText: string): string {
 }
 
 export default function SolarPage() {
-  const { t, fmt, monthLabel } = useLanguage();
+  const { lang, t, fmt, monthLabel } = useLanguage();
+  const s = SCREEN_STRINGS[lang];
   const { activeFarm, isLoading: farmsLoading } = useFarms();
   const { data: analysis, isLoading: analysisLoading } = useFarmAnalysis(activeFarm);
 
@@ -249,13 +251,15 @@ export default function SolarPage() {
             {t.howDoWeKnowTitle}
           </summary>
           <div className="pb-5 pt-1 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2.5 text-[15px] text-[var(--tp-fg-22392A)]">
-            <span>Installed PV capacity: {analysis.solar.capacityKwp} kWp</span>
-            <span>PVGIS specific yield: {analysis.solar.specificYieldKwhPerKwp} kWh/kWp/yr</span>
-            <span>PVGIS simulation: {analysis.solar.annualKwh.toLocaleString()} kWh/yr</span>
-            <span>Annual pump coverage: {analysis.solarVsPump.annualCoveragePct}%</span>
-            <span>System losses assumed: {analysis.solar.systemLossPct}%</span>
-            <span>Optimal seasonal tilt: {analysis.solar.optimalTiltDeg ?? analysis.solar.tiltDeg}°</span>
-            <span>Data source: European Commission JRC PVGIS v5.3</span>
+            <span>{s.engPvCapacity}: {analysis.solar.capacityKwp} kWp</span>
+            <span>
+              {s.engSpecificYield}: {analysis.solar.specificYieldKwhPerKwp} kWh/kWp {s.perYear}
+            </span>
+            <span>{s.engPvAnnual}: {analysis.solar.annualKwh.toLocaleString()} kWh {s.perYear}</span>
+            <span>{s.engAnnualCoverage}: {analysis.solarVsPump.annualCoveragePct}%</span>
+            <span>{s.engSystemLosses}: {analysis.solar.systemLossPct}%</span>
+            <span>{s.engTilt}: {analysis.solar.optimalTiltDeg ?? analysis.solar.tiltDeg}°</span>
+            <span>{s.sources}: European Commission JRC PVGIS v5.3</span>
           </div>
         </details>
       )}

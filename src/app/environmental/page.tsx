@@ -5,6 +5,8 @@ import Link from "next/link";
 import { Loader2 } from "lucide-react";
 import { FarmerPageHeader } from "@/components/farmer/FarmerUI";
 import { useLanguage } from "@/components/i18n/LanguageProvider";
+import { SCREEN_STRINGS, type ScreenStrings } from "@/lib/i18n/screen-strings";
+import { localizeWeatherCondition } from "@/lib/i18n/translations";
 import { useFarmAnalysis, useFarms } from "@/hooks/useFarms";
 import { selectFarmerMetrics } from "@/lib/services/farmer-metrics";
 import { cn } from "@/lib/utils";
@@ -18,15 +20,16 @@ function formatShortDay(dateStr: string, index: number, todayLabel: string, lang
   });
 }
 
-function plainDayWeather(precipMm: number, et0Mm: number | null): string {
-  if (precipMm >= 5) return "Rain expected";
-  if (precipMm >= 1) return "A few drops";
-  if (et0Mm !== null && et0Mm >= 5) return "Sunny · Hot";
-  return "Sunny · No rain";
+function plainDayWeather(precipMm: number, et0Mm: number | null, s: ScreenStrings): string {
+  if (precipMm >= 5) return s.dayRainExpected;
+  if (precipMm >= 1) return s.dayFewDrops;
+  if (et0Mm !== null && et0Mm >= 5) return s.daySunnyHot;
+  return s.daySunnyNoRain;
 }
 
 export default function WeatherPage() {
   const { lang, t, fmt } = useLanguage();
+  const s = SCREEN_STRINGS[lang];
   const { activeFarm, isLoading: farmsLoading } = useFarms();
   const { data: analysis, isLoading: analysisLoading } = useFarmAnalysis(activeFarm);
 
@@ -36,7 +39,7 @@ export default function WeatherPage() {
         <FarmerPageHeader mobileLabel={t.navWeather} title={t.weatherQuestionTitle} />
         <div className="bg-[var(--tp-bg-FFFFFF)] border-[1.5px] border-[var(--tp-bd-E4DFD2)] rounded-[20px] p-8 flex items-center gap-3 text-[17px] text-[var(--tp-fg-4A5A4F)]">
           <Loader2 className="w-6 h-6 animate-spin text-[var(--tp-fg-2E6B3A)]" />
-          <span>Checking live 7-day forecast and rain…</span>
+          <span>{s.checkingForecast}</span>
         </div>
       </div>
     );
@@ -105,8 +108,10 @@ export default function WeatherPage() {
             </b>
             <span className="text-[16px] text-[var(--tp-fg-4A5A4F)]">
               {idx === 0 && m.weatherSummary
-                ? `${m.weatherSummary} · ${day.precipMm < 1 ? "No rain" : `${Math.round(day.precipMm)} mm`}`
-                : plainDayWeather(day.precipMm, day.et0Mm)}
+                ? `${localizeWeatherCondition(m.weatherSummary, lang)} · ${
+                    day.precipMm < 1 ? s.noRain : `${Math.round(day.precipMm)} mm`
+                  }`
+                : plainDayWeather(day.precipMm, day.et0Mm, s)}
             </span>
             <span className="text-[17px] whitespace-nowrap">
               <b>{Math.round(day.tempMaxC)}°</b> / {Math.round(day.tempMinC)}°
@@ -170,22 +175,27 @@ export default function WeatherPage() {
           {t.forYourEngineerTitle}
         </summary>
         <div className="pb-5 pt-1 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2.5 text-[15px] text-[var(--tp-fg-22392A)]">
-          <span>Reference ET₀: {analysis.climate.annualEt0Mm} mm/yr (Open-Meteo ERA5)</span>
-          <span>Aridity index: {analysis.climate.aridityIndex} ({analysis.climate.aridityClass})</span>
-          <span>Elevation: {analysis.elevation.farmElevationM} m · Slope: {analysis.elevation.estimatedSlopePct}% (Copernicus DEM)</span>
           <span>
-            FAO WaPOR v3 actual ET:{" "}
+            {s.engEt0}: {analysis.climate.annualEt0Mm} mm {s.perYear} (Open-Meteo ERA5)
+          </span>
+          <span>{s.engAridity}: {analysis.climate.aridityIndex} (UNEP)</span>
+          <span>
+            {s.engElevation}: {analysis.elevation.farmElevationM} m · {s.engSlope}:{" "}
+            {analysis.elevation.estimatedSlopePct}% (Copernicus DEM)
+          </span>
+          <span>
+            {s.engWaporEt}:{" "}
             {analysis.wapor.actualEvapotranspirationMmYr !== null
-              ? `${analysis.wapor.actualEvapotranspirationMmYr} mm/yr`
-              : "N/A"}
+              ? `${analysis.wapor.actualEvapotranspirationMmYr} mm ${s.perYear}`
+              : s.notAvailable}
           </span>
           <span>
-            WaPOR biomass:{" "}
+            {s.engWaporBiomass}:{" "}
             {analysis.wapor.totalBiomassProductionKgHa !== null
-              ? `${analysis.wapor.totalBiomassProductionKgHa} kg/ha/yr`
-              : "N/A"}
+              ? `${analysis.wapor.totalBiomassProductionKgHa} kg/ha ${s.perYear}`
+              : s.notAvailable}
           </span>
-          <span>Sources: Open-Meteo Forecast & ERA5, FAO WaPOR v3, Copernicus DEM</span>
+          <span>{s.sources}: Open-Meteo Forecast & ERA5, FAO WaPOR v3, Copernicus DEM</span>
         </div>
       </details>
     </div>

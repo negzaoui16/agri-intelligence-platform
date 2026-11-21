@@ -4,6 +4,8 @@ import * as React from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { ArrowLeft, Loader2, LogOut, Sprout } from "lucide-react";
+import { FARM_UI_STRINGS } from "@/lib/i18n/farm-ui-strings";
+import { SCREEN_STRINGS } from "@/lib/i18n/screen-strings";
 import { useLanguage } from "@/components/i18n/LanguageProvider";
 import {
   ThreeStepFarmWizard,
@@ -20,6 +22,7 @@ export default function OnboardingPage() {
   const queryClient = useQueryClient();
   const { user, isAuthenticated, isLoading: authLoading, logout } = useAuthSession();
   const { lang, t, isRtl } = useLanguage();
+  const s = SCREEN_STRINGS[lang];
   const isOnline = useAppStore((s) => s.isOnline);
   const setActiveFarmId = useAppStore((s) => s.setActiveFarmId);
 
@@ -263,7 +266,7 @@ export default function OnboardingPage() {
       router.push(completeJson.redirectTo || "/");
       router.refresh();
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Could not save your farm.");
+      setError(s.couldNotSaveFarm);
     } finally {
       setSubmitting(false);
     }
@@ -302,7 +305,7 @@ export default function OnboardingPage() {
               className="min-h-[44px] px-4 rounded-full border-[1.5px] border-[var(--tp-bd-C9C3B3)] bg-[var(--tp-bg-FFFFFF)] text-[15px] font-bold text-[var(--tp-fg-17251C)] no-underline inline-flex items-center gap-1.5"
             >
               <ArrowLeft className={isRtl ? "w-4 h-4 rotate-180" : "w-4 h-4"} />
-              <span>Later</span>
+              <span>{FARM_UI_STRINGS[lang].later}</span>
             </Link>
             <button
               type="button"
@@ -329,7 +332,7 @@ export default function OnboardingPage() {
           }}
           onFinish={handleFinish}
           submitting={submitting}
-          finishLabel="Finish and check my farm"
+          finishLabel={s.finishAndCheck}
         />
       </div>
     </div>

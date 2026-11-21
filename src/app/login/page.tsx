@@ -7,6 +7,8 @@ import { AuthSplitLayout } from "@/components/auth/AuthSplitLayout";
 import { Button, Input } from "@/components/ui/primitives";
 import { useAppStore } from "@/lib/store/app-store";
 import { useAuthOptions } from "@/hooks/useAuthOptions";
+import { useLanguage } from "@/components/i18n/LanguageProvider";
+import { SCREEN_STRINGS } from "@/lib/i18n/screen-strings";
 import { clearUserLocalCacheOnLogout } from "@/lib/offline/sync-engine";
 import { useQueryClient } from "@tanstack/react-query";
 import { AlertCircle, Eye, EyeOff, Loader2, LogIn, WifiOff } from "lucide-react";
@@ -17,35 +19,32 @@ export default function LoginPage() {
   const isOnline = useAppStore((s) => s.isOnline);
 
   const authOptions = useAuthOptions();
+  const { lang } = useLanguage();
+  const s = SCREEN_STRINGS[lang];
   const [email, setEmail] = React.useState("");
   const [password, setPassword] = React.useState("");
   const [showPassword, setShowPassword] = React.useState(false);
   const [loading, setLoading] = React.useState(false);
   const [error, setError] = React.useState<string | null>(null);
-  const [sessionNotice, setSessionNotice] = React.useState<string | null>(null);
+  // Notices from the sign-in link are kept as codes so they follow the chosen language.
+  const [urlNotice, setUrlNotice] = React.useState<"expired" | "google" | "other" | null>(null);
 
   React.useEffect(() => {
     if (typeof window !== "undefined") {
       const sp = new URLSearchParams(window.location.search);
       const err = sp.get("error");
       const reason = sp.get("reason");
-      if (reason === "expired") {
-        setSessionNotice("Your session expired. Please sign in again to continue.");
-      } else if (err) {
-        setError(
-          err === "oauth_not_configured"
-            ? "Google sign-in is not available yet. Please sign in with your email and password."
-            : `Authentication notice: ${err.replaceAll("_", " ")}`
-        );
-      }
+      if (reason === "expired") setUrlNotice("expired");
+      else if (err) setUrlNotice(err === "oauth_not_configured" ? "google" : "other");
     }
   }, []);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError(null);
+    setUrlNotice(null);
     if (!email.trim() || !password) {
-      setError("Please enter both your email address and password.");
+      setError(s.enterEmailAndPassword);
       return;
     }
     setLoading(true);
@@ -55,9 +54,17 @@ export default function LoginPage() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ email: email.trim(), password }),
       });
-      const json = await res.json();
+      const json = await res.json().catch(() => ({}));
       if (!res.ok) {
-        setError(json.error || "Incorrect email or password.");
+        setError(
+          res.status === 401
+            ? s.wrongEmailOrPassword
+            : res.status === 429
+              ? s.tooManyTries
+              : res.status === 400
+                ? s.checkWhatYouTyped
+                : s.signInProblem
+        );
         return;
       }
       await clearUserLocalCacheOnLogout().catch(() => undefined);
@@ -67,7 +74,7 @@ export default function LoginPage() {
       router.push(json.redirectTo || "/");
       router.refresh();
     } catch {
-      setError("Unable to reach the authentication server. Check your connection.");
+      setError(s.noConnection);
     } finally {
       setLoading(false);
     }
@@ -87,7 +94,11 @@ export default function LoginPage() {
         await queryClient.invalidateQueries({ queryKey: ["farms"] });
         router.push("/");
         router.refresh();
+      } else {
+        setError(s.signInProblem);
       }
+    } catch {
+      setError(s.noConnection);
     } finally {
       setLoading(false);
     }
@@ -95,30 +106,31 @@ export default function LoginPage() {
 
   return (
     <AuthSplitLayout
-      title="Welcome back, farmer"
-      subtitle="Sign in to access your agricultural parcels, water analysis, and solar simulations."
+      title={s.loginTitle}
+      subtitle={s.loginSubtitle}
     >
       {!isOnline && (
-        <div className="p-3 rounded-xl bg-amber-50 dark:bg-amber-950/50 border border-amber-300 dark:border-amber-800 text-xs flex items-start gap-2 text-amber-900 dark:text-amber-200">
-          <WifiOff className="h-4 w-4 shrink-0 mt-0.5" />
-          <span>
-            You are currently offline. Online sign-in and Google OAuth require an internet connection.
-          </span>
+        <div className="p-3.5 rounded-xl bg-amber-50 dark:bg-amber-950/50 border border-amber-300 dark:border-amber-800 text-[15px] flex items-start gap-2 text-amber-900 dark:text-amber-200">
+          <WifiOff className="h-5 w-5 shrink-0 mt-0.5" aria-hidden="true" />
+          <span>{s.offlineSignIn}</span>
         </div>
       )}
 
-      {sessionNotice && (
-        <div className="p-3 rounded-xl bg-amber-50 dark:bg-amber-950/50 border border-amber-300 dark:border-amber-800 text-xs text-amber-900 dark:text-amber-200">
-          {sessionNotice}
+      {urlNotice && (
+        <div
+          role="status"
+          className="p-3.5 rounded-xl bg-amber-50 dark:bg-amber-950/50 border border-amber-300 dark:border-amber-800 text-[15px] text-amber-900 dark:text-amber-200"
+        >
+          {urlNotice === "expired" ? s.sessionExpired : urlNotice === "google" ? s.googleNotReady : s.signInProblem}
         </div>
       )}
 
       {error && (
         <div
           role="alert"
-          className="p-3 rounded-xl bg-red-50 dark:bg-red-950/50 border border-red-300 dark:border-red-800 text-xs flex items-start gap-2 text-red-900 dark:text-red-200"
+          className="p-3.5 rounded-xl bg-red-50 dark:bg-red-950/50 border border-red-300 dark:border-red-800 text-[15px] flex items-start gap-2 text-red-900 dark:text-red-200"
         >
-          <AlertCircle className="h-4 w-4 shrink-0 mt-0.5" />
+          <AlertCircle className="h-5 w-5 shrink-0 mt-0.5" aria-hidden="true" />
           <span>{error}</span>
         </div>
       )}
@@ -131,10 +143,10 @@ export default function LoginPage() {
           onClick={(e) => {
             if (!isOnline) {
               e.preventDefault();
-              setError("Google Sign-In requires an active internet connection.");
+              setError(s.googleNeedsInternet);
             }
           }}
-          className="w-full h-11 rounded-xl border border-border bg-card hover:bg-muted transition-colors flex items-center justify-center gap-2.5 text-sm font-medium"
+          className="w-full h-12 rounded-xl border border-border bg-card hover:bg-muted transition-colors flex items-center justify-center gap-2.5 text-[16px] font-semibold"
         >
           <svg className="h-4 w-4" viewBox="0 0 24 24" aria-hidden="true">
             <path
@@ -154,15 +166,15 @@ export default function LoginPage() {
               d="M12 4.75c1.77 0 3.35.61 4.6 1.8l3.42-3.42C17.95 1.19 15.24 0 12 0 7.31 0 3.26 2.7 1.29 6.62l3.99 3.14c.95-2.85 3.6-4.96 6.72-4.96Z"
             />
           </svg>
-          <span>Continue with Google</span>
+          <span>{s.continueWithGoogle}</span>
         </a>
   
         <div className="relative">
           <div className="absolute inset-0 flex items-center">
             <span className="w-full border-t border-border" />
           </div>
-          <div className="relative flex justify-center text-[11px] uppercase">
-            <span className="bg-background px-2 text-muted-foreground">Or sign in with email</span>
+          <div className="relative flex justify-center text-[14px]">
+            <span className="bg-background px-2 text-muted-foreground">{s.orUseEmail}</span>
           </div>
         </div>
         </>
@@ -170,36 +182,34 @@ export default function LoginPage() {
 
       <form onSubmit={handleSubmit} className="space-y-4">
         <div className="space-y-1.5">
-          <label htmlFor="login-email" className="text-xs font-medium">
-            Email address
+          <label htmlFor="login-email" className="text-[15px] font-semibold">
+            {s.email}
           </label>
           <Input
             id="login-email"
             type="email"
             inputMode="email"
             autoComplete="email"
+            dir="ltr"
             placeholder="farmer@example.tn"
             value={email}
             onChange={(e) => setEmail(e.target.value)}
-            className="h-11"
             required
           />
         </div>
 
         <div className="space-y-1.5">
           <div className="flex items-center justify-between">
-            <label htmlFor="login-password" className="text-xs font-medium">
-              Password
+            <label htmlFor="login-password" className="text-[15px] font-semibold">
+              {s.password}
             </label>
             {authOptions.passwordReset && (
-              <>
               <Link
                 href="/forgot-password"
-                className="text-xs text-[var(--tp-fg-14532D)] dark:text-emerald-400 hover:underline font-medium"
+                className="min-h-[40px] inline-flex items-center text-[15px] text-[var(--tp-fg-14532D)] dark:text-emerald-400 hover:underline font-semibold"
               >
-                Forgot password?
+                {s.forgotPassword}
               </Link>
-              </>
             )}
           </div>
           <div className="relative">
@@ -207,53 +217,51 @@ export default function LoginPage() {
               id="login-password"
               type={showPassword ? "text" : "password"}
               autoComplete="current-password"
-              placeholder="Enter your password"
+              placeholder={s.yourPassword}
               value={password}
               onChange={(e) => setPassword(e.target.value)}
-              className="h-11 pr-10"
+              className="pe-12"
               required
             />
             <button
               type="button"
               onClick={() => setShowPassword((v) => !v)}
-              aria-label={showPassword ? "Hide password" : "Show password"}
-              className="absolute right-2.5 top-1/2 -translate-y-1/2 p-1 text-muted-foreground hover:text-foreground cursor-pointer"
+              aria-label={showPassword ? s.hidePassword : s.showPassword}
+              aria-pressed={showPassword}
+              className="absolute end-1 top-1/2 -translate-y-1/2 w-10 h-10 inline-flex items-center justify-center rounded-lg text-muted-foreground hover:text-foreground cursor-pointer"
             >
-              {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+              {showPassword ? <EyeOff className="h-5 w-5" aria-hidden="true" /> : <Eye className="h-5 w-5" aria-hidden="true" />}
             </button>
           </div>
         </div>
 
         <Button type="submit" size="lg" variant="primary" className="w-full" disabled={loading}>
-          {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : <LogIn className="h-4 w-4" />}
-          <span>{loading ? "Signing in..." : "Sign in"}</span>
+          {loading ? <Loader2 className="h-5 w-5 animate-spin" aria-hidden="true" /> : <LogIn className="h-5 w-5 rtl:rotate-180" aria-hidden="true" />}
+          <span>{loading ? s.signingIn : s.signIn}</span>
         </Button>
       </form>
 
       <div className="pt-2 space-y-3">
-        <p className="text-xs text-center text-muted-foreground">
-          New to TerraPulse?{" "}
+        <p className="text-[15px] text-center text-muted-foreground">
+          {s.newHere}{" "}
           <Link
             href="/register"
-            className="text-[var(--tp-fg-14532D)] dark:text-emerald-400 font-semibold hover:underline"
+            className="min-h-[40px] inline-flex items-center text-[var(--tp-fg-14532D)] dark:text-emerald-400 font-semibold hover:underline"
           >
-            Create a farmer account
+            {s.createAccount}
           </Link>
         </p>
 
         {authOptions.demoLogin && (
-          <>
           <Button
             type="button"
-            variant="ghost"
-            size="sm"
-            className="w-full text-xs text-muted-foreground"
+            variant="outline"
+            className="w-full"
             onClick={handleDemoLogin}
             disabled={loading}
           >
-            Continue with Demo Agronomist Workspace
+            {s.tryDemoFarm}
           </Button>
-          </>
         )}
       </div>
     </AuthSplitLayout>

@@ -24,6 +24,14 @@ interface LanguageContextValue {
 const LanguageContext = React.createContext<LanguageContextValue | null>(null);
 const STORAGE_KEY = "terrapulse_lang";
 
+function saveLang(lang: AppLanguage) {
+  try {
+    localStorage.setItem(STORAGE_KEY, lang);
+  } catch {
+    // ignore storage unavailable
+  }
+}
+
 export function LanguageProvider({ children }: { children: React.ReactNode }) {
   const [lang, setLangState] = React.useState<AppLanguage>("en");
 
@@ -42,20 +50,20 @@ export function LanguageProvider({ children }: { children: React.ReactNode }) {
     if (typeof document === "undefined") return;
     document.documentElement.lang = lang;
     document.documentElement.dir = lang === "ar" ? "rtl" : "ltr";
-    try {
-      localStorage.setItem(STORAGE_KEY, lang);
-    } catch {
-      // ignore
-    }
   }, [lang]);
 
+  // Saved only when the farmer picks a language, so the "en" default on first render
+  // can never overwrite their stored choice.
   const setLang = React.useCallback((next: AppLanguage) => {
     setLangState(next);
+    saveLang(next);
   }, []);
 
   const cycleLang = React.useCallback(() => {
-    setLangState((prev) => (prev === "en" ? "ar" : prev === "ar" ? "fr" : "en"));
-  }, []);
+    const next: AppLanguage = lang === "en" ? "ar" : lang === "ar" ? "fr" : "en";
+    setLangState(next);
+    saveLang(next);
+  }, [lang]);
 
   const value = React.useMemo<LanguageContextValue>(
     () => ({

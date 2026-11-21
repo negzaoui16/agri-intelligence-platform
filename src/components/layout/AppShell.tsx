@@ -154,7 +154,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
         <div className="relative">
           <div className="min-h-[52px] rounded-[14px] border-[1.5px] border-[var(--tp-bd-C9C3B3)] bg-[var(--tp-bg-F6F4EE)] px-3.5 py-2 flex items-center justify-between gap-2 pointer-events-none">
             <span className="min-w-0 flex flex-col text-start">
-              <span className="text-[16px] font-bold text-[var(--tp-fg-17251C)] truncate">
+              <span dir="auto" className="text-[16px] font-bold text-[var(--tp-fg-17251C)] truncate text-start rtl:text-right">
                 {activeFarm ? activeFarm.name : t.addFarmTitle}
               </span>
               <span className="text-[13px] text-[var(--tp-fg-4A5A4F)] truncate">

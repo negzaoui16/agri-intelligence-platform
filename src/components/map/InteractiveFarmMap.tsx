@@ -533,8 +533,10 @@ export function InteractiveFarmMap(props: InteractiveFarmMapProps) {
           variant={props.mode === "INSPECT" ? "primary" : "secondary"}
           onClick={() => props.onModeChange("INSPECT")}
           title={f.toolMove}
+          aria-label={f.toolMove}
+          aria-pressed={props.mode === "INSPECT"}
         >
-          <Crosshair className="h-3.5 w-3.5" />
+          <Crosshair className="h-4 w-4" aria-hidden="true" />
           <span className="hidden sm:inline">{f.toolMove}</span>
         </Button>
         <Button
@@ -542,8 +544,9 @@ export function InteractiveFarmMap(props: InteractiveFarmMapProps) {
           variant={props.mode === "DROP_PIN" ? "primary" : "secondary"}
           onClick={() => props.onModeChange("DROP_PIN")}
           title={f.toolMark}
+          aria-pressed={props.mode === "DROP_PIN"}
         >
-          <MapPin className="h-3.5 w-3.5" />
+          <MapPin className="h-4 w-4" aria-hidden="true" />
           <span>{f.toolMark}</span>
         </Button>
         <Button
@@ -554,27 +557,36 @@ export function InteractiveFarmMap(props: InteractiveFarmMapProps) {
             props.onModeChange("DRAW_BOUNDARY");
           }}
           title={f.toolDraw}
+          aria-pressed={props.mode === "DRAW_BOUNDARY"}
         >
-          <PenTool className="h-3.5 w-3.5" />
+          <PenTool className="h-4 w-4" aria-hidden="true" />
           <span>{f.toolDraw}</span>
         </Button>
-        <Button size="sm" variant="secondary" onClick={handleLocateGps} title={f.toolMyLocation}>
-          <Crosshair className="h-3.5 w-3.5 text-sky-600" />
+        <Button
+          size="sm"
+          variant="secondary"
+          onClick={handleLocateGps}
+          title={f.toolMyLocation}
+          aria-label={f.toolMyLocation}
+        >
+          <Crosshair className="h-4 w-4 text-sky-600" aria-hidden="true" />
           <span className="hidden sm:inline">{f.toolMyLocation}</span>
         </Button>
       </div>
 
       {/* Bottom-Right Layer Switcher */}
       <div className="absolute bottom-3 right-3 z-10 flex items-center gap-1 bg-card/95 border border-border rounded-lg p-1 shadow-sm">
-        <Layers className="h-3.5 w-3.5 text-muted-foreground ml-1.5 mr-1" />
+        <Layers className="h-4 w-4 text-muted-foreground ms-1.5 me-1" aria-hidden="true" />
         {(["osm", "satellite", "topo"] as BaseLayerId[]).map((id) => (
           <button
             key={id}
+            type="button"
+            aria-pressed={props.baseLayer === id}
             onClick={() => props.onBaseLayerChange(id)}
-            className={`px-2 py-1 rounded text-[11px] font-medium cursor-pointer transition-colors ${
+            className={`min-h-[36px] px-3 rounded-md text-[13px] font-bold cursor-pointer transition-colors ${
               props.baseLayer === id
                 ? "bg-[var(--tp-bg-14532D)] text-white"
-                : "text-muted-foreground hover:bg-muted"
+                : "text-foreground hover:bg-muted"
             }`}
           >
             {id === "osm" ? f.layerStreet : id === "satellite" ? f.layerSatellite : f.layerHills}
