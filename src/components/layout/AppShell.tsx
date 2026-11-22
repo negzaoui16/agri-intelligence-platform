@@ -4,6 +4,7 @@ import * as React from "react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import {
+  Accessibility,
   AlertTriangle,
   Brain,
   ChevronDown,
@@ -18,9 +19,12 @@ import {
   Tractor,
   WifiOff,
 } from "lucide-react";
+import { AccessibilitySheet } from "@/components/farmer/AccessibilitySheet";
 import { ThemeToggle } from "@/components/farmer/FarmerUI";
 import { TunisianVoiceGuide } from "@/components/farmer/TunisianVoiceGuide";
 import { useLanguage } from "@/components/i18n/LanguageProvider";
+import { useAccessibility } from "@/components/providers/AccessibilityProvider";
+import { ACCESSIBILITY_STRINGS } from "@/lib/i18n/accessibility-strings";
 import { FARMBRAIN_STRINGS } from "@/lib/i18n/farmbrain-strings";
 import { TOUR_UI_STRINGS } from "@/lib/tour/tunisian-tour-steps";
 import { fillTemplate } from "@/lib/i18n/farm-ui-strings";
@@ -46,6 +50,8 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
   const router = useRouter();
   const { lang, setLang, t, fmt, monthLabel } = useLanguage();
+  const { openSheet, activeCount } = useAccessibility();
+  const a11yStr = ACCESSIBILITY_STRINGS[lang];
 
   const {
     user,
@@ -149,12 +155,18 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   };
 
   return (
-    <div className="min-h-screen flex flex-col lg:flex-row bg-[var(--tp-bg-F6F4EE)] text-[var(--tp-fg-17251C)]">
+    <div id="tp-app-shell" className="min-h-screen flex flex-col lg:flex-row bg-[var(--tp-bg-F6F4EE)] text-[var(--tp-fg-17251C)]">
+      <a
+        href="#main-content"
+        className="sr-only focus:not-sr-only focus:fixed focus:top-3 focus:start-3 focus:z-50 focus:min-h-[44px] focus:px-4 focus:py-2.5 focus:rounded-full focus:bg-[var(--tp-bg-2E6B3A)] focus:text-white focus:font-bold focus:shadow-lg"
+      >
+        {a11yStr.skipToContent}
+      </a>
       {/* Desktop Left Sidebar */}
-      <aside className="no-print hidden lg:flex lg:w-[256px] lg:flex-col lg:fixed lg:inset-y-0 lg:start-0 overflow-y-auto border-e-[1.5px] border-[var(--tp-bd-E4DFD2)] bg-[var(--tp-bg-FFFFFF)] z-30 px-[16px] py-4 gap-3.5">
+      <aside className="no-print hidden lg:flex lg:w-[256px] lg:flex-col lg:fixed lg:inset-y-0 lg:start-0 overflow-y-auto border-e-[1.5px] border-[var(--tp-bd-E4DFD2)] bg-[var(--tp-bg-FFFFFF)] z-30 px-3.5 py-3.5 gap-2.5">
         {/* Logo */}
         <div className="flex items-center gap-2.5">
-          <span className="w-10 h-10 rounded-[12px] bg-[var(--tp-bg-2E6B3A)] text-white flex items-center justify-center shrink-0">
+          <span className="w-10 h-10 rounded-[12px] bg-[var(--tp-bg-2E6B3A)] text-white shadow-sm flex items-center justify-center shrink-0">
             <Sprout className="w-[22px] h-[22px]" aria-hidden="true" />
           </span>
           <b className="text-[20px] font-bold tracking-tight text-[var(--tp-fg-17251C)]">
@@ -206,9 +218,9 @@ export function AppShell({ children }: { children: React.ReactNode }) {
                 href={item.href}
                 aria-current={active ? "page" : undefined}
                 className={cn(
-                  "min-h-[42px] rounded-[12px] px-3.5 flex items-center gap-3 text-[16px] transition-colors",
+                  "min-h-[42px] rounded-[12px] px-3.5 flex items-center gap-3 text-[16px] transition-all",
                   active
-                    ? "bg-[var(--tp-bg-E3EFE2)] text-[var(--tp-fg-1F4D28)] font-bold"
+                    ? "bg-[var(--tp-bg-E3EFE2)] text-[var(--tp-fg-1F4D28)] font-bold shadow-xs"
                     : "text-[var(--tp-fg-17251C)] font-normal hover:bg-[var(--tp-bg-F6F4EE)]"
                 )}
               >
@@ -342,8 +354,9 @@ export function AppShell({ children }: { children: React.ReactNode }) {
           </Link>
           <button
             type="button"
+            data-testid="open-tunisian-guide-btn"
             onClick={() => window.dispatchEvent(new Event("tp:start-tunisian-tour"))}
-            className="min-h-[38px] rounded-[12px] px-3.5 flex items-center gap-2.5 text-[15px] text-[var(--tp-fg-1F4D28)] bg-[var(--tp-bg-E3EFE2)]/65 hover:bg-[var(--tp-bg-E3EFE2)] font-bold transition-colors text-start"
+            className="min-h-[38px] rounded-[12px] px-3.5 flex items-center gap-2.5 text-[15px] text-[var(--tp-fg-1F4D28)] bg-[var(--tp-bg-E3EFE2)]/75 hover:bg-[var(--tp-bg-E3EFE2)] font-bold transition-colors text-start"
           >
             <Mic className="w-5 h-5 shrink-0 text-[var(--tp-fg-2E6B3A)]" aria-hidden="true" />
             <span className="truncate">{TOUR_UI_STRINGS[lang].floatingButton}</span>
@@ -351,7 +364,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
         </div>
 
         {/* Footer Controls */}
-        <div className="mt-auto flex flex-col gap-2">
+        <div className="mt-auto flex flex-col gap-1.5 pt-1">
           {(!isOnline || pendingSyncCount > 0) && (
             <div className="rounded-[12px] border border-[var(--tp-bd-E2B66B)] bg-[var(--tp-bg-FCEFD9)] px-3 py-2 flex items-center justify-between gap-2 text-[14px] text-[var(--tp-fg-6B3A00)]">
               <span className="inline-flex items-center gap-1.5 font-bold">
@@ -392,52 +405,150 @@ export function AppShell({ children }: { children: React.ReactNode }) {
             </div>
           )}
 
-          <ThemeToggle />
+          <div className="grid grid-cols-2 gap-1.5">
+            <ThemeToggle tight />
+            <button
+              type="button"
+              data-testid="open-accessibility-btn"
+              onClick={openSheet}
+              aria-label={a11yStr.buttonLabel}
+              title={`${a11yStr.buttonLabel} (${a11yStr.shortcutHint})`}
+              className={cn(
+                "min-h-[40px] w-full rounded-full border-[1.5px] px-2 text-[12.5px] font-bold inline-flex items-center justify-center gap-1.5 transition-colors whitespace-nowrap",
+                activeCount > 0
+                  ? "border-[var(--tp-bd-2E6B3A)] bg-[var(--tp-bg-E3EFE2)] text-[var(--tp-fg-1F4D28)]"
+                  : "border-[var(--tp-bd-C9C3B3)] bg-[var(--tp-bg-FFFFFF)] text-[var(--tp-fg-17251C)] hover:bg-[var(--tp-bg-F6F4EE)]"
+              )}
+            >
+              <Accessibility className="w-4 h-4 shrink-0 text-[#007AFF]" aria-hidden="true" />
+              <span className="truncate">{a11yStr.buttonShort}</span>
+              {activeCount > 0 && (
+                <span className="px-1.5 py-0.2 rounded-full bg-[var(--tp-bg-2E6B3A)] text-white text-[10.5px] leading-tight">
+                  {activeCount}
+                </span>
+              )}
+            </button>
+          </div>
 
-          {/* Language Switcher Pill matching DeskHome.dc.html */}
+          {/* Language Switcher Pill (compact 4-way switch cleanly inside 256px sidebar) */}
           <div
             role="group"
             aria-label={t.changeLanguageLabel}
-            className="min-h-[44px] rounded-full border-[1.5px] border-[var(--tp-bd-C9C3B3)] bg-[var(--tp-bg-FFFFFF)] px-2 flex items-center justify-around gap-1 text-[14px] font-bold"
+            className="min-h-[42px] w-full rounded-full border-[1.5px] border-[var(--tp-bd-C9C3B3)] bg-[var(--tp-bg-FFFFFF)] p-1 grid grid-cols-4 gap-0.5 text-[12px] font-bold"
           >
             <button
               type="button"
+              lang="en"
+              aria-label="English"
+              aria-pressed={lang === "en"}
               onClick={() => setLang("en")}
               className={cn(
-                "min-h-[36px] px-2.5 rounded-full transition-colors",
+                "min-h-[32px] px-1 rounded-full transition-colors truncate",
                 lang === "en" ? "bg-[var(--tp-bg-E3EFE2)] text-[var(--tp-fg-1F4D28)]" : "text-[var(--tp-fg-4A5A4F)] hover:text-[var(--tp-fg-17251C)]"
               )}
             >
-              English
+              EN
             </button>
-            <span className="text-[var(--tp-fg-C9C3B3)]" aria-hidden="true">·</span>
             <button
               type="button"
+              lang="ar"
+              aria-label="العربية"
+              aria-pressed={lang === "ar"}
               onClick={() => setLang("ar")}
               className={cn(
-                "min-h-[36px] px-2.5 rounded-full transition-colors",
+                "min-h-[32px] px-1 rounded-full transition-colors truncate",
                 lang === "ar" ? "bg-[var(--tp-bg-E3EFE2)] text-[var(--tp-fg-1F4D28)]" : "text-[var(--tp-fg-4A5A4F)] hover:text-[var(--tp-fg-17251C)]"
               )}
             >
-              العربية
+              عربي
             </button>
-            <span className="text-[var(--tp-fg-C9C3B3)]" aria-hidden="true">·</span>
             <button
               type="button"
+              lang="fr"
+              aria-label="Français"
+              aria-pressed={lang === "fr"}
               onClick={() => setLang("fr")}
               className={cn(
-                "min-h-[36px] px-2.5 rounded-full transition-colors",
+                "min-h-[32px] px-1 rounded-full transition-colors truncate",
                 lang === "fr" ? "bg-[var(--tp-bg-E3EFE2)] text-[var(--tp-fg-1F4D28)]" : "text-[var(--tp-fg-4A5A4F)] hover:text-[var(--tp-fg-17251C)]"
               )}
             >
-              Français
+              FR
+            </button>
+            <button
+              type="button"
+              lang="ja"
+              aria-label="日本語"
+              aria-pressed={lang === "ja"}
+              onClick={() => setLang("ja")}
+              className={cn(
+                "min-h-[32px] px-1 rounded-full transition-colors truncate",
+                lang === "ja" ? "bg-[var(--tp-bg-E3EFE2)] text-[var(--tp-fg-1F4D28)]" : "text-[var(--tp-fg-4A5A4F)] hover:text-[var(--tp-fg-17251C)]"
+              )}
+            >
+              日本語
             </button>
           </div>
         </div>
       </aside>
 
       {/* Main Content Area */}
-      <main className="flex-1 lg:ps-[256px] pb-[88px] lg:pb-10 min-w-0">
+      <main id="main-content" tabIndex={-1} className="flex-1 lg:ps-[256px] pb-[88px] lg:pb-10 min-w-0 outline-none">
+        {/* Clean Mobile Quick Access Bar (FarmBrain + Simulator + Accessibility + Tunisian Voice Guide) */}
+        <div className="no-print lg:hidden flex flex-wrap items-center justify-between gap-2 px-5 pt-2.5 pb-1 border-b border-[var(--tp-bd-E4DFD2)]/70 bg-[var(--tp-bg-FFFFFF)]/70 backdrop-blur-xs">
+          <div className="flex items-center gap-1.5 min-w-0">
+            <Link
+              href="/farmbrain"
+              className={cn(
+                "min-h-[34px] px-3 rounded-full text-[13px] font-bold no-underline inline-flex items-center gap-1.5 border",
+                pathname === "/farmbrain"
+                  ? "bg-[var(--tp-bg-E3EFE2)] border-[var(--tp-bd-2E6B3A)] text-[var(--tp-fg-1F4D28)]"
+                  : "bg-[var(--tp-bg-FFFFFF)] border-[var(--tp-bd-E4DFD2)] text-[var(--tp-fg-17251C)]"
+              )}
+            >
+              <Brain className="w-3.5 h-3.5 text-[var(--tp-fg-2E6B3A)]" aria-hidden="true" />
+              <span>{FARMBRAIN_STRINGS[lang].navFarmBrain}</span>
+            </Link>
+            <Link
+              href="/simulator"
+              className={cn(
+                "min-h-[34px] px-3 rounded-full text-[13px] font-bold no-underline inline-flex items-center gap-1.5 border",
+                pathname === "/simulator"
+                  ? "bg-[var(--tp-bg-E3EFE2)] border-[var(--tp-bd-2E6B3A)] text-[var(--tp-fg-1F4D28)]"
+                  : "bg-[var(--tp-bg-FFFFFF)] border-[var(--tp-bd-E4DFD2)] text-[var(--tp-fg-17251C)]"
+              )}
+            >
+              <SlidersHorizontal className="w-3.5 h-3.5 text-[var(--tp-fg-1D4F91)]" aria-hidden="true" />
+              <span>{FARMBRAIN_STRINGS[lang].navSimulator}</span>
+            </Link>
+          </div>
+          <div className="flex items-center gap-1.5 shrink-0">
+            <button
+              type="button"
+              data-testid="open-accessibility-mobile-btn"
+              onClick={openSheet}
+              aria-label={a11yStr.buttonLabel}
+              className={cn(
+                "min-h-[34px] px-2.5 rounded-full text-[13px] font-bold inline-flex items-center gap-1 border shrink-0",
+                activeCount > 0
+                  ? "bg-[var(--tp-bg-E3EFE2)] border-[var(--tp-bd-2E6B3A)] text-[var(--tp-fg-1F4D28)]"
+                  : "bg-[var(--tp-bg-FFFFFF)] border-[var(--tp-bd-C9C3B3)] text-[var(--tp-fg-17251C)]"
+              )}
+            >
+              <Accessibility className="w-3.5 h-3.5 shrink-0 text-[#007AFF]" aria-hidden="true" />
+              <span>{a11yStr.buttonShort}</span>
+            </button>
+            <button
+              type="button"
+              data-testid="open-tunisian-guide-mobile-btn"
+              onClick={() => window.dispatchEvent(new Event("tp:start-tunisian-tour"))}
+              className="min-h-[34px] px-3 rounded-full bg-[var(--tp-bg-2E6B3A)] text-white text-[13px] font-bold inline-flex items-center gap-1 shrink-0"
+            >
+              <Mic className="w-3.5 h-3.5 shrink-0" aria-hidden="true" />
+              <span>{TOUR_UI_STRINGS[lang].floatingButton}</span>
+            </button>
+          </div>
+        </div>
         {/* Offline / Sync Queue Notice on Phone or Conflicts */}
         {(!isOnline || pendingSyncCount > 0) && (
           <div className="no-print lg:hidden bg-[var(--tp-bg-FCEFD9)] border-b border-[var(--tp-bd-E2B66B)] px-4 py-2 flex items-center justify-between text-[14px] text-[var(--tp-fg-6B3A00)]">
@@ -489,7 +600,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
           </div>
         )}
 
-        <div className="max-w-[1120px] mx-auto px-5 py-4 lg:px-10 lg:py-8">
+        <div className="tp-fade-in max-w-[1120px] mx-auto px-5 py-4 lg:px-10 lg:py-8">
           {children}
         </div>
       </main>
@@ -497,7 +608,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
       {/* Mobile 4-Tab Bottom Navigation Bar matching Main.dc.html */}
       <nav
         aria-label="Main"
-        className="no-print lg:hidden fixed bottom-0 inset-x-0 z-30 grid grid-cols-4 bg-[var(--tp-bg-FFFFFF)] border-t-[1.5px] border-[var(--tp-bd-E4DFD2)] px-1.5 pt-1.5 pb-[max(12px,env(safe-area-inset-bottom))]"
+        className="no-print lg:hidden fixed bottom-0 inset-x-0 z-30 grid grid-cols-4 bg-[var(--tp-bg-FFFFFF)]/95 backdrop-blur-sm border-t-[1.5px] border-[var(--tp-bd-E4DFD2)] px-1.5 pt-1.5 pb-[max(12px,env(safe-area-inset-bottom))]"
       >
         {primaryNav.map((item) => {
           const Icon = item.icon;
@@ -508,10 +619,16 @@ export function AppShell({ children }: { children: React.ReactNode }) {
               href={item.href}
               aria-current={active ? "page" : undefined}
               className={cn(
-                "min-h-[56px] flex flex-col items-center justify-center gap-1 rounded-[12px] text-[14px] transition-colors",
+                "relative min-h-[56px] flex flex-col items-center justify-center gap-1 rounded-[12px] text-[14px] transition-transform active:scale-95",
                 active ? "text-[var(--tp-fg-2E6B3A)] font-bold" : "text-[var(--tp-fg-4A5A4F)] font-normal"
               )}
             >
+              {active && (
+                <span
+                  aria-hidden="true"
+                  className="absolute top-0.5 w-8 h-[3px] rounded-full bg-[var(--tp-bg-2E6B3A)]"
+                />
+              )}
               <Icon
                 className={cn(
                   "w-[26px] h-[26px]",
@@ -527,6 +644,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
       </nav>
 
       <TunisianVoiceGuide />
+      <AccessibilitySheet />
     </div>
   );
 }

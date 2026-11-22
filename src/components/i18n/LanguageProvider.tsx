@@ -38,7 +38,7 @@ export function LanguageProvider({ children }: { children: React.ReactNode }) {
   React.useEffect(() => {
     try {
       const saved = localStorage.getItem(STORAGE_KEY) as AppLanguage | null;
-      if (saved === "en" || saved === "fr" || saved === "ar") {
+      if (saved === "en" || saved === "fr" || saved === "ar" || saved === "ja") {
         setLangState(saved);
       }
     } catch {
@@ -60,7 +60,8 @@ export function LanguageProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   const cycleLang = React.useCallback(() => {
-    const next: AppLanguage = lang === "en" ? "ar" : lang === "ar" ? "fr" : "en";
+    const next: AppLanguage =
+      lang === "en" ? "ar" : lang === "ar" ? "fr" : lang === "fr" ? "ja" : "en";
     setLangState(next);
     saveLang(next);
   }, [lang]);

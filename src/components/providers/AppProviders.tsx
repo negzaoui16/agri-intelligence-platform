@@ -3,6 +3,7 @@
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { ThemeProvider } from "next-themes";
 import * as React from "react";
+import { AccessibilityProvider } from "@/components/providers/AccessibilityProvider";
 import { LanguageProvider } from "@/components/i18n/LanguageProvider";
 import {
   flushSyncQueue,
@@ -32,9 +33,28 @@ export function AppProviders({ children }: { children: React.ReactNode }) {
   React.useEffect(() => {
     if (typeof window === "undefined") return;
 
-    // Register Service Worker for offline PWA behavior
+    // Register Service Worker only in production; in dev, clear stale SW caches so unhashed chunks stay fresh
     if ("serviceWorker" in navigator) {
-      navigator.serviceWorker.register("/sw.js").catch(() => undefined);
+      if (process.env.NODE_ENV === "production") {
+        navigator.serviceWorker.register("/sw.js").catch(() => undefined);
+      } else {
+        navigator.serviceWorker
+          .getRegistrations()
+          .then((regs) => Promise.all(regs.map((r) => r.unregister())))
+          .catch(() => undefined);
+        if ("caches" in window) {
+          window.caches
+            .keys()
+            .then((keys) =>
+              Promise.all(
+                keys
+                  .filter((k) => k.startsWith("terrapulse-"))
+                  .map((k) => window.caches.delete(k))
+              )
+            )
+            .catch(() => undefined);
+        }
+      }
     }
 
     const refreshCounters = async () => {
@@ -73,7 +93,9 @@ export function AppProviders({ children }: { children: React.ReactNode }) {
   return (
     <ThemeProvider attribute="class" defaultTheme="light" enableSystem={false}>
       <LanguageProvider>
-        <QueryClientProvider client={queryClient}>{children}</QueryClientProvider>
+        <AccessibilityProvider>
+          <QueryClientProvider client={queryClient}>{children}</QueryClientProvider>
+        </AccessibilityProvider>
       </LanguageProvider>
     </ThemeProvider>
   );

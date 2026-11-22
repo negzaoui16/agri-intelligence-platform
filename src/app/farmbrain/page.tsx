@@ -215,52 +215,82 @@ export default function FarmBrainPage() {
 
           {/* 4 Big Visual Savings Cards */}
           <div data-tour="farmbrain-savings" className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4">
-            <article className="bg-[var(--tp-bg-FFFFFF)] border-[1.5px] border-[var(--tp-bd-E4DFD2)] rounded-[20px] p-5 flex flex-col gap-2">
-              <div className="flex items-center justify-between text-[var(--tp-fg-1D4F91)]">
+            <article
+              style={{ borderTopWidth: 3, borderTopColor: "var(--tp-fg-1D4F91)" }}
+              className="tp-card bg-[var(--tp-bg-FFFFFF)] border-[1.5px] border-[var(--tp-bd-E4DFD2)] rounded-[20px] p-5 flex flex-col gap-2"
+            >
+              <div className="flex items-center justify-between gap-2 text-[var(--tp-fg-1D4F91)]">
                 <span className="text-[15px] font-bold">{fb.waterSavedTitle}</span>
-                <Droplets className="w-6 h-6" aria-hidden="true" />
+                <span className="w-9 h-9 rounded-[10px] bg-[var(--tp-bg-E6EEF9)] flex items-center justify-center shrink-0">
+                  <Droplets className="w-5 h-5" aria-hidden="true" />
+                </span>
               </div>
-              <div className="text-[30px] font-bold text-[var(--tp-fg-17251C)] leading-tight">
+              <div dir="ltr" style={{ unicodeBidi: "isolate" }} className="tp-tabular text-[30px] font-bold text-[var(--tp-fg-17251C)] leading-tight w-fit">
                 {analysis.savings.waterSavingsPct}%
               </div>
-              <p className="m-0 text-[16px] font-bold text-[var(--tp-fg-2E6B3A)]">
-                {analysis.savings.waterSavedM3Yr.toLocaleString()} {fb.m3Unit} (
-                {analysis.savings.waterSavedLitresYr.toLocaleString()} {fb.litresUnit})
+              <p className="m-0 tp-tabular text-[15px] font-bold text-[var(--tp-fg-2E6B3A)]">
+                <span dir="ltr" style={{ unicodeBidi: "isolate" }} className="inline-block">
+                  {analysis.savings.waterSavedM3Yr.toLocaleString()}
+                </span>{" "}
+                {fb.m3Unit} (
+                <span dir="ltr" style={{ unicodeBidi: "isolate" }} className="inline-block">
+                  {analysis.savings.waterSavedLitresYr.toLocaleString()}
+                </span>{" "}
+                {fb.litresUnit})
               </p>
             </article>
 
-            <article className="bg-[var(--tp-bg-FFFFFF)] border-[1.5px] border-[var(--tp-bd-E4DFD2)] rounded-[20px] p-5 flex flex-col gap-2">
-              <div className="flex items-center justify-between text-[var(--tp-fg-9A6400)]">
+            <article
+              style={{ borderTopWidth: 3, borderTopColor: "var(--tp-fg-9A6400)" }}
+              className="tp-card bg-[var(--tp-bg-FFFFFF)] border-[1.5px] border-[var(--tp-bd-E4DFD2)] rounded-[20px] p-5 flex flex-col gap-2"
+            >
+              <div className="flex items-center justify-between gap-2 text-[var(--tp-fg-9A6400)]">
                 <span className="text-[15px] font-bold">{fb.energySavedTitle}</span>
-                <Zap className="w-6 h-6" aria-hidden="true" />
+                <span className="w-9 h-9 rounded-[10px] bg-[var(--tp-bg-F6ECD6)] flex items-center justify-center shrink-0">
+                  <Zap className="w-5 h-5" aria-hidden="true" />
+                </span>
               </div>
-              <div className="text-[30px] font-bold text-[var(--tp-fg-17251C)] leading-tight">
+              <div dir="ltr" style={{ unicodeBidi: "isolate" }} className="tp-tabular text-[30px] font-bold text-[var(--tp-fg-17251C)] leading-tight w-fit">
                 {analysis.savings.energySavedKwhYr.toLocaleString()}
               </div>
-              <p className="m-0 text-[16px] font-bold text-[var(--tp-fg-4A5A4F)]">
-                {fb.kwhUnit} ({analysis.savings.energySavingsPct}%)
+              <p className="m-0 tp-tabular text-[15px] font-bold text-[var(--tp-fg-4A5A4F)]">
+                {fb.kwhUnit} (
+                <span dir="ltr" style={{ unicodeBidi: "isolate" }} className="inline-block">
+                  {analysis.savings.energySavingsPct}%
+                </span>
+                )
               </p>
             </article>
 
-            <article className="bg-[var(--tp-bg-FFFFFF)] border-[1.5px] border-[var(--tp-bd-E4DFD2)] rounded-[20px] p-5 flex flex-col gap-2">
-              <div className="flex items-center justify-between text-[var(--tp-fg-2E6B3A)]">
+            <article
+              style={{ borderTopWidth: 3, borderTopColor: "var(--tp-fg-2E6B3A)" }}
+              className="tp-card bg-[var(--tp-bg-FFFFFF)] border-[1.5px] border-[var(--tp-bd-E4DFD2)] rounded-[20px] p-5 flex flex-col gap-2"
+            >
+              <div className="flex items-center justify-between gap-2 text-[var(--tp-fg-2E6B3A)]">
                 <span className="text-[15px] font-bold">{fb.timeSavedTitle}</span>
-                <Clock className="w-6 h-6" aria-hidden="true" />
+                <span className="w-9 h-9 rounded-[10px] bg-[var(--tp-bg-E3EFE2)] flex items-center justify-center shrink-0">
+                  <Clock className="w-5 h-5" aria-hidden="true" />
+                </span>
               </div>
-              <div className="text-[30px] font-bold text-[var(--tp-fg-17251C)] leading-tight">
+              <div dir="ltr" style={{ unicodeBidi: "isolate" }} className="tp-tabular text-[30px] font-bold text-[var(--tp-fg-17251C)] leading-tight w-fit">
                 {analysis.savings.timeSavedHoursYr.toLocaleString()}
               </div>
-              <p className="m-0 text-[16px] font-bold text-[var(--tp-fg-4A5A4F)]">
+              <p className="m-0 tp-tabular text-[15px] font-bold text-[var(--tp-fg-4A5A4F)]">
                 {fb.hoursUnit}
               </p>
             </article>
 
-            <article className="bg-[var(--tp-bg-FFFFFF)] border-[1.5px] border-[var(--tp-bd-E4DFD2)] rounded-[20px] p-5 flex flex-col gap-2">
-              <div className="flex items-center justify-between text-[var(--tp-fg-1F4D28)]">
+            <article
+              style={{ borderTopWidth: 3, borderTopColor: "var(--tp-fg-1F4D28)" }}
+              className="tp-card bg-[var(--tp-bg-FFFFFF)] border-[1.5px] border-[var(--tp-bd-E4DFD2)] rounded-[20px] p-5 flex flex-col gap-2"
+            >
+              <div className="flex items-center justify-between gap-2 text-[var(--tp-fg-1F4D28)]">
                 <span className="text-[15px] font-bold">{fb.moneySavedTitle}</span>
-                <Wallet className="w-6 h-6" aria-hidden="true" />
+                <span className="w-9 h-9 rounded-[10px] bg-[var(--tp-bg-E3EFE2)] flex items-center justify-center shrink-0">
+                  <Wallet className="w-5 h-5" aria-hidden="true" />
+                </span>
               </div>
-              <div className="text-[30px] font-bold text-[var(--tp-fg-17251C)] leading-tight">
+              <div className="tp-tabular text-[30px] font-bold text-[var(--tp-fg-17251C)] leading-tight">
                 {analysis.savings.totalEstimatedSavingsTndYr.toLocaleString()} {fb.tndUnit}
               </div>
               <p className="m-0 text-[14px] text-[var(--tp-fg-4A5A4F)]">
@@ -275,7 +305,7 @@ export default function FarmBrainPage() {
 
           {/* Verified Savings Tier & Completeness Score */}
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-            <section className="bg-[var(--tp-bg-FFFFFF)] border-[1.5px] border-[var(--tp-bd-E4DFD2)] rounded-[20px] p-5 flex flex-col gap-3">
+            <section className="tp-card bg-[var(--tp-bg-FFFFFF)] border-[1.5px] border-[var(--tp-bd-E4DFD2)] rounded-[20px] p-5 flex flex-col gap-3">
               <div className="flex items-center justify-between gap-2">
                 <h2 className="m-0 text-[19px] font-bold text-[var(--tp-fg-17251C)] flex items-center gap-2">
                   <ShieldCheck className="w-5 h-5 text-[var(--tp-fg-2E6B3A)]" />
@@ -410,7 +440,7 @@ export default function FarmBrainPage() {
           </section>
 
           {/* 7-Day Soil Moisture Forecast Chart */}
-          <section className="bg-[var(--tp-bg-FFFFFF)] border-[1.5px] border-[var(--tp-bd-E4DFD2)] rounded-[20px] p-5 lg:p-6 flex flex-col gap-4">
+          <section className="tp-card bg-[var(--tp-bg-FFFFFF)] border-[1.5px] border-[var(--tp-bd-E4DFD2)] rounded-[20px] p-5 lg:p-6 flex flex-col gap-4">
             <div>
               <h2 className="m-0 text-[20px] font-bold text-[var(--tp-fg-17251C)]">
                 {fb.forecastTitle}
@@ -420,17 +450,34 @@ export default function FarmBrainPage() {
             <div dir="ltr" className="w-full h-[250px]">
               <ResponsiveContainer width="100%" height="100%">
                 <AreaChart data={analysis.soilMoistureForecast7d}>
+                  <defs>
+                    <linearGradient id="fbMoistureGrad" x1="0" y1="0" x2="0" y2="1">
+                      <stop offset="5%" stopColor="#2E6B3A" stopOpacity={0.35} />
+                      <stop offset="95%" stopColor="#2E6B3A" stopOpacity={0.03} />
+                    </linearGradient>
+                    <linearGradient id="fbIrrGrad" x1="0" y1="0" x2="0" y2="1">
+                      <stop offset="5%" stopColor="#1D4F91" stopOpacity={0.28} />
+                      <stop offset="95%" stopColor="#1D4F91" stopOpacity={0.02} />
+                    </linearGradient>
+                  </defs>
                   <CartesianGrid strokeDasharray="3 3" stroke="rgba(120,120,110,0.2)" />
                   <XAxis dataKey="date" tick={{ fontSize: 12 }} />
                   <YAxis domain={[0, 100]} tick={{ fontSize: 12 }} />
-                  <Tooltip />
+                  <Tooltip
+                    contentStyle={{
+                      backgroundColor: "var(--tp-bg-FFFFFF)",
+                      border: "1.5px solid var(--tp-bd-E4DFD2)",
+                      borderRadius: "12px",
+                      color: "var(--tp-fg-17251C)",
+                    }}
+                    labelStyle={{ fontWeight: 700, color: "var(--tp-fg-17251C)" }}
+                  />
                   <Area
                     type="monotone"
                     dataKey="expectedMoisturePct"
                     name={fb.moistureChartLabel}
                     stroke="#2E6B3A"
-                    fill="#2E6B3A"
-                    fillOpacity={0.22}
+                    fill="url(#fbMoistureGrad)"
                     strokeWidth={2.5}
                   />
                   <Area
@@ -438,8 +485,7 @@ export default function FarmBrainPage() {
                     dataKey="recommendedIrrigationMm"
                     name={fb.recommendedWaterLabel}
                     stroke="#1D4F91"
-                    fill="#1D4F91"
-                    fillOpacity={0.15}
+                    fill="url(#fbIrrGrad)"
                     strokeWidth={2}
                   />
                 </AreaChart>
@@ -449,7 +495,7 @@ export default function FarmBrainPage() {
 
           {/* Plot Breakdown + Data Completeness */}
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-            <section className="bg-[var(--tp-bg-FFFFFF)] border-[1.5px] border-[var(--tp-bd-E4DFD2)] rounded-[20px] p-5 flex flex-col gap-3">
+            <section className="tp-card bg-[var(--tp-bg-FFFFFF)] border-[1.5px] border-[var(--tp-bd-E4DFD2)] rounded-[20px] p-5 flex flex-col gap-3">
               <h2 className="m-0 text-[19px] font-bold text-[var(--tp-fg-17251C)]">
                 {fb.plotsTitle}
               </h2>
@@ -461,14 +507,27 @@ export default function FarmBrainPage() {
                   >
                     <div>
                       <b className="text-[17px] text-[var(--tp-fg-17251C)] block">
-                        {cropLabel(plot.cropName, plot.cropCode)} ({plot.areaHa} ha)
+                        {cropLabel(plot.cropName, plot.cropCode)}{" "}
+                        <span dir="ltr" style={{ unicodeBidi: "isolate" }} className="inline-block">
+                          ({Number(plot.areaHa.toFixed(1))} ha)
+                        </span>
                       </b>
                       <span className="text-[14px] text-[var(--tp-fg-4A5A4F)]">
-                        {fb.withoutSmartLabel}: {plot.baselineWaterM3Yr.toLocaleString()} m³ →{" "}
-                        {fb.withSmartLabel}: {plot.smartWaterM3Yr.toLocaleString()} m³
+                        {fb.withoutSmartLabel}:{" "}
+                        <span dir="ltr" style={{ unicodeBidi: "isolate" }} className="inline-block tp-tabular">
+                          {plot.baselineWaterM3Yr.toLocaleString()} m³
+                        </span>{" "}
+                        → {fb.withSmartLabel}:{" "}
+                        <span dir="ltr" style={{ unicodeBidi: "isolate" }} className="inline-block tp-tabular">
+                          {plot.smartWaterM3Yr.toLocaleString()} m³
+                        </span>
                       </span>
                     </div>
-                    <span className="px-3 py-1 rounded-full bg-[var(--tp-bg-E3EFE2)] text-[var(--tp-fg-1F4D28)] text-[14px] font-bold">
+                    <span
+                      dir="ltr"
+                      style={{ unicodeBidi: "isolate" }}
+                      className="tp-tabular px-3 py-1 rounded-full bg-[var(--tp-bg-E3EFE2)] text-[var(--tp-fg-1F4D28)] text-[14px] font-bold"
+                    >
                       -{plot.waterSavedM3Yr.toLocaleString()} m³ ({plot.efficiencyGainPct}%)
                     </span>
                   </div>
@@ -476,15 +535,21 @@ export default function FarmBrainPage() {
               </div>
             </section>
 
-            <section className="bg-[var(--tp-bg-FFFFFF)] border-[1.5px] border-[var(--tp-bd-E4DFD2)] rounded-[20px] p-5 flex flex-col gap-3">
+            <section className="tp-card bg-[var(--tp-bg-FFFFFF)] border-[1.5px] border-[var(--tp-bd-E4DFD2)] rounded-[20px] p-5 flex flex-col gap-3">
               <div className="flex items-center justify-between gap-2">
                 <h2 className="m-0 text-[19px] font-bold text-[var(--tp-fg-17251C)] flex items-center gap-2">
                   <Gauge className="w-5 h-5 text-[var(--tp-fg-2E6B3A)]" />
                   <span>{fb.completenessTitle}</span>
                 </h2>
-                <span className="text-[20px] font-bold text-[var(--tp-fg-2E6B3A)]">
+                <span className="tp-tabular text-[20px] font-bold text-[var(--tp-fg-2E6B3A)]">
                   {analysis.dataCompletenessPct}%
                 </span>
+              </div>
+              <div className="h-2.5 w-full rounded-full bg-[var(--tp-bg-F6F4EE)] border border-[var(--tp-bd-E4DFD2)] overflow-hidden">
+                <div
+                  className="h-full rounded-full bg-[var(--tp-bg-2E6B3A)] transition-all duration-500"
+                  style={{ width: `${Math.min(100, Math.max(0, analysis.dataCompletenessPct))}%` }}
+                />
               </div>
               <p className="m-0 text-[14px] text-[var(--tp-fg-4A5A4F)]">
                 {fb.completenessMissingHint}

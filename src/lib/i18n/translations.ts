@@ -1,4 +1,19 @@
-export type AppLanguage = "en" | "fr" | "ar";
+export type AppLanguage = "en" | "fr" | "ar" | "ja";
+
+export const JAPANESE_MONTHS: Record<string, string> = {
+  January: "1月",
+  February: "2月",
+  March: "3月",
+  April: "4月",
+  May: "5月",
+  June: "6月",
+  July: "7月",
+  August: "8月",
+  September: "9月",
+  October: "10月",
+  November: "11月",
+  December: "12月",
+};
 
 export const MAGHREB_ARABIC_MONTHS: Record<string, string> = {
   January: "جانفي",
@@ -49,29 +64,31 @@ export function localizeMonthName(monthName: string, lang: AppLanguage): string 
   if (!(key in MAGHREB_ARABIC_MONTHS)) return monthName;
   if (lang === "ar") return MAGHREB_ARABIC_MONTHS[key];
   if (lang === "fr") return FRENCH_MONTHS[key];
+  if (lang === "ja") return JAPANESE_MONTHS[key];
   return key;
 }
 
 // REVIEW: native Arabic / French speaker review recommended
 const WATER_SOURCE_LABELS: Record<
   string,
-  { en: [string, string]; fr: [string, string]; ar: [string, string] }
+  { en: [string, string]; fr: [string, string]; ar: [string, string]; ja: [string, string] }
 > = {
   // [short farmer name, one-line description]
   WATER_INFRASTRUCTURE: {
     en: ["Water point", "Pipe or tank on the map"],
     fr: ["Point d'eau", "Conduite ou réservoir sur la carte"],
     ar: ["نقطة ماء", "قناة أو خزان على الخريطة"],
+    ja: ["水利ポイント", "地図上の配管・貯水タンク"],
   },
-  WELL: { en: ["Well", "Well"], fr: ["Puits", "Puits"], ar: ["بئر", "بئر"] },
-  BOREHOLE: { en: ["Borehole", "Deep well"], fr: ["Forage", "Puits profond"], ar: ["بئر عميقة", "بئر عميقة"] },
-  RIVER: { en: ["River", "River"], fr: ["Oued", "Rivière"], ar: ["وادي", "وادي"] },
-  STREAM: { en: ["Stream", "Small stream"], fr: ["Ruisseau", "Petit cours d'eau"], ar: ["ساقية", "مجرى ماء صغير"] },
-  CANAL: { en: ["Canal", "Irrigation canal"], fr: ["Canal", "Canal d'irrigation"], ar: ["قناة", "قناة ري"] },
-  RESERVOIR: { en: ["Dam", "Dam or reservoir"], fr: ["Barrage", "Barrage ou retenue"], ar: ["سد", "سد أو خزان"] },
-  LAKE: { en: ["Lake", "Lake or pond"], fr: ["Lac", "Lac ou bassin"], ar: ["بحيرة", "بحيرة أو بركة"] },
-  SPRING: { en: ["Spring", "Natural spring"], fr: ["Source", "Source naturelle"], ar: ["عين", "عين ماء"] },
-  HYDRO_RIVER_REACH: { en: ["River", "River channel"], fr: ["Oued", "Lit de rivière"], ar: ["وادي", "مجرى وادي"] },
+  WELL: { en: ["Well", "Well"], fr: ["Puits", "Puits"], ar: ["بئر", "بئر"], ja: ["井戸", "井戸"] },
+  BOREHOLE: { en: ["Borehole", "Deep well"], fr: ["Forage", "Puits profond"], ar: ["بئر عميقة", "بئر عميقة"], ja: ["深井戸", "ボーリング井戸"] },
+  RIVER: { en: ["River", "River"], fr: ["Oued", "Rivière"], ar: ["وادي", "وادي"], ja: ["河川", "川"] },
+  STREAM: { en: ["Stream", "Small stream"], fr: ["Ruisseau", "Petit cours d'eau"], ar: ["ساقية", "مجرى ماء صغير"], ja: ["小川", "小規模な水路"] },
+  CANAL: { en: ["Canal", "Irrigation canal"], fr: ["Canal", "Canal d'irrigation"], ar: ["قناة", "قناة ري"], ja: ["用水路", "灌漑水路"] },
+  RESERVOIR: { en: ["Dam", "Dam or reservoir"], fr: ["Barrage", "Barrage ou retenue"], ar: ["سد", "سد أو خزان"], ja: ["ダム・貯水池", "ダムまたは貯水池"] },
+  LAKE: { en: ["Lake", "Lake or pond"], fr: ["Lac", "Lac ou bassin"], ar: ["بحيرة", "بحيرة أو بركة"], ja: ["湖・ため池", "湖またはため池"] },
+  SPRING: { en: ["Spring", "Natural spring"], fr: ["Source", "Source naturelle"], ar: ["عين", "عين ماء"], ja: ["湧水", "自然の湧き水"] },
+  HYDRO_RIVER_REACH: { en: ["River", "River channel"], fr: ["Oued", "Lit de rivière"], ar: ["وادي", "مجرى وادي"], ja: ["水路・河川", "河川流路"] },
 };
 
 /**
@@ -92,27 +109,27 @@ export function localizeWaterSource(
 }
 
 export function localizeCropLabel(cropName: string, cropCode: string, lang: AppLanguage): string {
-  const map: Record<string, { en: string; fr: string; ar: string }> = {
-    citrus: { en: "Citrus", fr: "Agrumes", ar: "قوارص" },
-    olive: { en: "Olive", fr: "Olivier", ar: "زيتون" },
-    wheat: { en: "Wheat", fr: "Blé", ar: "قمح" },
-    barley: { en: "Barley", fr: "Orge", ar: "شعير" },
-    tomato: { en: "Tomato", fr: "Tomate", ar: "طماطم" },
-    potato: { en: "Potato", fr: "Pomme de terre", ar: "بطاطا" },
-    onion: { en: "Onion", fr: "Oignon", ar: "بصل" },
-    pepper: { en: "Pepper", fr: "Piment / Poivron", ar: "فلفل" },
-    watermelon: { en: "Watermelon", fr: "Pastèque", ar: "دلاع" },
-    melon: { en: "Melon", fr: "Melon", ar: "بطيخ" },
-    grapes: { en: "Grapes", fr: "Raisin", ar: "عنب" },
-    almond: { en: "Almond", fr: "Amandier", ar: "لوز" },
-    date_palm: { en: "Date palm", fr: "Palmier dattier", ar: "نخيل" },
-    sorghum: { en: "Sorghum", fr: "Sorgho", ar: "سورغوم" },
-    alfalfa: { en: "Alfalfa", fr: "Luzerne", ar: "فصة" },
-    maize: { en: "Maize", fr: "Maïs", ar: "ذرة" },
-    soybean: { en: "Soybean", fr: "Soja", ar: "صوجا" },
-    cotton: { en: "Cotton", fr: "Coton", ar: "قطن" },
-    rice: { en: "Rice", fr: "Riz", ar: "أرز" },
-    custom: { en: "Other crop", fr: "Autre culture", ar: "محصول آخر" },
+  const map: Record<string, { en: string; fr: string; ar: string; ja: string }> = {
+    citrus: { en: "Citrus", fr: "Agrumes", ar: "قوارص", ja: "柑橘類" },
+    olive: { en: "Olive", fr: "Olivier", ar: "زيتون", ja: "オリーブ" },
+    wheat: { en: "Wheat", fr: "Blé", ar: "قمح", ja: "小麦" },
+    barley: { en: "Barley", fr: "Orge", ar: "شعير", ja: "大麦" },
+    tomato: { en: "Tomato", fr: "Tomate", ar: "طماطم", ja: "トマト" },
+    potato: { en: "Potato", fr: "Pomme de terre", ar: "بطاطا", ja: "じゃがいも" },
+    onion: { en: "Onion", fr: "Oignon", ar: "بصل", ja: "玉ねぎ" },
+    pepper: { en: "Pepper", fr: "Piment / Poivron", ar: "فلفل", ja: "トウガラシ・ピーマン" },
+    watermelon: { en: "Watermelon", fr: "Pastèque", ar: "دلاع", ja: "スイカ" },
+    melon: { en: "Melon", fr: "Melon", ar: "بطيخ", ja: "メロン" },
+    grapes: { en: "Grapes", fr: "Raisin", ar: "عنب", ja: "ブドウ" },
+    almond: { en: "Almond", fr: "Amandier", ar: "لوز", ja: "アーモンド" },
+    date_palm: { en: "Date palm", fr: "Palmier dattier", ar: "نخيل", ja: "ナツメヤシ" },
+    sorghum: { en: "Sorghum", fr: "Sorgho", ar: "سورغوم", ja: "ソルガム" },
+    alfalfa: { en: "Alfalfa", fr: "Luzerne", ar: "فصة", ja: "アルファルファ" },
+    maize: { en: "Maize", fr: "Maïs", ar: "ذرة", ja: "トウモロコシ" },
+    soybean: { en: "Soybean", fr: "Soja", ar: "صوجا", ja: "大豆" },
+    cotton: { en: "Cotton", fr: "Coton", ar: "قطن", ja: "綿花" },
+    rice: { en: "Rice", fr: "Riz", ar: "أرز", ja: "稲（米）" },
+    custom: { en: "Other crop", fr: "Autre culture", ar: "محصول آخر", ja: "その他の作物" },
   };
   const found = map[cropCode];
   if (found) return found[lang];
@@ -125,18 +142,48 @@ export function localizeWeatherCondition(
 ): string {
   const s = (summary || "Partly cloudy").toLowerCase();
   if (s.includes("clear") || s.includes("sunny")) {
-    return lang === "ar" ? "صافي ومشمس" : lang === "fr" ? "Ciel dégagé" : summary || "Mainly clear";
+    return lang === "ar"
+      ? "صافي ومشمس"
+      : lang === "fr"
+        ? "Ciel dégagé"
+        : lang === "ja"
+          ? "快晴"
+          : summary || "Mainly clear";
   }
   if (s.includes("overcast")) {
-    return lang === "ar" ? "غائم كلياً" : lang === "fr" ? "Couvert" : summary || "Overcast";
+    return lang === "ar"
+      ? "غائم كلياً"
+      : lang === "fr"
+        ? "Couvert"
+        : lang === "ja"
+          ? "曇り"
+          : summary || "Overcast";
   }
   if (s.includes("rain") || s.includes("shower") || s.includes("drizzle")) {
-    return lang === "ar" ? "ممطر" : lang === "fr" ? "Pluie" : summary || "Rain";
+    return lang === "ar"
+      ? "ممطر"
+      : lang === "fr"
+        ? "Pluie"
+        : lang === "ja"
+          ? "雨"
+          : summary || "Rain";
   }
   if (s.includes("fog")) {
-    return lang === "ar" ? "ضباب" : lang === "fr" ? "Brouillard" : summary || "Fog";
+    return lang === "ar"
+      ? "ضباب"
+      : lang === "fr"
+        ? "Brouillard"
+        : lang === "ja"
+          ? "霧"
+          : summary || "Fog";
   }
-  return lang === "ar" ? "غائم جزئياً" : lang === "fr" ? "Partiellement nuageux" : summary || "Partly cloudy";
+  return lang === "ar"
+    ? "غائم جزئياً"
+    : lang === "fr"
+      ? "Partiellement nuageux"
+      : lang === "ja"
+        ? "晴れ時々曇り"
+        : summary || "Partly cloudy";
 }
 
 export interface TranslationStrings {
@@ -907,10 +954,200 @@ const AR_STRINGS: TranslationStrings = {
   deleteFarmConfirm: "هل تريد حذف «{name}»؟ سيتم مسح بيانات هذه المزرعة نهائياً.",
 };
 
+const JA_STRINGS: TranslationStrings = {
+  appName: "TerraPulse",
+  navHome: "ホーム",
+  navMyFarm: "私の農園",
+  navAsk: "AIに聞く",
+  navReport: "レポート",
+  navCheckGroup: "確認項目",
+  navWater: "水バランス",
+  navSunPower: "太陽光発電",
+  navWeather: "天気予報",
+  changeFarm: "農園を変更",
+  backToHome: "ホームへ戻る",
+  signOut: "ログアウト",
+  changeLanguageLabel: "言語を変更",
+  hectaresShort: "ha",
+  hectaresFull: "ヘクタール",
+
+  statusGood: "良好",
+  statusOk: "OK",
+  statusProblem: "要確認",
+  statusAllGood: "すべて良好",
+  needsAttention: "要注意",
+  goAndCheck: "現地で確認",
+  askForPermission: "許可を確認",
+
+  shortInMonth: "{month}に水不足",
+  shortInSummer: "夏季に不足",
+  enoughAllYear: "通年で十分",
+  calmWeek: "穏やかな週",
+  alertAhead: "警報を確認",
+
+  goodMorning: "おはようございます",
+  yourFarmToday: "今日のあなたの農園",
+  liveDataLabel: "リアルタイム",
+  waterWillBeShortInMonth: "{month}に水が不足する見込みです",
+  waterFineTitle: "水と天気は良好な状態です",
+  yourPumpGivesPerDay: "現在のポンプ供給量は {supply} m³/日です。{month}には作物が1日 {demand} m³ を必要とします。",
+  yourTreesNeed: "作物の必要量",
+  yourPumpGives: "ポンプの供給量",
+  m3ADay: "m³/日",
+  seeWhatToDo: "対策を見る",
+  pumpCupsCaption: "必要量 {cups} 杯のうち1杯分を供給",
+  sunRestOfYearCaption: "年間を通じて概ね十分",
+  weatherCalmCaption: "霜や強風の予報はありません",
+  todayTitle: "今日",
+  waterAsNormalToday: "今日は通常どおり灌漑してください。",
+  holdWaterRainToday: "雨が降った場合は灌漑を控えてください。",
+  noRainNoFrostLightWind: "雨なし · 霜なし · 穏やかな風",
+  yourNextSteps: "次のステップ",
+  stepVisitWaterPoint: "{distance} m 先の水利ポイントを確認し、通年水があるか確かめてください。",
+  stepPlanSummerWater: "夏の水確保を計画しましょう（貯水タンクまたは大型ポンプ）。",
+  stepAddFarmPrompt: "農園の位置と作物を登録すると、詳しい診断が表示されます。",
+  farmReportCardTitle: "農園レポート",
+  verdictSolveWaterFirst: "まず夏季の水対策を行えば良い候補地です。",
+  verdictGoodChoice: "作物と立地に適した良い農園です。",
+  openReport: "レポートを開く",
+  askAQuestion: "質問してみる",
+
+  waterQuestionTitle: "水は十分に足りますか？",
+  notInMonth: "{month}には足りません。",
+  yesEnoughWater: "はい、{month}の最大需要をカバーできます。",
+  hottestMonthSubtitle: "{month}が最も暑い時期です。1日あたりの水収支：",
+  pumpDetailFormula: "ポンプ供給量（{flow} m³/時 × {hours} 時間）",
+  cupsOfTreesNeed: "これは作物が必要とする {cups} 杯のうち約1杯分です。",
+  whatCanYouDo: "できる対策は？",
+  optBiggerPump: "ポンプを大型化する",
+  optBiggerPumpDesc: "1時間あたり約 {needed} m³ 必要（現在は {current} m³）。",
+  optPumpLonger: "稼働時間を延ばす",
+  optPumpLongerDesc: "{month}には1日 {needed} 時間必要です（現在は {current} 時間）。",
+  optSecondSource: "別の水源を確保する",
+  optSecondSourcePhone: "最寄り：{name}（{dist}先）",
+  optSecondSourceDesktop: "下の周辺水源リストを確認してください。",
+  waterNearYou: "周辺の水源候補",
+  showingTopSources: "地図上の {total} 件のうち有力な {shown} 件を表示",
+  colPlace: "場所",
+  colHowFar: "距離",
+  colHowHardToPump: "揚水の負担",
+  colStatus: "状態",
+  easySameHeight: "容易：農園とほぼ同じ標高",
+  easyHigher: "容易：農園より {m} m 高い",
+  hardLower: "負担大：農園より {m} m 低い",
+  heightUnknown: "現地で標高を確認してください",
+  waterCheckWarning: "地図上の地点が枯渇・塩分過多・私有地の場合があります。ポンプ購入前に必ず現地確認してください。",
+  forYourEngineerTitle: "技術者向け：計算詳細とデータ出典",
+  howDoWeKnowTitle: "根拠とデータ出典",
+
+  sunQuestionTitle: "太陽光でポンプを動かせますか？",
+  yesMostOfYear: "はい、1年のほとんどで動かせます。",
+  yesOverFullYear: "はい、年間を通じた発電量は十分です。",
+  withYourPanelsFullYear: "{kw} kW（パネル約 {panels} 枚）の年間発電バランス：",
+  sunMakes: "太陽光の発電量",
+  pumpUses: "ポンプの消費量",
+  kwhUnit: "kWh",
+  kwhAYear: "kWh/年",
+  extraWinterPowerNote: "冬場に余剰電力が出ますが、蓄電池や貯水タンクがないと夏には持ち越せません。",
+  notEnoughInMonth: "ただし {month} は不足します。",
+  treesDrinkMostWhenHot: "暑い時期ほど作物は多く水を吸います。太陽光は {month} の必要量10のうち {units} を賄えます。",
+  missingInMonthKwh: "{month}の不足分：約 {kwh} kWh",
+  howToCoverSummer: "夏の不足を補う方法",
+  optWaterTank: "貯水タンクに溜める",
+  optWaterTankDesc: "晴れた日に汲み上げて後で散水（目安：約 {m3} m³）。",
+  usuallyCheapest: "通常もっとも低コスト",
+  optBattery: "蓄電池を追加する",
+  optBatteryDesc: "夕方の稼働向けに電力を蓄える（約 {kwh} kWh）。",
+  optGridOrGen: "商用電源または発電機を併用",
+  optGridOrGenDesc: "猛暑のピーク月のみ使用。",
+  yourPanelsCard: "太陽光パネル設定",
+  panelSizeLabel: "設備容量",
+  panelSizeVal: "{kw} kW（約 {panels} 枚）",
+  facingLabel: "向き",
+  facingSouth: "南向き",
+  angleLabel: "設置角度",
+  angleGoodArea: "{deg}°（この地域に適した角度）",
+  changeMyPanels: "パネル設定を変更",
+
+  weatherQuestionTitle: "今日、水やりをすべきですか？",
+  yesWaterAsNormal: "はい、通常どおり灌漑してください。",
+  skipRainComing: "待機 — 今日は雨が予想されています。",
+  soilLosesMmDay: "雨の予報はありません。太陽と風で土壌から1日約 {mm} mm の水が蒸発します。",
+  rainComingTodayDetail: "今日は約 {mm} mm の降雨予報です。ポンプを回す前に土壌水分を確認してください。",
+  next4Days: "今後4日間の予報",
+  todayLabel: "今日",
+  warningsTitle: "気象アラート",
+  noFrost: "霜の心配なし",
+  frostAlert: "霜注意",
+  noHeatWave: "熱波なし",
+  heatAlert: "猛暑注意",
+  noStrongWind: "強風なし",
+  windAlert: "強風注意",
+  alertNoticeHint: "霜・猛暑・強風が近づくとここにお知らせします。",
+  lastYearLabel: "昨年実績：",
+  lastYearRainSummary: "年間降水量 {annual} mm（夏季 {summer} mm）。夏の水計画を早めに立てましょう。",
+
+  askTitle: "農園について質問する",
+  askSubtitle: "文字または音声で質問できます。農園の実データで回答します。",
+  listenBtn: "音声入力",
+  stopListeningBtn: "停止",
+  seeSunPowerLink: "太陽光を見る",
+  seeWaterLink: "水収支を見る",
+  whatIKnowAboutFarm: "現在の農園データ概要",
+  somethingWrongFixIt: "修正が必要ですか？設定を変更",
+  otherFarmersAsk: "よくある質問例",
+  typeYourQuestion: "質問を入力してください…",
+  speakYourQuestion: "音声で質問する",
+  sampleQ1: "この土地はオリーブ栽培に向いていますか？",
+  sampleQ2: "植え付けに適した時期はいつですか？",
+  sampleQ3: "一番大きいリスクは何ですか？",
+  sampleQ4: "近くの水源ポイントは使えますか？",
+
+  reportQuestionTitle: "この農園の総合評価は？",
+  landAndClimate: "土地と気候",
+  bestCropsForPlace: "この土地におすすめの作物",
+  themeDark: "ナイトモード",
+  themeLight: "ライトモード",
+  themeSwitchLabel: "ライトモードとナイトモードを切り替え",
+  cropWaterLow: "少ない水で育つ",
+  cropWaterMedium: "標準的な水量が必要",
+  cropWaterHigh: "多くの水が必要",
+  cropWaterVeryHigh: "非常に多くの水が必要",
+  cropHandlesDrySummers: "乾燥した夏に強い",
+  checkInPersonTitle: "投資前に現地で確認すべきこと",
+  checkPointAllYear: "最寄りの水源は1年中水がありますか？",
+  checkSoilTest: "土壌検査：塩分濃度と保水性",
+  checkGroundwaterDepth: "地下水位の深さはどれくらいですか？",
+  savePdfBtn: "PDF保存",
+  sendToEngineerBtn: "技術者へ送る",
+  yourCropTag: "（選択中の作物）",
+
+  addFarmTitle: "農園を追加",
+  myFarmTitle: "私の農園",
+  threeShortSteps: "3ステップで簡単登録。分からない項目は安全な推定値を使用します。",
+  step1Where: "場所",
+  step1WhereSub: "位置と広さ",
+  step2WhatGrow: "作物",
+  step2WhatGrowSub: "作物の種類と面積",
+  step3Water: "水・設備",
+  step3WaterSub: "井戸・ポンプ・太陽光（任意）",
+  whereIsYourFarm: "農園はどこにありますか？",
+  standOnLandHint: "農園の場所で緑のボタンを押すと自動取得できます。",
+  iAmOnMyFarmNow: "今、農園にいます",
+  useMyLocation: "現在地を使う",
+  nearestVillageOrTown: "最寄りの町・地域名",
+  villagePlaceholder: "例：Korba",
+  skipIfDontKnow: "不明な場合はスキップ",
+  ourEstimateBadge: "推定値",
+  saveFarmBtn: "農園を保存",
+  deleteFarmConfirm: "「{name}」を削除しますか？保存されたデータと診断結果が完全に削除されます。",
+};
+
 export const TRANSLATIONS: Record<AppLanguage, TranslationStrings> = {
   en: EN_STRINGS,
   fr: FR_STRINGS,
   ar: AR_STRINGS,
+  ja: JA_STRINGS,
 };
 
 export function formatTemplate(

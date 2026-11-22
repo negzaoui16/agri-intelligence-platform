@@ -246,13 +246,27 @@ export default function SimulatorPage() {
                 type="button"
                 onClick={() => handleSelectPreset(type)}
                 className={cn(
-                  "rounded-[18px] border-[1.5px] p-4 text-start flex flex-col gap-2 transition-colors min-h-[120px]",
+                  "tp-card-interactive relative rounded-[18px] border-[1.5px] p-4 text-start flex flex-col gap-2 min-h-[120px]",
                   active
-                    ? "bg-[var(--tp-bg-E3EFE2)] border-[var(--tp-bd-2E6B3A)] text-[var(--tp-fg-1F4D28)]"
+                    ? "bg-[var(--tp-bg-E3EFE2)] border-[var(--tp-bd-2E6B3A)] text-[var(--tp-fg-1F4D28)] ring-2 ring-[var(--tp-bg-2E6B3A)]/20"
                     : "bg-[var(--tp-bg-FFFFFF)] border-[var(--tp-bd-E4DFD2)] text-[var(--tp-fg-17251C)] hover:bg-[var(--tp-bg-F6F4EE)]"
                 )}
               >
-                <Icon className="w-6 h-6 shrink-0" aria-hidden="true" />
+                <div className="flex items-center justify-between gap-2 w-full">
+                  <span
+                    className={cn(
+                      "w-10 h-10 rounded-[12px] flex items-center justify-center shrink-0",
+                      active
+                        ? "bg-[var(--tp-bg-2E6B3A)] text-white"
+                        : "bg-[var(--tp-bg-F6F4EE)] text-[var(--tp-fg-2E6B3A)]"
+                    )}
+                  >
+                    <Icon className="w-5 h-5" aria-hidden="true" />
+                  </span>
+                  {active && (
+                    <CheckCircle2 className="w-5 h-5 text-[var(--tp-fg-2E6B3A)] shrink-0" aria-hidden="true" />
+                  )}
+                </div>
                 <b className="text-[17px] leading-snug">{scenarioLabel(type)}</b>
                 <span className="text-[14px] text-[var(--tp-fg-4A5A4F)] leading-snug">
                   {scenarioDesc(type)}
@@ -266,7 +280,7 @@ export default function SimulatorPage() {
       {/* 2. Scenario Controls Form */}
       <form
         onSubmit={handleRun}
-        className="bg-[var(--tp-bg-FFFFFF)] border-[1.5px] border-[var(--tp-bd-E4DFD2)] rounded-[20px] p-5 lg:p-6 flex flex-col gap-4"
+        className="tp-card bg-[var(--tp-bg-FFFFFF)] border-[1.5px] border-[var(--tp-bd-E4DFD2)] rounded-[20px] p-5 lg:p-6 flex flex-col gap-4"
       >
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <label className="flex flex-col gap-1.5 text-[15px] font-bold text-[var(--tp-fg-17251C)]">
@@ -297,7 +311,9 @@ export default function SimulatorPage() {
                         : "bg-[var(--tp-bg-FFFFFF)] border-[var(--tp-bd-C9C3B3)] text-[var(--tp-fg-17251C)]"
                     )}
                   >
-                    {val.toLocaleString()} L
+                    <span dir="ltr" style={{ unicodeBidi: "isolate" }} className="tp-tabular inline-block">
+                      {val.toLocaleString()} L
+                    </span>
                   </button>
                 ))}
                 <input
@@ -485,7 +501,16 @@ export default function SimulatorPage() {
       {activeResult && (() => {
         const locRes = localizeSimulationResult(activeResult, lang);
         return (
-        <section className="bg-[var(--tp-bg-FFFFFF)] border-[1.5px] border-[var(--tp-bd-E4DFD2)] rounded-[20px] p-5 lg:p-6 flex flex-col gap-5">
+        <section
+          className={cn(
+            "tp-card tp-fade-in bg-[var(--tp-bg-FFFFFF)] border-[1.5px] border-[var(--tp-bd-E4DFD2)] border-t-[4px] rounded-[20px] p-5 lg:p-6 flex flex-col gap-5",
+            activeResult.riskLevel === "HIGH"
+              ? "border-t-[var(--tp-fg-8A4B00)]"
+              : activeResult.riskLevel === "MODERATE"
+                ? "border-t-[var(--tp-fg-C98A1B)]"
+                : "border-t-[var(--tp-fg-2E6B3A)]"
+          )}
+        >
           <div className="flex flex-wrap items-center justify-between gap-2">
             <h2 className="m-0 text-[22px] font-bold text-[var(--tp-fg-17251C)]">
               {fb.resultHeadline}: {locRes.headlineOutcome}
@@ -515,7 +540,7 @@ export default function SimulatorPage() {
               <span className="text-[14px] text-[var(--tp-fg-4A5A4F)] block">
                 {fb.waterImpactLabel}
               </span>
-              <b className="text-[22px] text-[var(--tp-fg-17251C)]">
+              <b dir="ltr" style={{ unicodeBidi: "isolate" }} className="tp-tabular inline-block text-[20px] sm:text-[22px] text-[var(--tp-fg-17251C)]">
                 {activeResult.waterDeltaM3Season >= 0 ? "+" : ""}
                 {activeResult.waterDeltaM3Season.toLocaleString()} m³ ({activeResult.waterDeltaPct}%)
               </b>
@@ -524,7 +549,7 @@ export default function SimulatorPage() {
               <span className="text-[14px] text-[var(--tp-fg-4A5A4F)] block">
                 {fb.energyImpactLabel}
               </span>
-              <b className="text-[22px] text-[var(--tp-fg-17251C)]">
+              <b dir="ltr" style={{ unicodeBidi: "isolate" }} className="tp-tabular inline-block text-[20px] sm:text-[22px] text-[var(--tp-fg-17251C)]">
                 {activeResult.energyDeltaKwhSeason >= 0 ? "+" : ""}
                 {activeResult.energyDeltaKwhSeason.toLocaleString()} kWh
               </b>
@@ -533,7 +558,7 @@ export default function SimulatorPage() {
               <span className="text-[14px] text-[var(--tp-fg-4A5A4F)] block">
                 {fb.yieldImpactLabel}
               </span>
-              <b className="text-[22px] text-[var(--tp-fg-17251C)]">
+              <b dir="ltr" style={{ unicodeBidi: "isolate" }} className="tp-tabular inline-block text-[20px] sm:text-[22px] text-[var(--tp-fg-17251C)]">
                 {activeResult.estimatedYieldChangePct >= 0 ? "+" : ""}
                 {activeResult.estimatedYieldChangePct}%
               </b>
@@ -542,7 +567,7 @@ export default function SimulatorPage() {
               <span className="text-[14px] text-[var(--tp-fg-4A5A4F)] block">
                 {fb.costImpactLabel}
               </span>
-              <b className="text-[22px] text-[var(--tp-fg-17251C)]">
+              <b dir="ltr" style={{ unicodeBidi: "isolate" }} className="tp-tabular inline-block text-[20px] sm:text-[22px] text-[var(--tp-fg-17251C)]">
                 {activeResult.estimatedCostDeltaTnd !== null
                   ? `${activeResult.estimatedCostDeltaTnd >= 0 ? "+" : ""}${activeResult.estimatedCostDeltaTnd} TND`
                   : "--"}
@@ -582,11 +607,18 @@ export default function SimulatorPage() {
                     key={alloc.plotId}
                     className="rounded-[14px] border-[1.5px] border-[var(--tp-bd-E4DFD2)] p-3.5 flex flex-col gap-1"
                   >
-                    <div className="flex items-center justify-between gap-2">
+                    <div className="flex flex-wrap items-center justify-between gap-2">
                       <b className="text-[17px] text-[var(--tp-fg-17251C)]">
-                        {localizedCrop} ({alloc.areaHa} ha)
+                        {localizedCrop}{" "}
+                        <span dir="ltr" style={{ unicodeBidi: "isolate" }} className="inline-block">
+                          ({Number(alloc.areaHa.toFixed(1))} ha)
+                        </span>
                       </b>
-                      <span className="px-2.5 py-0.5 rounded-full bg-[var(--tp-bg-E3EFE2)] text-[var(--tp-fg-1F4D28)] text-[14px] font-bold">
+                      <span
+                        dir="ltr"
+                        style={{ unicodeBidi: "isolate" }}
+                        className="tp-tabular px-2.5 py-0.5 rounded-full bg-[var(--tp-bg-E3EFE2)] text-[var(--tp-fg-1F4D28)] text-[14px] font-bold"
+                      >
                         {alloc.allocatedLitresDay.toLocaleString()} L/d ({alloc.fulfillmentPct}%)
                       </span>
                     </div>
@@ -611,7 +643,15 @@ export default function SimulatorPage() {
                   <CartesianGrid strokeDasharray="3 3" stroke="rgba(120,120,110,0.2)" />
                   <XAxis dataKey="day" tick={{ fontSize: 12 }} />
                   <YAxis domain={[0, 100]} tick={{ fontSize: 12 }} />
-                  <Tooltip />
+                  <Tooltip
+                    contentStyle={{
+                      backgroundColor: "var(--tp-bg-FFFFFF)",
+                      border: "1.5px solid var(--tp-bd-E4DFD2)",
+                      borderRadius: "12px",
+                      color: "var(--tp-fg-17251C)",
+                    }}
+                    labelStyle={{ fontWeight: 700, color: "var(--tp-fg-17251C)" }}
+                  />
                   <Legend />
                   <Line
                     type="monotone"

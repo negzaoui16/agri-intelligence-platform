@@ -89,9 +89,10 @@ const LANGUAGE_CHOICES = [
   { code: "en", short: "EN", name: "English" },
   { code: "ar", short: "ع", name: "العربية" },
   { code: "fr", short: "FR", name: "Français" },
+  { code: "ja", short: "日", name: "日本語" },
 ] as const;
 
-/** Compact EN · ع · FR switch with 40px tap targets (phone headers and sign-in screens). */
+/** Compact EN · ع · FR · 日 switch with 36px+ tap targets (phone headers and sign-in screens). */
 export function LanguageSwitch({ className }: { className?: string }) {
   const { lang, setLang, t } = useLanguage();
   return (
@@ -99,7 +100,7 @@ export function LanguageSwitch({ className }: { className?: string }) {
       role="group"
       aria-label={t.changeLanguageLabel}
       className={cn(
-        "min-h-[44px] px-1 rounded-full border-[1.5px] border-[var(--tp-bd-C9C3B3)] bg-[var(--tp-bg-FFFFFF)] inline-flex items-center gap-0.5 text-[15px] font-bold text-[var(--tp-fg-17251C)] shrink-0",
+        "min-h-[42px] px-1 rounded-full border-[1.5px] border-[var(--tp-bd-C9C3B3)] bg-[var(--tp-bg-FFFFFF)] inline-flex items-center gap-0.5 text-[14px] font-bold text-[var(--tp-fg-17251C)] shrink-0",
         className
       )}
     >
@@ -113,7 +114,7 @@ export function LanguageSwitch({ className }: { className?: string }) {
           aria-label={choice.name}
           title={choice.name}
           className={cn(
-            "min-h-[40px] min-w-[40px] px-2 rounded-full",
+            "min-h-[36px] min-w-[36px] px-1.5 rounded-full",
             lang === choice.code
               ? "bg-[var(--tp-bg-E3EFE2)] text-[var(--tp-fg-1F4D28)]"
               : "text-[var(--tp-fg-4A5A4F)] hover:text-[var(--tp-fg-17251C)]"
@@ -128,9 +129,15 @@ export function LanguageSwitch({ className }: { className?: string }) {
 
 /**
  * Light / dark mode switch. `compact` is a 44px round icon button (phone headers);
- * the default shows the icon plus the mode it switches to (desktop sidebar).
+ * `tight` fits side-by-side inside the 256px desktop sidebar footer alongside Accessibility.
  */
-export function ThemeToggle({ compact = false }: { compact?: boolean }) {
+export function ThemeToggle({
+  compact = false,
+  tight = false,
+}: {
+  compact?: boolean;
+  tight?: boolean;
+}) {
   const { t } = useLanguage();
   const { resolvedTheme, setTheme } = useTheme();
   const [mounted, setMounted] = React.useState(false);
@@ -149,12 +156,16 @@ export function ThemeToggle({ compact = false }: { compact?: boolean }) {
       aria-pressed={isDark}
       title={nextLabel}
       className={cn(
-        "shrink-0 rounded-full border-[1.5px] border-[var(--tp-bd-C9C3B3)] bg-[var(--tp-bg-FFFFFF)] text-[var(--tp-fg-17251C)] inline-flex items-center justify-center gap-2 font-bold hover:bg-[var(--tp-bg-F6F4EE)] transition-colors",
-        compact ? "w-11 h-11" : "min-h-[44px] w-full px-4 text-[15px]"
+        "shrink-0 rounded-full border-[1.5px] border-[var(--tp-bd-C9C3B3)] bg-[var(--tp-bg-FFFFFF)] text-[var(--tp-fg-17251C)] inline-flex items-center justify-center font-bold hover:bg-[var(--tp-bg-F6F4EE)] transition-colors",
+        compact
+          ? "w-11 h-11 gap-2"
+          : tight
+            ? "min-h-[40px] w-full px-2 gap-1.5 text-[12.5px] whitespace-nowrap"
+            : "min-h-[44px] w-full px-4 gap-2 text-[15px]"
       )}
     >
-      <Icon className="w-5 h-5 shrink-0" strokeWidth={2.2} aria-hidden="true" />
-      {!compact && <span>{nextLabel}</span>}
+      <Icon className={cn("shrink-0", tight ? "w-4 h-4" : "w-5 h-5")} strokeWidth={2.2} aria-hidden="true" />
+      {!compact && <span className="truncate">{nextLabel}</span>}
     </button>
   );
 }

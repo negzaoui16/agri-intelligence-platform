@@ -117,11 +117,13 @@ export function FieldSensorCard({
     <>
       <section
         data-testid="field-sensor-card"
-        className="bg-[var(--tp-bg-FFFFFF)] border-[1.5px] border-[var(--tp-bd-E4DFD2)] rounded-[20px] lg:rounded-[22px] p-[18px] lg:px-[26px] lg:py-5 flex flex-col gap-3.5"
+        className="tp-card bg-[var(--tp-bg-FFFFFF)] border-[1.5px] border-[var(--tp-bd-E4DFD2)] rounded-[20px] lg:rounded-[22px] p-[18px] lg:px-[26px] lg:py-5 flex flex-col gap-3.5"
       >
         <div className="flex flex-wrap items-center justify-between gap-2.5">
           <div className="flex items-center gap-2.5 min-w-0">
-            <Radio className="w-6 h-6 text-[var(--tp-fg-2E6B3A)] shrink-0" strokeWidth={2.2} aria-hidden="true" />
+            <span className="w-10 h-10 rounded-[12px] bg-[var(--tp-bg-E3EFE2)] text-[var(--tp-fg-2E6B3A)] flex items-center justify-center shrink-0">
+              <Radio className="w-5 h-5" strokeWidth={2.2} aria-hidden="true" />
+            </span>
             <h2 className="m-0 text-[20px] lg:text-[22px] font-bold text-[var(--tp-fg-17251C)]">
               {s.rightNowInField}
             </h2>
@@ -130,6 +132,7 @@ export function FieldSensorCard({
           <div className="flex flex-wrap items-center gap-2">
             {bt.connected && (
               <span className="text-[15px] font-bold px-3 py-1 rounded-full bg-[var(--tp-bg-E3EFE2)] text-[var(--tp-fg-1F4D28)] inline-flex items-center gap-1.5">
+                <span className="w-2 h-2 rounded-full bg-[var(--tp-bg-2E6B3A)] tp-live-dot" aria-hidden="true" />
                 <Bluetooth className="w-4 h-4 shrink-0" aria-hidden="true" />
                 <span>{s.bluetoothConnectedBadge}</span>
               </span>
@@ -137,13 +140,16 @@ export function FieldSensorCard({
             {ageInfo && (
               <span
                 className={cn(
-                  "text-[15px] font-bold px-3 py-1 rounded-full",
+                  "text-[15px] font-bold px-3 py-1 rounded-full inline-flex items-center gap-1.5",
                   isStale
                     ? "bg-[var(--tp-bg-FCEFD9)] text-[var(--tp-fg-8A4B00)]"
                     : "bg-[var(--tp-bg-E3EFE2)] text-[var(--tp-fg-1F4D28)]"
                 )}
               >
-                {ageInfo.label}
+                {!isStale && (
+                  <span className="w-2 h-2 rounded-full bg-[var(--tp-bg-2E6B3A)] tp-live-dot" aria-hidden="true" />
+                )}
+                <span>{ageInfo.label}</span>
               </span>
             )}
             {bt.isSupported && (
@@ -273,15 +279,30 @@ export function FieldSensorCard({
                 </p>
               ) : (
                 <>
-                  <b className="text-[26px] leading-tight text-[var(--tp-fg-17251C)]">
+                  <b className="tp-tabular text-[26px] leading-tight text-[var(--tp-fg-17251C)]">
                     {latest.soilMoisturePct !== null
                       ? `${Math.round(latest.soilMoisturePct)}%`
                       : "—"}
                   </b>
                   {latest.soilMoisturePct !== null && (
-                    <span className="text-[16px] font-bold text-[var(--tp-fg-22392A)]">
-                      {soilLabel(latest.soilMoisturePct, s)}
-                    </span>
+                    <>
+                      <div className="h-2 w-full rounded-full bg-[var(--tp-bg-FFFFFF)] border border-[var(--tp-bd-E4DFD2)] overflow-hidden">
+                        <div
+                          className={cn(
+                            "h-full rounded-full transition-all duration-500",
+                            latest.soilMoisturePct < 30
+                              ? "bg-[var(--tp-bg-C98A1B)]"
+                              : latest.soilMoisturePct > 70
+                                ? "bg-[var(--tp-bg-1D4F91)]"
+                                : "bg-[var(--tp-bg-2E6B3A)]"
+                          )}
+                          style={{ width: `${Math.min(100, Math.max(4, Math.round(latest.soilMoisturePct)))}%` }}
+                        />
+                      </div>
+                      <span className="text-[15px] font-bold text-[var(--tp-fg-22392A)]">
+                        {soilLabel(latest.soilMoisturePct, s)}
+                      </span>
+                    </>
                   )}
                 </>
               )}
@@ -309,22 +330,35 @@ export function FieldSensorCard({
                 <Gauge className="w-5 h-5 text-[var(--tp-fg-2E6B3A)] shrink-0" aria-hidden="true" />
                 <span>{s.tankLevel}</span>
               </div>
-              <b className="text-[26px] leading-tight text-[var(--tp-fg-17251C)]">
+              <b className="tp-tabular text-[26px] leading-tight text-[var(--tp-fg-17251C)]">
                 {latest.waterLevelPct !== null ? `${Math.round(latest.waterLevelPct)}%` : "—"}
               </b>
               {latest.waterLevelPct !== null && (
-                <span className="text-[16px] font-bold text-[var(--tp-fg-22392A)]">
-                  {tankLabel(latest.waterLevelPct, s)}
-                </span>
+                <>
+                  <div className="h-2 w-full rounded-full bg-[var(--tp-bg-FFFFFF)] border border-[var(--tp-bd-E4DFD2)] overflow-hidden">
+                    <div
+                      className={cn(
+                        "h-full rounded-full transition-all duration-500",
+                        latest.waterLevelPct < 20
+                          ? "bg-[var(--tp-bg-C98A1B)]"
+                          : "bg-[var(--tp-bg-1D4F91)]"
+                      )}
+                      style={{ width: `${Math.min(100, Math.max(4, Math.round(latest.waterLevelPct)))}%` }}
+                    />
+                  </div>
+                  <span className="text-[15px] font-bold text-[var(--tp-fg-22392A)]">
+                    {tankLabel(latest.waterLevelPct, s)}
+                  </span>
+                </>
               )}
             </div>
 
             {/* 4. Pump on / off */}
             <div
               className={cn(
-                "rounded-[16px] border-[1.5px] p-3.5 flex flex-col gap-1.5",
+                "rounded-[16px] border-[1.5px] p-3.5 flex flex-col gap-1.5 transition-colors",
                 latest.pumpOn
-                  ? "bg-[var(--tp-bg-E3EFE2)] border-[var(--tp-bd-7FB083)]"
+                  ? "bg-[var(--tp-bg-E3EFE2)] border-[var(--tp-bd-7FB083)] ring-2 ring-[var(--tp-bg-2E6B3A)]/20"
                   : "bg-[var(--tp-bg-F6F4EE)] border-[var(--tp-bd-E4DFD2)]"
               )}
             >

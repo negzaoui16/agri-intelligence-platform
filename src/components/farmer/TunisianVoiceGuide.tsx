@@ -15,7 +15,6 @@ import {
 } from "lucide-react";
 import { useLanguage } from "@/components/i18n/LanguageProvider";
 import { TOUR_UI_STRINGS, TUNISIAN_TOUR_STEPS } from "@/lib/tour/tunisian-tour-steps";
-import { cn } from "@/lib/utils";
 
 const TOUR_SEEN_KEY = "tp_tunisian_tour_seen_v1";
 
@@ -151,8 +150,15 @@ export function TunisianVoiceGuide() {
           setIsPlaying(false);
           return;
         }
-        const utter = new SpeechSynthesisUtterance(stepObj.subtitleDerja);
-        utter.lang = "ar-TN";
+        const utter = new SpeechSynthesisUtterance(stepObj.subtitle[lang]);
+        utter.lang =
+          lang === "ar"
+            ? "ar-TN"
+            : lang === "fr"
+              ? "fr-FR"
+              : lang === "ja"
+                ? "ja-JP"
+                : "en-US";
         utter.rate = 0.96;
         utter.onend = () => {
           setIsPlaying(false);
@@ -164,7 +170,7 @@ export function TunisianVoiceGuide() {
       };
 
       try {
-        const audio = new Audio(stepObj.audioUrl);
+        const audio = new Audio(stepObj.audioUrl[lang]);
         audio.muted = muted;
         audioRef.current = audio;
         audio.onended = () => {
@@ -181,7 +187,7 @@ export function TunisianVoiceGuide() {
         speakFallback();
       }
     },
-    [handleAdvanceOrFinish, muted, stopAudio]
+    [handleAdvanceOrFinish, lang, muted, stopAudio]
   );
 
   // Sync mute state to active HTMLAudioElement
@@ -297,55 +303,44 @@ export function TunisianVoiceGuide() {
   };
 
   if (!isOpen) {
+    if (!showInvite) return null;
     return (
-      <div className="no-print fixed bottom-[86px] lg:bottom-6 end-4 lg:end-6 z-40 flex flex-col items-end gap-2.5 max-w-[calc(100vw-2rem)]">
-        {showInvite && (
-          <div className="rounded-[18px] border-[1.5px] border-[var(--tp-bd-7FB083)] bg-[var(--tp-bg-FFFFFF)] shadow-xl p-4 max-w-[330px] flex flex-col gap-2.5">
-            <div className="flex items-start justify-between gap-2">
-              <b className="text-[16px] text-[var(--tp-fg-17251C)] leading-snug">
-                {ui.welcomeTitle}
-              </b>
-              <button
-                type="button"
-                onClick={markSeen}
-                aria-label={ui.close}
-                className="p-1 text-[var(--tp-fg-4A5A4F)] hover:text-[var(--tp-fg-17251C)]"
-              >
-                <X className="w-4 h-4" />
-              </button>
-            </div>
-            <p className="m-0 text-[14px] text-[var(--tp-fg-4A5A4F)] leading-snug">
-              {ui.welcomeBody}
-            </p>
-            <div className="flex items-center gap-2 pt-0.5">
-              <button
-                type="button"
-                onClick={startTour}
-                className="min-h-[40px] px-4 rounded-full bg-[var(--tp-bg-2E6B3A)] text-white text-[14px] font-bold inline-flex items-center gap-1.5 hover:bg-[var(--tp-bg-23542D)]"
-              >
-                <Mic className="w-4 h-4" aria-hidden="true" />
-                <span>{ui.startTour}</span>
-              </button>
-              <button
-                type="button"
-                onClick={markSeen}
-                className="min-h-[40px] px-3 rounded-full border border-[var(--tp-bd-C9C3B3)] text-[14px] font-bold text-[var(--tp-fg-4A5A4F)]"
-              >
-                {ui.skipTour}
-              </button>
-            </div>
+      <div className="no-print fixed bottom-[86px] lg:bottom-6 end-4 lg:end-6 z-40 max-w-[calc(100vw-2rem)]">
+        <div className="tp-fade-in rounded-[18px] border-[1.5px] border-[var(--tp-bd-7FB083)] bg-[var(--tp-bg-FFFFFF)] shadow-xl p-4 max-w-[330px] flex flex-col gap-2.5">
+          <div className="flex items-start justify-between gap-2">
+            <b className="text-[16px] text-[var(--tp-fg-17251C)] leading-snug">
+              {ui.welcomeTitle}
+            </b>
+            <button
+              type="button"
+              onClick={markSeen}
+              aria-label={ui.close}
+              className="p-1 text-[var(--tp-fg-4A5A4F)] hover:text-[var(--tp-fg-17251C)]"
+            >
+              <X className="w-4 h-4" />
+            </button>
           </div>
-        )}
-
-        <button
-          type="button"
-          data-testid="open-tunisian-guide-btn"
-          onClick={startTour}
-          className="min-h-[48px] px-4 rounded-full bg-[var(--tp-bg-2E6B3A)] text-white shadow-lg border border-white/15 text-[15px] font-bold inline-flex items-center gap-2 hover:bg-[var(--tp-bg-23542D)] transition-transform active:scale-95"
-        >
-          <Mic className="w-4 h-4 shrink-0" aria-hidden="true" />
-          <span>{ui.floatingButton}</span>
-        </button>
+          <p className="m-0 text-[14px] text-[var(--tp-fg-4A5A4F)] leading-snug">
+            {ui.welcomeBody}
+          </p>
+          <div className="flex items-center gap-2 pt-0.5">
+            <button
+              type="button"
+              onClick={startTour}
+              className="min-h-[40px] px-4 rounded-full bg-[var(--tp-bg-2E6B3A)] text-white text-[14px] font-bold inline-flex items-center gap-1.5 hover:bg-[var(--tp-bg-23542D)]"
+            >
+              <Mic className="w-4 h-4" aria-hidden="true" />
+              <span>{ui.startTour}</span>
+            </button>
+            <button
+              type="button"
+              onClick={markSeen}
+              className="min-h-[40px] px-3 rounded-full border border-[var(--tp-bd-C9C3B3)] text-[14px] font-bold text-[var(--tp-fg-4A5A4F)]"
+            >
+              {ui.skipTour}
+            </button>
+          </div>
+        </div>
       </div>
     );
   }
@@ -361,7 +356,7 @@ export function TunisianVoiceGuide() {
         <div
           data-testid="tour-spotlight"
           aria-hidden="true"
-          className="fixed z-40 pointer-events-none rounded-[18px] border-[3px] border-[var(--tp-bg-2E6B3A)] transition-all duration-300"
+          className="fixed z-40 pointer-events-none rounded-[18px] border-[3px] border-[var(--tp-bg-2E6B3A)] ring-4 ring-[var(--tp-bg-2E6B3A)]/25 transition-all duration-300"
           style={{
             top: rect.top,
             left: rect.left,
@@ -378,12 +373,21 @@ export function TunisianVoiceGuide() {
       )}
 
       {/* Interactive Voice Guide Control Panel */}
-      <div className="fixed bottom-[86px] lg:bottom-6 end-4 lg:end-6 start-4 sm:start-auto sm:w-[420px] z-50 rounded-[22px] border-2 border-[var(--tp-bd-7FB083)] bg-[var(--tp-bg-FFFFFF)] shadow-2xl p-4 lg:p-5 flex flex-col gap-3">
+      <div className="tp-fade-in fixed bottom-[86px] lg:bottom-6 end-4 lg:end-6 start-4 sm:start-auto sm:w-[420px] z-50 rounded-[22px] border-2 border-[var(--tp-bd-7FB083)] bg-[var(--tp-bg-FFFFFF)] shadow-2xl p-4 lg:p-5 flex flex-col gap-3">
         <div className="flex items-start justify-between gap-2">
           <div className="flex flex-col gap-1 min-w-0">
             <div className="flex items-center gap-2 flex-wrap">
               <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-[var(--tp-bg-E3EFE2)] text-[var(--tp-fg-1F4D28)] text-[12px] font-bold">
-                <Mic className={cn("w-3.5 h-3.5", isPlaying && "animate-pulse")} />
+                {isPlaying ? (
+                  <span className="inline-flex items-end gap-[2px] h-3.5" aria-hidden="true">
+                    <span className="w-[2.5px] h-2 bg-current rounded-full tp-eq-bar" style={{ animationDelay: "0ms" }} />
+                    <span className="w-[2.5px] h-3.5 bg-current rounded-full tp-eq-bar" style={{ animationDelay: "160ms" }} />
+                    <span className="w-[2.5px] h-2.5 bg-current rounded-full tp-eq-bar" style={{ animationDelay: "320ms" }} />
+                    <span className="w-[2.5px] h-3 bg-current rounded-full tp-eq-bar" style={{ animationDelay: "480ms" }} />
+                  </span>
+                ) : (
+                  <Mic className="w-3.5 h-3.5" />
+                )}
                 <span>{ui.speakingBadge}</span>
               </span>
               <span className="text-[13px] font-bold text-[var(--tp-fg-4A5A4F)]">
@@ -414,12 +418,14 @@ export function TunisianVoiceGuide() {
           />
         </div>
 
-        {/* Tunisian Derja Subtitles */}
+        {/* Localized Voice Guide Subtitles */}
         <p
-          dir="rtl"
-          className="m-0 rounded-[14px] bg-[var(--tp-bg-F6F4EE)] border border-[var(--tp-bd-E4DFD2)] p-3 text-[16px] leading-[1.55] font-medium text-[var(--tp-fg-17251C)] text-right"
+          dir={isRtl ? "rtl" : "ltr"}
+          className={`m-0 rounded-[14px] bg-[var(--tp-bg-F6F4EE)] border border-[var(--tp-bd-E4DFD2)] p-3 text-[16px] leading-[1.55] font-medium text-[var(--tp-fg-17251C)] ${
+            isRtl ? "text-right" : "text-left"
+          }`}
         >
-          {step.subtitleDerja}
+          {step.subtitle[lang]}
         </p>
 
         {/* Playback + Navigation Controls */}

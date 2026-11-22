@@ -267,7 +267,7 @@ const AR: PdfStrings = {
   inMonth: "في {month}",
 };
 
-export const PDF_STRINGS: Record<AppLanguage, PdfStrings> = { en: EN, fr: FR, ar: AR };
+export const PDF_STRINGS: Record<AppLanguage, PdfStrings> = { en: EN, fr: FR, ar: AR, ja: EN };
 
 export interface FeasibilityPdfOptions {
   lang: AppLanguage;
@@ -329,8 +329,11 @@ export function buildFeasibilityPdf(
   report: FeasibilityReportPayload,
   options: FeasibilityPdfOptions
 ): jsPDF {
-  // Arabic without its font would print boxes: fall back to English instead.
-  const lang: AppLanguage = options.lang === "ar" && !options.arabicFontBase64 ? "en" : options.lang;
+  // Arabic without its font and Japanese (no CJK font bundled in jsPDF) fall back to English cleanly.
+  const lang: AppLanguage =
+    (options.lang === "ar" && !options.arabicFontBase64) || options.lang === "ja"
+      ? "en"
+      : options.lang;
   const rtl = lang === "ar";
   const t = PDF_STRINGS[lang];
   const doc = new jsPDF({ unit: "mm", format: "a4" });

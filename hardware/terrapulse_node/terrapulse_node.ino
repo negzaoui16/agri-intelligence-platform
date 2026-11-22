@@ -65,13 +65,12 @@ int WATER_FULL = 2050;
 
 // ---- Pump rules (always run locally, never decided by the server) ----
 // Starts when soil drops below PUMP_ON_BELOW and the tank is not empty.
-// Stops when soil reaches PUMP_OFF_AT, the tank runs empty, or after
-// PUMP_MAX_RUN_MS; then waits PUMP_REST_MS so water can soak in.
+// Once ON, stays ON until soil reaches at least PUMP_OFF_AT (50%), unless
+// the tank runs empty or a soil sensor fault occurs; then waits PUMP_REST_MS.
 // Never runs if the soil reading is pinned at the ADC maximum (loose wire).
 const int PUMP_ON_BELOW = 30;          // soil %
-const int PUMP_OFF_AT = 60;            // soil %
+const int PUMP_OFF_AT = 50;            // minimum soil % before turning pump off
 const int SOIL_FAULT_RAW = 4000;       // raw soil reading treated as a fault
-const unsigned long PUMP_MAX_RUN_MS = 10000;
 const unsigned long PUMP_REST_MS = 30000;
 
 #ifdef ENABLE_WIFI_CLOUD
@@ -132,8 +131,11 @@ void updatePump(int soilRaw, int soilPercent, int waterPercent) {
   if (soilRaw >= SOIL_FAULT_RAW) { setPump(false, "soil sensor fault"); return; }
   if (waterPercent <= 0)         { setPump(false, "tank empty"); return; }
   if (pumpOn) {
-    if (soilPercent >= PUMP_OFF_AT)  setPump(false, "soil wet enough");
-    else if (since >= PUMP_MAX_RUN_MS) setPump(false, "max run time, resting");
+    if (soilPercent >= PUMP_OFF_AT) {
+      setPump(false, "soil reached 50%");
+    } else {
+      pumpReason = "watering until 50%";
+    }
     return;
   }
   bool resting = pumpChangedAt != 0 && since < PUMP_REST_MS;

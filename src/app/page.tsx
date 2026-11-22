@@ -158,7 +158,9 @@ export default function HomePage() {
               ? "رياح خفيفة"
               : lang === "fr"
                 ? "Vent léger"
-                : "Light wind",
+                : lang === "ja"
+                  ? "穏やかな風"
+                  : "Light wind",
         ].join(" · ");
 
   return (
@@ -169,7 +171,7 @@ export default function HomePage() {
           <span className="text-[15px] text-[var(--tp-fg-4A5A4F)]">
             {firstName ? `${t.goodMorning}, ${firstName}` : t.goodMorning}
           </span>
-          <h1 dir="auto" className="m-0 text-[22px] font-bold text-[var(--tp-fg-17251C)] truncate text-start rtl:text-right">
+          <h1 dir="auto" className="m-0 text-[20px] font-bold leading-snug text-[var(--tp-fg-17251C)] line-clamp-2 text-start rtl:text-right">
             {activeFarm.name}
           </h1>
           <span className="text-[15px] text-[var(--tp-fg-4A5A4F)] truncate">
@@ -221,7 +223,7 @@ export default function HomePage() {
       </div>
 
       {/* FarmBrain Savings & Simulator Quick Strip */}
-      <section className="bg-[var(--tp-bg-FFFFFF)] border-[1.5px] border-[var(--tp-bd-E4DFD2)] rounded-[20px] p-4 lg:px-6 lg:py-5 flex flex-col lg:flex-row lg:items-center justify-between gap-4">
+      <section className="tp-card bg-[var(--tp-bg-FFFFFF)] border-[1.5px] border-[var(--tp-bd-E4DFD2)] rounded-[20px] p-4 lg:px-6 lg:py-5 flex flex-col lg:flex-row lg:items-center justify-between gap-4">
         <div className="flex items-start gap-3">
           <span className="w-11 h-11 rounded-[14px] bg-[var(--tp-bg-E3EFE2)] text-[var(--tp-fg-1F4D28)] flex items-center justify-center shrink-0">
             <Brain className="w-6 h-6" aria-hidden="true" />
@@ -361,7 +363,7 @@ export default function HomePage() {
         )}
 
         {/* Today Weather Card */}
-        <section className="lg:flex-[1_1_280px] min-w-0 bg-[var(--tp-bg-FFFFFF)] border-[1.5px] border-[var(--tp-bd-E4DFD2)] rounded-[20px] lg:rounded-[22px] p-4 lg:px-6 lg:py-[22px] flex flex-col gap-3">
+        <section className="tp-card lg:flex-[1_1_280px] min-w-0 bg-[var(--tp-bg-FFFFFF)] border-[1.5px] border-[var(--tp-bd-E4DFD2)] rounded-[20px] lg:rounded-[22px] p-4 lg:px-6 lg:py-[22px] flex flex-col gap-3">
           <div className="flex items-center justify-between gap-2">
             <h2 className="m-0 text-[19px] lg:text-[20px] font-bold text-[var(--tp-fg-17251C)]">
               {t.todayTitle}
@@ -372,7 +374,7 @@ export default function HomePage() {
           </div>
           <div className="flex items-center gap-3.5">
             <Cloud className="hidden lg:block w-12 h-12 text-[var(--tp-fg-2E6B3A)] shrink-0" strokeWidth={1.8} aria-hidden="true" />
-            <span className="text-[40px] lg:text-[48px] font-bold leading-none text-[var(--tp-fg-17251C)]">
+            <span className="tp-tabular text-[40px] lg:text-[48px] font-bold leading-none text-[var(--tp-fg-17251C)]">
               {m.currentTempC !== null ? `${m.currentTempC}°` : "—"}
             </span>
             <div className="lg:hidden flex flex-col gap-0.5">
@@ -413,9 +415,11 @@ export default function HomePage() {
       <div data-tour="status-tiles" className="grid grid-cols-3 gap-2.5 lg:gap-4">
         <Link
           href="/water"
-          className="bg-[var(--tp-bg-FFFFFF)] border-[1.5px] border-[var(--tp-bd-E4DFD2)] rounded-[16px] lg:rounded-[18px] p-3.5 lg:px-5 lg:py-[18px] no-underline text-[var(--tp-fg-17251C)] flex flex-col lg:flex-row gap-1.5 lg:gap-3.5 items-start hover:border-[var(--tp-bd-1D4F91)]/50 transition-colors"
+          className="tp-card-interactive bg-[var(--tp-bg-FFFFFF)] border-[1.5px] border-[var(--tp-bd-E4DFD2)] rounded-[16px] lg:rounded-[18px] p-3.5 lg:px-5 lg:py-[18px] no-underline text-[var(--tp-fg-17251C)] flex flex-col lg:flex-row gap-2 lg:gap-3.5 items-start hover:border-[var(--tp-bd-1D4F91)]/50"
         >
-          <Droplet className="w-[30px] h-[30px] lg:w-[34px] lg:h-[34px] text-[var(--tp-fg-1D4F91)] shrink-0" strokeWidth={2} aria-hidden="true" />
+          <span className="w-10 h-10 lg:w-11 lg:h-11 rounded-[12px] bg-[var(--tp-bg-E6EEF9)] text-[var(--tp-fg-1D4F91)] flex items-center justify-center shrink-0">
+            <Droplet className="w-[22px] h-[22px] lg:w-6 lg:h-6" strokeWidth={2} aria-hidden="true" />
+          </span>
           <span className="flex flex-col gap-1 min-w-0">
             <b className="text-[17px] lg:text-[19px] leading-tight">{t.navWater}</b>
             <span
@@ -438,9 +442,11 @@ export default function HomePage() {
 
         <Link
           href="/solar"
-          className="bg-[var(--tp-bg-FFFFFF)] border-[1.5px] border-[var(--tp-bd-E4DFD2)] rounded-[16px] lg:rounded-[18px] p-3.5 lg:px-5 lg:py-[18px] no-underline text-[var(--tp-fg-17251C)] flex flex-col lg:flex-row gap-1.5 lg:gap-3.5 items-start hover:border-[var(--tp-bd-C98A1B)]/60 transition-colors"
+          className="tp-card-interactive bg-[var(--tp-bg-FFFFFF)] border-[1.5px] border-[var(--tp-bd-E4DFD2)] rounded-[16px] lg:rounded-[18px] p-3.5 lg:px-5 lg:py-[18px] no-underline text-[var(--tp-fg-17251C)] flex flex-col lg:flex-row gap-2 lg:gap-3.5 items-start hover:border-[var(--tp-bd-C98A1B)]/60"
         >
-          <Sun className="w-[30px] h-[30px] lg:w-[34px] lg:h-[34px] text-[var(--tp-fg-9A6400)] shrink-0" strokeWidth={2} aria-hidden="true" />
+          <span className="w-10 h-10 lg:w-11 lg:h-11 rounded-[12px] bg-[var(--tp-bg-F6ECD6)] text-[var(--tp-fg-9A6400)] flex items-center justify-center shrink-0">
+            <Sun className="w-[22px] h-[22px] lg:w-6 lg:h-6" strokeWidth={2} aria-hidden="true" />
+          </span>
           <span className="flex flex-col gap-1 min-w-0">
             <b className="text-[17px] lg:text-[19px] leading-tight">{t.navSunPower}</b>
             <span
@@ -459,9 +465,11 @@ export default function HomePage() {
 
         <Link
           href="/environmental"
-          className="bg-[var(--tp-bg-FFFFFF)] border-[1.5px] border-[var(--tp-bd-E4DFD2)] rounded-[16px] lg:rounded-[18px] p-3.5 lg:px-5 lg:py-[18px] no-underline text-[var(--tp-fg-17251C)] flex flex-col lg:flex-row gap-1.5 lg:gap-3.5 items-start hover:border-[var(--tp-bd-2E6B3A)]/50 transition-colors"
+          className="tp-card-interactive bg-[var(--tp-bg-FFFFFF)] border-[1.5px] border-[var(--tp-bd-E4DFD2)] rounded-[16px] lg:rounded-[18px] p-3.5 lg:px-5 lg:py-[18px] no-underline text-[var(--tp-fg-17251C)] flex flex-col lg:flex-row gap-2 lg:gap-3.5 items-start hover:border-[var(--tp-bd-2E6B3A)]/50"
         >
-          <Cloud className="w-[30px] h-[30px] lg:w-[34px] lg:h-[34px] text-[var(--tp-fg-2E6B3A)] shrink-0" strokeWidth={2} aria-hidden="true" />
+          <span className="w-10 h-10 lg:w-11 lg:h-11 rounded-[12px] bg-[var(--tp-bg-E3EFE2)] text-[var(--tp-fg-2E6B3A)] flex items-center justify-center shrink-0">
+            <Cloud className="w-[22px] h-[22px] lg:w-6 lg:h-6" strokeWidth={2} aria-hidden="true" />
+          </span>
           <span className="flex flex-col gap-1 min-w-0">
             <b className="text-[17px] lg:text-[19px] leading-tight">{t.navWeather}</b>
             <span
@@ -481,7 +489,7 @@ export default function HomePage() {
 
       {/* Bottom Row: Your next steps + Farm report */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 lg:gap-5">
-        <section className="bg-[var(--tp-bg-FFFFFF)] border-[1.5px] border-[var(--tp-bd-E4DFD2)] rounded-[20px] p-4 lg:px-6 lg:py-5 flex flex-col gap-3">
+        <section className="tp-card bg-[var(--tp-bg-FFFFFF)] border-[1.5px] border-[var(--tp-bd-E4DFD2)] rounded-[20px] p-4 lg:px-6 lg:py-5 flex flex-col gap-3">
           <h2 className="m-0 text-[19px] lg:text-[20px] font-bold text-[var(--tp-fg-17251C)]">
             {t.yourNextSteps}
           </h2>
@@ -503,7 +511,7 @@ export default function HomePage() {
           ))}
         </section>
 
-        <section data-tour="assistant-report" className="bg-[var(--tp-bg-FFFFFF)] border-[1.5px] border-[var(--tp-bd-E4DFD2)] rounded-[20px] p-4 lg:px-6 lg:py-5 flex flex-col gap-3">
+        <section data-tour="assistant-report" className="tp-card bg-[var(--tp-bg-FFFFFF)] border-[1.5px] border-[var(--tp-bd-E4DFD2)] rounded-[20px] p-4 lg:px-6 lg:py-5 flex flex-col gap-3">
           <h2 className="m-0 text-[19px] lg:text-[20px] font-bold text-[var(--tp-fg-17251C)]">
             {t.farmReportCardTitle}
           </h2>

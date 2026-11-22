@@ -521,52 +521,188 @@ const AR: FarmBrainStrings = {
   noSavedScenarios: "شغّل تجربة لفوق باش تحفظها وتقارن بين الحلول هنا.",
 };
 
+const JA: FarmBrainStrings = {
+  navGroupLabel: "FarmBrain AI",
+  navFarmBrain: "節約ポテンシャル",
+  navSimulator: "意思決定シミュレータ",
+  homeCardTitle: "FarmBrain スマートアドバイザー",
+  homeCardSubtitle: "年間どれくらい水・電気・時間を節約できるか確認し、変更を安全に試せます。",
+  homeOpenSavings: "節約額を見る",
+  homeOpenSimulator: "変更を試す",
+
+  brainPageTitle: "FarmBrain で節約できる効果",
+  brainPageSubtitle: "農園の広さ・作物・天気予報・センサーデータから自動計算された実数値です。",
+  recalculateBtn: "分析を更新",
+  recalculatingBtn: "更新中…",
+  loadingBrain: "FarmBrain 分析を読み込んでいます…",
+  noFarmSelected: "節約額を計算するため、まず農園を追加してください。",
+  goToMyFarm: "私の農園へ",
+
+  waterSavedTitle: "年間の節水量",
+  litresUnit: "リットル/年",
+  m3Unit: "m³/年",
+  energySavedTitle: "節約できる電力量",
+  kwhUnit: "kWh/年",
+  timeSavedTitle: "圃場作業の時短",
+  hoursUnit: "時間/年",
+  moneySavedTitle: "年間節約見込み額",
+  tndUnit: "TND/年",
+  tariffsNeededNote: "下で水道・電気単価を入力すると金額が表示されます",
+  solarFreeElectricityBadge: "太陽光でポンプ電力をすべて賄えます（電気代 0 TND）",
+
+  tariffTitle: "地域の水・電気単価（任意）",
+  tariffSubtitle: "不明な場合は空欄のままで構いません（単価を勝手に推測しません）。",
+  waterTariffLabel: "水の単価（TND / m³）",
+  electricityTariffLabel: "電気単価 STEG（TND / kWh）",
+  saveTariffsBtn: "単価で再計算",
+
+  trackingTitle: "節約効果の検証レベル",
+  tierInitial: "初期推定（農園プロフィールより）",
+  tierSensorUpdated: "圃場センサーでリアルタイム更新済み",
+  tierVerifiedActual: "ポンプ実稼働データで検証済み",
+  observedCyclesLabel: "ポンプ起動回数（過去24h）",
+  observedHoursLabel: "ポンプ稼働時間（過去24h）",
+
+  forecastTitle: "今後7日間の土壌予測",
+  forecastSubtitle: "気象予報とセンサー傾向から予測した根域水分と1日あたりの必要水量です。",
+  moistureChartLabel: "土壌水分 (%)",
+  recommendedWaterLabel: "必要灌漑量 (mm)",
+  plotsTitle: "区画・作物別の節約内訳",
+  withoutSmartLabel: "固定スケジュール",
+  withSmartLabel: "FarmBrain 最適化",
+
+  adviceTitle: "農園へのわかりやすい提案",
+  whatIsHappening: "現状",
+  whyLabel: "理由",
+  whatToDo: "対策",
+  sensorAnomalyAlert: "土壌センサーの配線を確認してください",
+
+  completenessTitle: "農園データ充実度スコア",
+  completenessMissingHint: "実測データが揃うほど予測の精度が上がります。",
+  provMeasured: "センサー実測",
+  provFarmerProvided: "ユーザー入力",
+  provEstimated: "気象・地図推定",
+  provDefault: "標準作物値",
+
+  engineerToggleLabel: "技術者・アドバイザー向け詳細",
+  engineerSubtitle: "MLモデルの検証精度・作物物理モデル・手法上の制約",
+  mlModelsHeading: "学習済みMLモデル（時系列厳密ホールドアウト検証）",
+
+  simPageTitle: "導入前にシミュレーションで確認",
+  simPageSubtitle: "実際のポンプや農園データに触れず、仮想コピー上で安全に比較テストできます。",
+  simSafetyBanner: "安全シミュレーションモード — ここでの操作で実際のポンプが動くことはありません。",
+  chooseScenarioHeading: "1. テストしたいシナリオを選択",
+
+  scenWaterShortage: "水不足対策",
+  scenWaterShortageDesc: "今日使える限られた水を優先度付きで配分して作物を守ります。",
+  scenChangeCrop: "作物の変更",
+  scenChangeCropDesc: "別の作物に変えた場合の水量・収穫への影響を比較します。",
+  scenWeather: "猛暑・少雨シナリオ",
+  scenWeatherDesc: "気温上昇や降雨減少が水需要に与える影響を確認します。",
+  scenStrategy: "灌漑スケジュール",
+  scenStrategyDesc: "毎日・2日おき・センサー連動・AI最適化の4方式を比較します。",
+  scenExpansion: "農園の拡張",
+  scenExpansionDesc: "耕作面積を増やしても今のポンプと太陽光で足りるか確認します。",
+
+  scenarioNameLabel: "テスト名",
+  availableWaterLabel: "今日使える水量は？",
+  customLitresLabel: "任意入力（リットル/日）",
+  pickPlotLabel: "対象の区画",
+  newCropLabel: "試す新しい作物",
+  tempShiftLabel: "気温の変化 (°C)",
+  rainShiftLabel: "降水量の変化 (%)",
+  humidityShiftLabel: "湿度の変化 (%)",
+  strategyLabel: "試すスケジュール",
+  stratCurrent: "現在の習慣",
+  stratDaily: "毎日少量ずつ",
+  stratEvery2Days: "2日おき",
+  stratMoistureTrigger: "土壌水分が基準以下のみ",
+  stratAiOptimized: "FarmBrain AI 最適化",
+  thresholdLabel: "開始する土壌水分 (%)",
+  addedAreaLabel: "追加する面積（ha）",
+  addedCropLabel: "追加農地の作物",
+  runAndSaveBtn: "シミュレーション実行＆保存",
+  runningSimBtn: "計算中…",
+  resetInputsBtn: "リセット",
+
+  resultHeadline: "テスト結果",
+  waterImpactLabel: "水量の変化",
+  energyImpactLabel: "電力の変化",
+  costImpactLabel: "コストの変化",
+  yieldImpactLabel: "収穫への影響",
+  pumpCheckLabel: "ポンプ能力チェック",
+  pumpOkLabel: "現在のポンプで対応可能",
+  pumpOverloadLabel: "ポンプ容量不足・過負荷",
+  hoursPerDayUnit: "時間/日（ピーク時）",
+  allocationHeading: "作物の耐性に基づくスマート配分（均等割りではありません）",
+  trajectoryHeading: "30日間の土壌水分推移",
+  savedScenariosHeading: "保存済みテスト — 横並び比較",
+  compareSelectedBtn: "選択を比較",
+  comparingBtn: "比較中…",
+  deleteScenarioBtn: "削除",
+  openScenarioBtn: "読み込む",
+  comparisonHeading: "シナリオ横並び比較",
+  bestWaterBadge: "最も節水",
+  bestYieldBadge: "収穫保護が最良",
+  bestOverallBadge: "総合バランス最良",
+  noSavedScenarios: "上でテストを実行すると、ここに保存して比較できます。",
+};
+
 export const FARMBRAIN_STRINGS: Record<AppLanguage, FarmBrainStrings> = {
   en: EN,
   fr: FR,
   ar: AR,
+  ja: JA,
 };
 
-const COMPLETENESS_LABEL_MAP: Record<string, { en: string; fr: string; ar: string }> = {
+const COMPLETENESS_LABEL_MAP: Record<string, { en: string; fr: string; ar: string; ja: string }> = {
   location_boundary: {
     en: "Farm location & field boundary",
     fr: "Emplacement et limites des parcelles",
     ar: "موقع الفيرمة وحدود الأرض",
+    ja: "農園の位置と圃場境界",
   },
   crops_plots: {
     en: "Registered crops & plot areas",
     fr: "Cultures et surfaces enregistrées",
     ar: "الزراعات ومساحة كل قطعة",
+    ja: "登録された作物と面積",
   },
   planting_stage: {
     en: "Planting dates & growth stages",
     fr: "Dates de plantation et stades",
     ar: "تواريخ الزراعة ومراحل النمو",
+    ja: "植え付け日と生育段階",
   },
   soil_profile: {
     en: "Soil texture & water capacity",
     fr: "Type de sol et réserve en eau",
     ar: "نوع التربة وقدرتها على حفظ الماء",
+    ja: "土質と保水容量",
   },
   pump_specs: {
     en: "Pump flow & pipe setup",
     fr: "Débit de pompe et tuyaux",
     ar: "قوة المضخة والأنابيب",
+    ja: "ポンプ流量と配管構成",
   },
   solar_setup: {
     en: "Solar power configuration",
     fr: "Équipement solaire",
     ar: "تجهيزات الطاقة الشمسية",
+    ja: "太陽光発電設備",
   },
   water_source: {
     en: "Water source",
     fr: "Source d'eau",
     ar: "مصدر الماء",
+    ja: "水源情報",
   },
   live_sensor: {
     en: "ESP32 live soil & weather sensor",
     fr: "Capteur champ ESP32 en direct",
     ar: "حساس التربة والطقس المباشر",
+    ja: "ESP32 リアルタイム土壌・気象センサー",
   },
 };
 
@@ -586,6 +722,15 @@ export function localizeTrackingExplanation(
   lang: AppLanguage
 ): string {
   if (lang === "en") return fallback;
+  if (lang === "ja") {
+    if (tier === "VERIFIED_ACTUAL") {
+      return `過去24時間の実測値より算出（ポンプ起動 ${cycles24h} 回、稼働 ${hours24h} 時間）。`;
+    }
+    if (tier === "SENSOR_UPDATED_PROJECTION") {
+      return "接続された圃場センサーの最新測定値で推定を更新しました。";
+    }
+    return "農園データと地域気象に基づく初期予測です。ESP32センサーを接続すると実測検証に切り替わります。";
+  }
   if (lang === "fr") {
     if (tier === "VERIFIED_ACTUAL") {
       return `Mesuré sur les dernières 24h (${cycles24h} démarrage(s) de pompe, ${hours24h} h de marche).`;
@@ -607,6 +752,9 @@ export function localizeTrackingExplanation(
 export function localizeAnomalyReason(reason: string | null, lang: AppLanguage): string | null {
   if (!reason) return null;
   if (lang === "en") return reason;
+  if (lang === "ja") {
+    return "土壌センサーの値が異常です（断線または範囲外の値）。灌漑の前に配線・プローブを確認してください。";
+  }
   if (lang === "fr") {
     return "La lecture brute du capteur de sol semble anormale (hors plage ou fil coupé). Vérifiez le câble avant d'arroser.";
   }
@@ -625,6 +773,38 @@ export function localizeBrainRecommendation(
   lang: AppLanguage
 ): { whatIsHappening: string; why: string; whatToDo: string; estimatedImpact?: string } {
   if (lang === "en") return rec;
+  if (lang === "ja") {
+    if (rec.id === "rec_water_savings") {
+      return {
+        whatIsHappening: `年間で約 ${savings.waterSavedLitresYr.toLocaleString()} L（${savings.waterSavedM3Yr.toLocaleString()} m³）の節水が可能です（${savings.waterSavingsPct}%削減）。`,
+        why: "根が本当に水を必要とする時だけ灌漑することで、地中への無駄な浸透ロスを防げます。",
+        whatToDo: "固定タイマーではなく、アプリの実測土壌水分と気象予測に合わせて水やりしてください。",
+        estimatedImpact: `-${savings.waterSavingsPct}% 節水 · -${savings.energySavedKwhYr} kWh/年`,
+      };
+    }
+    if (rec.id === "rec_sensor_anomaly") {
+      return {
+        whatIsHappening: "土壌センサーの測定値に異常が見られます。",
+        why: "配線の緩みやプローブの接触不良があると誤った値が出ます。",
+        whatToDo: "ESP32ボックスの配線と土壌プローブの差し込みを確認してください。",
+      };
+    }
+    if (rec.id === "rec_rain_skip") {
+      return {
+        whatIsHappening: "数日以内に雨が降る予報です。",
+        why: "降雨直前の灌漑は水とポンプ電力の両方を無駄にします。",
+        whatToDo: "水やりを後ろにずらし、雨上がりの土壌水分を確認してください。",
+      };
+    }
+    if (rec.id === "rec_solar_free") {
+      return {
+        whatIsHappening: "太陽光パネルがポンプの電力をすでにすべて賄っています。",
+        why: "太陽光により電力コストが0になるため、主なメリットは節水とポンプ長寿命化です。",
+        whatToDo: "日照の強い時間帯や貯水タンク経由での灌漑を優先しましょう。",
+      };
+    }
+    return rec;
+  }
   if (lang === "fr") {
     if (rec.id === "rec_water_savings") {
       return {
@@ -724,6 +904,35 @@ export function localizeSimulationResult(
   const absW = Math.abs(res.waterDeltaM3Season).toLocaleString();
   const pct = Math.abs(res.waterDeltaPct);
 
+  if (lang === "ja") {
+    const headlineJaMap: Record<string, string> = {
+      WATER_SHORTAGE: "各作物の乾燥耐性に応じて限られた水を優先配分しました。",
+      CHANGE_CROP:
+        res.waterDeltaM3Season < 0
+          ? `この作物変更で年間約 ${absW} m³（${pct}%）節水できます。`
+          : `この作物変更で年間約 +${absW} m³ の追加水量が必要です。`,
+      WEATHER_CLIMATE:
+        res.waterDeltaM3Season >= 0
+          ? `高温・少雨により年間水需要が +${absW} m³ 増加します。`
+          : `この気象条件では年間水需要が ${absW} m³ 減少します。`,
+      IRRIGATION_STRATEGY: `この灌漑スケジュールは水使用量を ${res.waterDeltaM3Season >= 0 ? "+" : "-"}${absW} m³/年 変化させます。`,
+      FARM_EXPANSION: res.pumpOverloadRisk
+        ? `拡張後はピーク時に1日 ${res.pumpRequiredHoursDay} 時間必要となり、ポンプ過負荷になります。`
+        : `現在のポンプで十分対応できます（ピーク時 ${res.pumpRequiredHoursDay} 時間/日）。`,
+    };
+    return {
+      headlineOutcome: headlineJaMap[res.scenarioType] ?? res.headlineOutcome,
+      whatChanges: `予想される水量の変化：${res.waterDeltaM3Season >= 0 ? "+" : "-"}${absW} m³/年（${res.waterDeltaPct}%）。`,
+      whyItHappens:
+        res.scenarioType === "WATER_SHORTAGE"
+          ? "全区画を均等に減らすと水を浪費するため、乾燥に弱い作物を優先して保護します。"
+          : "気温、根の深さ、灌漑のタイミングによって毎日の蒸発散量と排水ロスが変わります。",
+      whatFarmerShouldDo: res.pumpOverloadRisk
+        ? "面積を広げる前に、貯水タンクを増設するか区画別の輪番灌漑を検討してください。"
+        : "センサーの実測水分を見ながら各バルブの散水時間を調整してください。",
+    };
+  }
+
   if (lang === "fr") {
     const headlineMap: Record<string, string> = {
       WATER_SHORTAGE: "Répartition prioritaire calculée selon la sensibilité de chaque culture.",
@@ -762,16 +971,16 @@ export function localizeSimulationResult(
         : `تبديل النبتة هذي يزيد الحاجة بحوالي ${absW} م³ ماء في العام.`,
     WEATHER_CLIMATE:
       res.waterDeltaM3Season >= 0
-        ? `السخانة أو شح المطر يزيد حاجة السقي بـ +${absW} م³/سنة.`
-        : `تبدّل الطقس ينقّص حاجة السقي بـ ${absW} م³/سنة.`,
-    IRRIGATION_STRATEGY: `برنامج السقي هذا يغيّر استهلاك الماء بـ ${res.waterDeltaM3Season >= 0 ? "+" : "-"}${absW} م³/سنة.`,
+        ? `السخانة أو شح المطر يزيد حاجة السقي بـ \u2066+${absW}\u2069 م³/سنة.`
+        : `تبدّل الطقس ينقّص حاجة السقي بـ \u2066${absW}\u2069 م³/سنة.`,
+    IRRIGATION_STRATEGY: `برنامج السقي هذا يغيّر استهلاك الماء بـ \u2066${res.waterDeltaM3Season >= 0 ? "+" : "-"}${absW}\u2069 م³/سنة.`,
     FARM_EXPANSION: res.pumpOverloadRisk
       ? `التوسيع يوصل المضخة لـ ${res.pumpRequiredHoursDay} ساعة/يوم في الذروة — تحتاج خزان أو مضخة أقوى.`
       : `مضختك الحالية تكفي (${res.pumpRequiredHoursDay} ساعة/يوم في الذروة).`,
   };
   return {
     headlineOutcome: headlineArMap[res.scenarioType] ?? res.headlineOutcome,
-    whatChanges: `التغيّر المتوقع في الماء: ${res.waterDeltaM3Season >= 0 ? "+" : "-"}${absW} م³/سنة (${res.waterDeltaPct}%).`,
+    whatChanges: `التغيّر المتوقع في الماء: \u2066${res.waterDeltaM3Season >= 0 ? "+" : "-"}${absW}\u2069 م³/سنة (\u2066${res.waterDeltaPct}%\u2069).`,
     whyItHappens:
       res.scenarioType === "WATER_SHORTAGE"
         ? "تقسيم الماء بالتساوي يضيعو على الأشجار القوية؛ الأولوية للنباتات اللي ما تصبرش على العطش."
@@ -788,6 +997,11 @@ export function localizeAllocationRationale(
   lang: AppLanguage
 ): string | null {
   if (lang === "en") return null;
+  if (lang === "ja") {
+    return fulfillmentPct >= 85
+      ? `${cropName} は水不足に弱いため優先配分（充足率 ${Math.round(fulfillmentPct)}%）。`
+      : `より乾燥に弱い作物を守るため配分を ${Math.round(fulfillmentPct)}% に調整。`;
+  }
   if (lang === "fr") {
     return fulfillmentPct >= 85
       ? `Prioritaire (${Math.round(fulfillmentPct)}% couvert) car ${cropName} est sensible au manque d'eau.`

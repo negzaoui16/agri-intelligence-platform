@@ -82,9 +82,8 @@ The pump runs through a relay and has its own power supply: never power it
 from the ESP32's pins.
 
 - **Starts** when soil is below 30 % and the water level is above 0 %.
-- **Stops** when soil reaches 60 %, the tank reads empty, or after 10 seconds.
-- **Rests** 30 seconds after stopping so the water can soak in before the
-  soil is measured again.
+- **Stays ON** once started until the soil sensor reaches at least 50 %, or stops immediately for safety if the tank reads empty or the soil wire faults.
+- **Rests** 30 seconds after stopping so the water can soak in before starting a new cycle.
 - **Never runs** if the soil reading is 4000 or more: that means a loose
   soil wire, and pumping on a false "dry" reading would flood the pot.
 
