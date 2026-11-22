@@ -1,0 +1,72 @@
+{
+  "version": "1.0.0",
+  "seed": 42,
+  "trainedAt": "2026-11-22T02:32:51.749920+00:00",
+  "splitStrategy": "chronological_80_20",
+  "splitDate": "2024-12-31",
+  "trainSamples": 7300,
+  "testSamples": 1830,
+  "models": {
+    "soil_moisture_forecaster": {
+      "algorithm": "RandomForestRegressor",
+      "target": "next_day_soil_moisture_pct",
+      "features": [
+        "soil_moisture_t0",
+        "temp_max_c",
+        "humidity_pct",
+        "rain_mm",
+        "et0_mm",
+        "irrigation_mm",
+        "kc",
+        "taw_mm_m",
+        "infiltration_mm_hr",
+        "doy_sin",
+        "doy_cos"
+      ],
+      "metrics": {
+        "mae": 1.0898,
+        "rmse": 1.5476,
+        "r2": 0.991
+      },
+      "residualP80Pct": 1.638
+    },
+    "irrigation_water_demand": {
+      "algorithm": "GradientBoostingRegressor",
+      "target": "optimal_irrigation_mm",
+      "features": [
+        "soil_moisture_t0",
+        "temp_max_c",
+        "humidity_pct",
+        "rain_mm",
+        "et0_mm",
+        "kc",
+        "taw_mm_m",
+        "doy_sin",
+        "doy_cos"
+      ],
+      "metrics": {
+        "mae": 0.2187,
+        "rmse": 0.3155,
+        "r2": 0.9936
+      }
+    },
+    "sensor_anomaly_detector": {
+      "algorithm": "IsolationForest",
+      "target": "anomaly_flag",
+      "features": [
+        "soil_moisture_t0",
+        "temp_max_c",
+        "humidity_pct",
+        "et0_mm"
+      ],
+      "metrics": {
+        "precision": 0.7792,
+        "recall": 1.0,
+        "f1": 0.8759,
+        "mae": 0.0,
+        "rmse": 0.0,
+        "r2": 1.0
+      }
+    }
+  }
+}

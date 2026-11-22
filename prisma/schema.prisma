@@ -90,11 +90,13 @@ model User {
   createdAt           DateTime  @default(now())
   updatedAt           DateTime  @updatedAt
 
-  farmerProfile      FarmerProfile?
-  onboardingProgress OnboardingProgress?
-  farms              Farm[]
-  conversations      AIConversation[]
-  syncOperations     SyncOperation[]
+  farmerProfile        FarmerProfile?
+  onboardingProgress   OnboardingProgress?
+  farms                Farm[]
+  conversations        AIConversation[]
+  syncOperations       SyncOperation[]
+  farmBrainAnalyses    FarmBrainAnalysis[]
+  simulationScenarios  SimulationScenario[]
 }
 
 model FarmerProfile {
@@ -170,6 +172,11 @@ model Farm {
   environmentalAnalyses EnvironmentalAnalysis[]
   feasibilityReports    FeasibilityReport[]
   aiConversations       AIConversation[]
+  sensorDevices         SensorDevice[]
+  sensorReadings        SensorReading[]
+  farmBrainAnalyses     FarmBrainAnalysis[]
+  simulationScenarios   SimulationScenario[]
+  mlPredictionLogs      MLPredictionLog[]
 
   @@index([userId])
   @@index([centerLat, centerLon])
@@ -508,4 +515,126 @@ model SyncOperation {
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@index([userId, serverTimestamp])
+}
+
+model SensorDevice {
+  id         String          @id @default(cuid())
+  farmId     String
+  name       String
+  tokenHash  String          @unique
+  createdAt  DateTime        @default(now())
+  lastSeenAt DateTime?
+  revokedAt  DateTime?
+
+  farm     Farm            @relation(fields: [farmId], references: [id], onDelete: Cascade)
+  readings SensorReading[]
+
+  @@index([farmId])
+  @@index([tokenHash])
+}
+
+model SensorReading {
+  id              String   @id @default(cuid())
+  deviceId        String
+  farmId          String
+  recordedAt      DateTime
+  receivedAt      DateTime @default(now())
+  airTempC        Float?
+  airHumidityPct  Float?
+  soilMoisturePct Float?
+  soilRaw         Int?
+  waterLevelPct   Float?
+  waterRaw        Int?
+  pumpOn          Boolean  @default(false)
+  soilFault       Boolean  @default(false)
+
+  device SensorDevice @relation(fields: [deviceId], references: [id], onDelete: Cascade)
+  farm   Farm         @relation(fields: [farmId], references: [id], onDelete: Cascade)
+
+  @@index([farmId, recordedAt])
+  @@index([deviceId, recordedAt])
+}
+
+enum SimulationScenarioType {
+  WATER_SHORTAGE
+  CHANGE_CROP
+  WEATHER_CLIMATE
+  IRRIGATION_STRATEGY
+  FARM_EXPANSION
+}
+
+model FarmBrainAnalysis {
+  id                  String   @id @default(cuid())
+  farmId              String
+  userId              String
+  version             Int      @default(1)
+  dataCompletenessPct Float    @default(0)
+  completenessJson    Json
+  savingsJson         Json
+  verifiedTrackingJson Json
+  forecastJson        Json
+  plotBreakdownsJson  Json
+  recommendationsJson Json
+  soilAnomalyDetected Boolean  @default(false)
+  soilAnomalyReason   String?
+  mlModelsJson        Json
+  assumptionsJson     Json
+  limitationsJson     Json
+  generatedAt         DateTime @default(now())
+  updatedAt           DateTime @updatedAt
+
+  farm Farm @relation(fields: [farmId], references: [id], onDelete: Cascade)
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([farmId, generatedAt])
+  @@index([userId, updatedAt])
+}
+
+model SimulationScenario {
+  id           String                 @id @default(cuid())
+  farmId       String
+  userId       String
+  name         String
+  scenarioType SimulationScenarioType
+  inputsJson   Json
+  resultJson   Json?
+  isArchived   Boolean                @default(false)
+  createdAt    DateTime               @default(now())
+  updatedAt    DateTime               @updatedAt
+  lastRunAt    DateTime?
+
+  farm Farm @relation(fields: [farmId], references: [id], onDelete: Cascade)
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([farmId, updatedAt])
+  @@index([userId, isArchived])
+}
+
+model MLModelMetadata {
+  id             String   @id @default(cuid())
+  modelName      String   @unique
+  algorithm      String
+  version        String
+  targetVariable String
+  mae            Float
+  rmse           Float
+  r2             Float
+  trainSamples   Int
+  testSamples    Int
+  featureNames   Json
+  trainedAt      DateTime @default(now())
+}
+
+model MLPredictionLog {
+  id            String   @id @default(cuid())
+  farmId        String
+  modelName     String
+  inputSummary  Json
+  outputSummary Json
+  provenance    String
+  createdAt     DateTime @default(now())
+
+  farm Farm @relation(fields: [farmId], references: [id], onDelete: Cascade)
+
+  @@index([farmId, createdAt])
 }

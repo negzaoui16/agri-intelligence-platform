@@ -1,10 +1,12 @@
-import { getFarmById } from "@/lib/db/repository";
+import { getFarmById, getFarmSensorsBundle } from "@/lib/db/repository";
 import { fullEnglishMonthName } from "@/lib/i18n/translations";
+import { SENSOR_STALE_AFTER_MS, SOIL_DRY_THRESHOLD_PCT } from "@/lib/services/farmer-metrics";
 import type {
   AIChatMessageRecord,
   AIToolExecutionTrace,
   DataSourceCitation,
   FarmRecord,
+  SensorReadingRecord,
 } from "@/types/agri";
 import { AI_TOOL_DEFINITIONS, executeAITool } from "./tools";
 
@@ -28,6 +30,7 @@ async function runDeterministicToolAssistant(params: {
   message: string;
   farm: FarmRecord | null;
   compareFarm: FarmRecord | null;
+  latestSensorReading?: SensorReadingRecord | null;
 }): Promise<AIChatMessageRecord> {
   const q = params.message.toLowerCase();
   const farm = params.farm;
@@ -339,9 +342,19 @@ async function runDeterministicToolAssistant(params: {
         : "No mapped water source appeared within 10 km, so rely on verified on-site well yield."
     );
   } else if (wCur && cl) {
+    const sr = params.latestSensorReading;
+    const isFresh = Boolean(
+      sr && Date.now() - new Date(sr.recordedAt || sr.receivedAt).getTime() < SENSOR_STALE_AFTER_MS
+    );
+    const liveTemp = isFresh && sr?.airTempC !== null && sr?.airTempC !== undefined
+      ? `${Math.round(sr.airTempC)}°C (from your sensor)`
+      : `${Math.round(wCur.temperatureC)}°C (from the forecast)`;
+    const soilLine = isFresh && sr && !sr.soilFault && sr.soilMoisturePct !== null
+      ? `Soil wetness from your sensor is ${Math.round(sr.soilMoisturePct)}% (${sr.soilMoisturePct < SOIL_DRY_THRESHOLD_PCT ? "dry — water today" : "wet — skip watering today"}). Tank level is ${sr.waterLevelPct !== null ? `${Math.round(sr.waterLevelPct)}%` : "unknown"}, pump ${sr.pumpOn ? "on" : "off"}.`
+      : "";
     paragraphs.push(
-      `**Right now it is ${Math.round(wCur.temperatureC)}°C (${wCur.weatherSummary.toLowerCase()}) with ${wAlerts.length ? `${wAlerts.length} weather alert(s) ahead` : "a calm week ahead"}.**`,
-      `Your farm gets about ${Math.round(cl.annualPrecipMm)} mm of rain per year. ${el ? `Land height is ${Math.round(el.farmElevationM)} m with gentle ${el.estimatedSlopePct}% slope.` : ""}`
+      `**Right now it is ${liveTemp} (${wCur.weatherSummary.toLowerCase()}) with ${wAlerts.length ? `${wAlerts.length} weather alert(s) ahead` : "a calm week ahead"}.**`,
+      `${soilLine ? `${soilLine} ` : ""}Your farm gets about ${Math.round(cl.annualPrecipMm)} mm of rain per year. ${el ? `Land height is ${Math.round(el.farmElevationM)} m with gentle ${el.estimatedSlopePct}% slope.` : ""}`
     );
   } else {
     paragraphs.push("**Here is what your farm data shows today.**");
@@ -372,6 +385,8 @@ export async function runAIChat(params: {
 }): Promise<AIChatMessageRecord> {
   const farm = params.farmId ? await getFarmById(params.farmId) : null;
   const compareFarm = params.compareFarmId ? await getFarmById(params.compareFarmId) : null;
+  const sensors = farm ? await getFarmSensorsBundle(farm.id) : null;
+  const latestSensorReading = sensors?.latestReading ?? null;
 
   const apiKey = params.groqApiKeyOverride?.trim() || process.env.GROQ_API_KEY?.trim();
   const modelName = params.groqModelOverride?.trim() || process.env.GROQ_MODEL?.trim();
@@ -384,6 +399,7 @@ export async function runAIChat(params: {
       message: params.message,
       farm,
       compareFarm,
+      latestSensorReading,
     });
   }
 
@@ -391,6 +407,20 @@ export async function runAIChat(params: {
   if (farm) {
     contextLines.push(
       `Active Farm Context: id="${farm.id}", name="${farm.name}", lat=${farm.centerLat}, lon=${farm.centerLon}, areaHa=${farm.areaHectares}, crop="${farm.irrigationConfig.cropCode}", soil="${farm.soilProfile.textureClass}", solarKwp=${farm.solarConfig.capacityKwp}, solarTilt=${farm.solarConfig.tiltDeg}, pumpFlowM3Hr=${farm.pumpConfig.flowRateM3Hr}, pumpTdhM=${farm.pumpConfig.totalDynamicHeadM}.`
+    );
+  }
+  if (latestSensorReading) {
+    const ageMin = Math.max(
+      0,
+      Math.round(
+        (Date.now() -
+          new Date(latestSensorReading.recordedAt || latestSensorReading.receivedAt).getTime()) /
+          60_000
+      )
+    );
+    const freshness = ageMin < 15 ? "FRESH (under 15 min old)" : `STALE (${ageMin} min old — use forecast instead)`;
+    contextLines.push(
+      `Live Field Sensor Reading [${freshness}]: airTempC=${latestSensorReading.airTempC ?? "null"}, airHumidityPct=${latestSensorReading.airHumidityPct ?? "null"}, soilMoisturePct=${latestSensorReading.soilFault ? "FAULT" : (latestSensorReading.soilMoisturePct ?? "null")}, soilFault=${latestSensorReading.soilFault}, waterLevelPct=${latestSensorReading.waterLevelPct ?? "null"}, pumpOn=${latestSensorReading.pumpOn}. When fresh and valid, prefer sensor values for today's temperature and soil watering advice and label them "from your sensor".`
     );
   }
   if (compareFarm) {
@@ -492,6 +522,7 @@ export async function runAIChat(params: {
       message: params.message,
       farm,
       compareFarm,
+      latestSensorReading,
     });
     fallback.content = `> **Note**: Groq API fallback activated (${err instanceof Error ? err.message : "unavailable"}). Results below come directly from verified analytical tools.\n\n${fallback.content}`;
     return fallback;
@@ -501,5 +532,6 @@ export async function runAIChat(params: {
     message: params.message,
     farm,
     compareFarm,
+    latestSensorReading,
   });
 }

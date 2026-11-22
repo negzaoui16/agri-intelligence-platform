@@ -3,12 +3,16 @@ import { apiError } from "@/lib/api/http";
 import { getSessionState } from "@/lib/auth/session";
 import {
   getFarmById,
+  getFarmSensorsBundle,
+  getLatestFarmBrainAnalysis,
   getOnboardingProgress,
   saveAnalysisBundle,
+  saveFarmBrainAnalysis,
   saveReport,
   upsertFarm,
   upsertOnboardingProgress,
 } from "@/lib/db/repository";
+import { computeFarmBrainAnalysis } from "@/lib/engines/farmbrain-engine";
 import {
   buildFeasibilityReport,
   runCompleteFarmAnalysis,
@@ -74,6 +78,22 @@ export async function POST(request: Request) {
       pendingMessage = "Offline mode: farm saved locally; remote analysis will run once online.";
     }
 
+    // Automatically generate initial FarmBrain savings analysis right after onboarding
+    let farmBrain = null;
+    try {
+      const sensors = await getFarmSensorsBundle(farm.id, userId).catch(() => null);
+      const prevBrain = await getLatestFarmBrainAnalysis(farm.id, userId).catch(() => null);
+      farmBrain = computeFarmBrainAnalysis({
+        farm,
+        analysis,
+        sensors,
+        previousVersion: prevBrain?.version ?? 0,
+      });
+      await saveFarmBrainAnalysis(farmBrain);
+    } catch {
+      // Never block onboarding completion if initial FarmBrain persistence hits transient issue
+    }
+
     return NextResponse.json({
       completed: true,
       onboardingProgress: updatedProgress,
@@ -81,6 +101,7 @@ export async function POST(request: Request) {
       analysisStatus,
       pendingMessage,
       analysis,
+      farmBrain,
       redirectTo: "/",
     });
   } catch (err) {

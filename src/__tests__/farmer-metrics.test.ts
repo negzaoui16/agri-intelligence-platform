@@ -3,6 +3,7 @@ import { getSessionState } from "@/lib/auth/session";
 import { localizeMonthName, MAGHREB_ARABIC_MONTHS } from "@/lib/i18n/translations";
 import { buildFeasibilityReport } from "@/lib/services/analysis-orchestrator";
 import { selectFarmerMetrics } from "@/lib/services/farmer-metrics";
+import type { SensorReadingRecord } from "@/types/agri";
 import { makeDemoFarm, makeMockBundle } from "./fixtures/demo-farm";
 
 
@@ -79,5 +80,75 @@ describe("Farmer-First Shared Metrics & Honest Scoring", () => {
     expect(m.sunStatus).toBe("UNKNOWN");
     expect(m.weatherStatus).toBe("UNKNOWN");
     expect(m.isWaterShort).toBe(false);
+    expect(m.tempSourceLabel).toBe("from the forecast");
+    expect(m.waterAdviceSourceLabel).toBe("from the forecast");
+  });
+
+  it("uses fresh ESP32 sensor readings for water advice and live temperature, falling back when stale or faulted", () => {
+    const farm = makeDemoFarm();
+    const bundle = makeMockBundle(); // forecast currentTempC = 28, today precipMm = 0
+    const nowMs = Date.UTC(2026, 10, 22, 12, 0, 0);
+
+    // Fresh wet sensor (5 min old) -> skips watering despite 0mm rain forecast, and uses 24C sensor temp
+    const freshWet: SensorReadingRecord = {
+      id: "sr_wet",
+      deviceId: "dev_1",
+      farmId: farm.id,
+      recordedAt: new Date(nowMs - 5 * 60_000).toISOString(),
+      receivedAt: new Date(nowMs - 5 * 60_000).toISOString(),
+      airTempC: 24.2,
+      airHumidityPct: 55,
+      soilMoisturePct: 68,
+      soilRaw: 1450,
+      waterLevelPct: 80,
+      waterRaw: 1640,
+      pumpOn: false,
+      soilFault: false,
+    };
+    const mWet = selectFarmerMetrics(farm, bundle, freshWet, nowMs);
+    expect(mWet.isSensorFresh).toBe(true);
+    expect(mWet.shouldWaterToday).toBe(false);
+    expect(mWet.waterAdviceSourceLabel).toBe("from your sensor");
+    expect(mWet.currentTempC).toBe(24);
+    expect(mWet.tempSourceLabel).toBe("from your sensor");
+
+    // Fresh dry sensor -> advises watering today from sensor
+    const freshDry: SensorReadingRecord = {
+      ...freshWet,
+      id: "sr_dry",
+      soilMoisturePct: 22,
+      soilRaw: 2500,
+    };
+    const mDry = selectFarmerMetrics(farm, bundle, freshDry, nowMs);
+    expect(mDry.shouldWaterToday).toBe(true);
+    expect(mDry.waterAdviceSourceLabel).toBe("from your sensor");
+
+    // Fresh sensor with soilFault=true -> uses sensor air temp, falls back to forecast for watering advice
+    const freshFault: SensorReadingRecord = {
+      ...freshWet,
+      id: "sr_fault",
+      soilFault: true,
+      soilMoisturePct: null,
+      soilRaw: 4095,
+    };
+    const mFault = selectFarmerMetrics(farm, bundle, freshFault, nowMs);
+    expect(mFault.hasSensorFault).toBe(true);
+    expect(mFault.waterAdviceSourceLabel).toBe("from the forecast");
+    expect(mFault.tempSourceLabel).toBe("from your sensor");
+
+    // Stale sensor (>= 15 min old) -> falls back to forecast for everything
+    const stale: SensorReadingRecord = {
+      ...freshWet,
+      id: "sr_stale",
+      recordedAt: new Date(nowMs - 20 * 60_000).toISOString(),
+      receivedAt: new Date(nowMs - 20 * 60_000).toISOString(),
+    };
+    const mStale = selectFarmerMetrics(farm, bundle, stale, nowMs);
+    expect(mStale.isSensorStale).toBe(true);
+    expect(mStale.isSensorFresh).toBe(false);
+    expect(mStale.tempSourceLabel).toBe("from the forecast");
+    expect(mStale.waterAdviceSourceLabel).toBe("from the forecast");
+    expect(mStale.currentTempC).toBe(Math.round(bundle.weather.current.temperatureC));
+    expect(mStale.shouldWaterToday).toBe(true);
   });
 });

@@ -5,19 +5,24 @@ import Link from "next/link";
 import {
   AlertTriangle,
   ArrowRight,
+  Brain,
   CheckCircle2,
   Cloud,
   Droplet,
   Loader2,
   RefreshCw,
+  SlidersHorizontal,
   Sun,
 } from "lucide-react";
 import { LanguageSwitch, NotCheckedYetCard, ThemeToggle } from "@/components/farmer/FarmerUI";
+import { FieldSensorCard } from "@/components/farmer/FieldSensorCard";
 import { useLanguage } from "@/components/i18n/LanguageProvider";
+import { FARMBRAIN_STRINGS } from "@/lib/i18n/farmbrain-strings";
 import { useAuthSession } from "@/hooks/useAuth";
 import {
   useFarmAnalysis,
   useFarms,
+  useFarmSensors,
   useRefreshFarmAnalysis,
 } from "@/hooks/useFarms";
 import { selectFarmerMetrics } from "@/lib/services/farmer-metrics";
@@ -34,6 +39,7 @@ export default function HomePage() {
     data: analysis,
     isLoading: analysisLoading,
   } = useFarmAnalysis(activeFarm);
+  const { data: sensors } = useFarmSensors(activeFarm?.id);
   const refreshAnalysis = useRefreshFarmAnalysis();
 
   const [checkedSteps, setCheckedSteps] = React.useState<Record<string, boolean>>({});
@@ -110,7 +116,7 @@ export default function HomePage() {
     );
   }
 
-  const m = selectFarmerMetrics(activeFarm, analysis);
+  const m = selectFarmerMetrics(activeFarm, analysis, sensors?.latestReading);
   const localizedPeakMonth = monthLabel(m.peakMonthName ?? "");
   const localizedCrop = cropLabel(m.cropName, m.cropCode);
   const demandBarPct =
@@ -158,7 +164,7 @@ export default function HomePage() {
   return (
     <div className="flex flex-col gap-4 lg:gap-5">
       {/* Mobile Header matching Main.dc.html / HomeArabic.dc.html */}
-      <header className="flex lg:hidden items-center justify-between gap-3">
+      <header data-tour="home-header" className="flex lg:hidden items-center justify-between gap-3">
         <div className="flex flex-col gap-0.5 min-w-0">
           <span className="text-[15px] text-[var(--tp-fg-4A5A4F)]">
             {firstName ? `${t.goodMorning}, ${firstName}` : t.goodMorning}
@@ -170,14 +176,14 @@ export default function HomePage() {
             {Number(activeFarm.areaHectares.toFixed(1))} {t.hectaresFull} · {localizedCrop}
           </span>
         </div>
-        <div className="flex items-center gap-2 shrink-0">
+        <div data-tour="theme-lang" className="flex items-center gap-2 shrink-0">
             <ThemeToggle compact />
           <LanguageSwitch />
         </div>
       </header>
 
       {/* Desktop Header matching DeskHome.dc.html */}
-      <header className="hidden lg:flex flex-wrap items-end justify-between gap-3">
+      <header data-tour="home-header" className="hidden lg:flex flex-wrap items-end justify-between gap-3">
         <div className="flex flex-col gap-1">
           <span className="text-[17px] text-[var(--tp-fg-4A5A4F)]">
             {firstName ? `${t.goodMorning}, ${firstName}` : t.goodMorning}
@@ -190,6 +196,10 @@ export default function HomePage() {
           <span className="text-[15px] text-[var(--tp-fg-4A5A4F)]">
             {analysisLoading ? s.checkingLiveData : t.liveDataLabel}
           </span>
+          <div data-tour="theme-lang" className="flex items-center gap-2">
+            <ThemeToggle compact />
+            <LanguageSwitch />
+          </div>
           <button
             type="button"
             onClick={() => refreshAnalysis.mutate(activeFarm.id)}
@@ -205,6 +215,43 @@ export default function HomePage() {
           </button>
         </div>
       </header>
+
+      <div data-tour="sensor-card">
+        <FieldSensorCard farmId={activeFarm.id} sensors={sensors} />
+      </div>
+
+      {/* FarmBrain Savings & Simulator Quick Strip */}
+      <section className="bg-[var(--tp-bg-FFFFFF)] border-[1.5px] border-[var(--tp-bd-E4DFD2)] rounded-[20px] p-4 lg:px-6 lg:py-5 flex flex-col lg:flex-row lg:items-center justify-between gap-4">
+        <div className="flex items-start gap-3">
+          <span className="w-11 h-11 rounded-[14px] bg-[var(--tp-bg-E3EFE2)] text-[var(--tp-fg-1F4D28)] flex items-center justify-center shrink-0">
+            <Brain className="w-6 h-6" aria-hidden="true" />
+          </span>
+          <div className="flex flex-col gap-0.5">
+            <h2 className="m-0 text-[19px] font-bold text-[var(--tp-fg-17251C)]">
+              {FARMBRAIN_STRINGS[lang].homeCardTitle}
+            </h2>
+            <p className="m-0 text-[15px] text-[var(--tp-fg-4A5A4F)]">
+              {FARMBRAIN_STRINGS[lang].homeCardSubtitle}
+            </p>
+          </div>
+        </div>
+        <div className="flex flex-wrap gap-2.5 shrink-0">
+          <Link
+            href="/farmbrain"
+            className="min-h-[48px] px-5 rounded-full bg-[var(--tp-bg-2E6B3A)] text-white text-[16px] font-bold no-underline inline-flex items-center gap-2 hover:bg-[var(--tp-bg-23542D)]"
+          >
+            <Brain className="w-4 h-4" aria-hidden="true" />
+            <span>{FARMBRAIN_STRINGS[lang].homeOpenSavings}</span>
+          </Link>
+          <Link
+            href="/simulator"
+            className="min-h-[48px] px-5 rounded-full border-[1.5px] border-[var(--tp-bd-2E6B3A)] bg-[var(--tp-bg-FFFFFF)] text-[var(--tp-fg-1F4D28)] text-[16px] font-bold no-underline inline-flex items-center gap-2"
+          >
+            <SlidersHorizontal className="w-4 h-4" aria-hidden="true" />
+            <span>{FARMBRAIN_STRINGS[lang].homeOpenSimulator}</span>
+          </Link>
+        </div>
+      </section>
 
       {!m.hasAnalysis ? (
         <NotCheckedYetCard farmId={activeFarm.id} loading={analysisLoading} />
@@ -315,9 +362,14 @@ export default function HomePage() {
 
         {/* Today Weather Card */}
         <section className="lg:flex-[1_1_280px] min-w-0 bg-[var(--tp-bg-FFFFFF)] border-[1.5px] border-[var(--tp-bd-E4DFD2)] rounded-[20px] lg:rounded-[22px] p-4 lg:px-6 lg:py-[22px] flex flex-col gap-3">
-          <h2 className="m-0 text-[19px] lg:text-[20px] font-bold text-[var(--tp-fg-17251C)]">
-            {t.todayTitle}
-          </h2>
+          <div className="flex items-center justify-between gap-2">
+            <h2 className="m-0 text-[19px] lg:text-[20px] font-bold text-[var(--tp-fg-17251C)]">
+              {t.todayTitle}
+            </h2>
+            <span className="text-[14px] font-bold text-[var(--tp-fg-4A5A4F)]">
+              {m.tempSource === "SENSOR" ? s.fromYourSensor : s.fromTheForecast}
+            </span>
+          </div>
           <div className="flex items-center gap-3.5">
             <Cloud className="hidden lg:block w-12 h-12 text-[var(--tp-fg-2E6B3A)] shrink-0" strokeWidth={1.8} aria-hidden="true" />
             <span className="text-[40px] lg:text-[48px] font-bold leading-none text-[var(--tp-fg-17251C)]">
@@ -335,14 +387,30 @@ export default function HomePage() {
           <span className="hidden lg:block text-[16px] text-[var(--tp-fg-4A5A4F)]">
             {weatherConditionsLine}
           </span>
-          <span className="hidden lg:block mt-auto text-[16px] font-bold text-[var(--tp-fg-1F4D28)]">
-            {m.shouldWaterToday ? t.waterAsNormalToday : t.holdWaterRainToday}
-          </span>
+          <div className="mt-auto flex flex-col gap-0.5 pt-1">
+            <span
+              className={cn(
+                "text-[16px] font-bold",
+                m.shouldWaterToday ? "text-[var(--tp-fg-1F4D28)]" : "text-[var(--tp-fg-1D4F91)]"
+              )}
+            >
+              {m.waterAdviceSource === "SENSOR"
+                ? m.shouldWaterToday
+                  ? s.waterTodayFromSensorDry
+                  : s.skipWaterTodayFromSensorWet
+                : m.shouldWaterToday
+                  ? t.waterAsNormalToday
+                  : t.holdWaterRainToday}
+            </span>
+            <span className="text-[14px] text-[var(--tp-fg-4A5A4F)]">
+              {m.waterAdviceSource === "SENSOR" ? s.fromYourSensor : s.fromTheForecast}
+            </span>
+          </div>
         </section>
       </div>
 
       {/* 3 Status Tiles: Water / Sun power / Weather */}
-      <div className="grid grid-cols-3 gap-2.5 lg:gap-4">
+      <div data-tour="status-tiles" className="grid grid-cols-3 gap-2.5 lg:gap-4">
         <Link
           href="/water"
           className="bg-[var(--tp-bg-FFFFFF)] border-[1.5px] border-[var(--tp-bd-E4DFD2)] rounded-[16px] lg:rounded-[18px] p-3.5 lg:px-5 lg:py-[18px] no-underline text-[var(--tp-fg-17251C)] flex flex-col lg:flex-row gap-1.5 lg:gap-3.5 items-start hover:border-[var(--tp-bd-1D4F91)]/50 transition-colors"
@@ -435,7 +503,7 @@ export default function HomePage() {
           ))}
         </section>
 
-        <section className="bg-[var(--tp-bg-FFFFFF)] border-[1.5px] border-[var(--tp-bd-E4DFD2)] rounded-[20px] p-4 lg:px-6 lg:py-5 flex flex-col gap-3">
+        <section data-tour="assistant-report" className="bg-[var(--tp-bg-FFFFFF)] border-[1.5px] border-[var(--tp-bd-E4DFD2)] rounded-[20px] p-4 lg:px-6 lg:py-5 flex flex-col gap-3">
           <h2 className="m-0 text-[19px] lg:text-[20px] font-bold text-[var(--tp-fg-17251C)]">
             {t.farmReportCardTitle}
           </h2>

@@ -7,7 +7,7 @@ import { FarmerPageHeader, NotCheckedYetCard } from "@/components/farmer/FarmerU
 import { useLanguage } from "@/components/i18n/LanguageProvider";
 import { SCREEN_STRINGS, type ScreenStrings } from "@/lib/i18n/screen-strings";
 import { localizeWeatherCondition } from "@/lib/i18n/translations";
-import { useFarmAnalysis, useFarms } from "@/hooks/useFarms";
+import { useFarmAnalysis, useFarms, useFarmSensors } from "@/hooks/useFarms";
 import { selectFarmerMetrics } from "@/lib/services/farmer-metrics";
 import { cn } from "@/lib/utils";
 
@@ -32,6 +32,7 @@ export default function WeatherPage() {
   const s = SCREEN_STRINGS[lang];
   const { activeFarm, isLoading: farmsLoading } = useFarms();
   const { data: analysis, isLoading: analysisLoading } = useFarmAnalysis(activeFarm);
+  const { data: sensors } = useFarmSensors(activeFarm?.id);
 
   if (farmsLoading || analysisLoading) {
     return (
@@ -71,7 +72,7 @@ export default function WeatherPage() {
     );
   }
 
-  const m = selectFarmerMetrics(activeFarm, analysis);
+  const m = selectFarmerMetrics(activeFarm, analysis, sensors?.latestReading);
   const next4Days = analysis.weather.daily.slice(0, 4);
 
   return (
@@ -93,14 +94,20 @@ export default function WeatherPage() {
               : "m-0 text-[22px] lg:text-[26px] font-bold text-[var(--tp-fg-123766)]"
           }
         >
-          {m.shouldWaterToday ? t.yesWaterAsNormal : t.skipRainComing}
+          {m.waterAdviceSource === "SENSOR"
+            ? m.shouldWaterToday
+              ? s.waterTodayFromSensorDry
+              : s.skipWaterTodayFromSensorWet
+            : m.shouldWaterToday
+              ? t.yesWaterAsNormal
+              : t.skipRainComing}
         </p>
         <p className="m-0 text-[16px] lg:text-[17px] leading-[1.45] text-[var(--tp-fg-22392A)]">
-          {m.shouldWaterToday
-            ? m.todayEt0Mm !== null
-              ? fmt(t.soilLosesMmDay, { mm: m.todayEt0Mm })
-              : null
-            : fmt(t.rainComingTodayDetail, { mm: Math.round(m.todayPrecipMm) })}
+          {m.waterAdviceSource === "SENSOR"
+            ? `${s.fromYourSensor}${m.liveSoilMoisturePct !== null ? ` (${Math.round(m.liveSoilMoisturePct)}%)` : ""}`
+            : m.shouldWaterToday
+              ? `${s.fromTheForecast}${m.todayEt0Mm !== null ? ` · ${fmt(t.soilLosesMmDay, { mm: m.todayEt0Mm })}` : ""}`
+              : `${s.fromTheForecast} · ${fmt(t.rainComingTodayDetail, { mm: Math.round(m.todayPrecipMm) })}`}
         </p>
       </section>
 

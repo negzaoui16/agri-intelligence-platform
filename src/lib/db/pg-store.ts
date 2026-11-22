@@ -9,14 +9,30 @@
 import type { Prisma, PrismaClient } from "@prisma/client";
 import type {
   AIChatMessageRecord,
+  FarmBrainAnalysisRecord,
+  FarmBrainCompletenessItem,
+  FarmBrainDailyMoistureForecastPoint,
+  FarmBrainExplainableAdvice,
+  FarmBrainPlotBreakdown,
+  FarmBrainSavingsBreakdown,
+  FarmBrainVerifiedSavingsTracking,
   FarmCropRecord,
   FarmerProfileRecord,
   FarmerWaterSourceRecord,
   FarmRecord,
+  FarmSensorsBundle,
   FeasibilityReportPayload,
   GeoPolygon,
   IrrigationMethod,
+  MLModelMetadataRecord,
+  MLPredictionLogRecord,
   OnboardingProgressRecord,
+  SensorDevicePublicRecord,
+  SensorDeviceRecord,
+  SensorReadingRecord,
+  SimulationScenarioInputs,
+  SimulationScenarioRecord,
+  SimulationScenarioResult,
   UserAccountRecord,
 } from "@/types/agri";
 import { IRRIGATION_EFFICIENCY_DEFAULTS, SOIL_TEXTURE_DEFAULTS } from "./defaults";
@@ -658,5 +674,473 @@ export async function pgSaveProgress(prisma: PrismaClient, o: OnboardingProgress
     where: { userId: o.userId },
     update: data,
     create: { id: o.id, userId: o.userId, ...data },
+  });
+}
+
+// ---------------------------------------------------------------------------
+// ESP32 Sensor Devices & Readings
+// ---------------------------------------------------------------------------
+
+type SensorDeviceRow = Prisma.SensorDeviceGetPayload<object>;
+type SensorReadingRow = Prisma.SensorReadingGetPayload<object>;
+
+export function isMissingSensorTableError(err: unknown): boolean {
+  const e = err as { code?: string; message?: string };
+  if (e?.code === "P2021") return true;
+  const msg = String(e?.message ?? "");
+  return msg.includes("SensorDevice") || msg.includes("SensorReading");
+}
+
+function sensorDeviceRowToRecord(row: SensorDeviceRow): SensorDeviceRecord {
+  return {
+    id: row.id,
+    farmId: row.farmId,
+    name: row.name,
+    tokenHash: row.tokenHash,
+    createdAt: row.createdAt.toISOString(),
+    lastSeenAt: iso(row.lastSeenAt),
+    revokedAt: iso(row.revokedAt),
+  };
+}
+
+function sensorReadingRowToRecord(row: SensorReadingRow): SensorReadingRecord {
+  return {
+    id: row.id,
+    deviceId: row.deviceId,
+    farmId: row.farmId,
+    recordedAt: row.recordedAt.toISOString(),
+    receivedAt: row.receivedAt.toISOString(),
+    airTempC: row.airTempC,
+    airHumidityPct: row.airHumidityPct,
+    soilMoisturePct: row.soilMoisturePct,
+    soilRaw: row.soilRaw,
+    waterLevelPct: row.waterLevelPct,
+    waterRaw: row.waterRaw,
+    pumpOn: row.pumpOn,
+    soilFault: row.soilFault,
+  };
+}
+
+export async function pgCreateSensorDevice(
+  prisma: PrismaClient,
+  device: SensorDeviceRecord
+): Promise<SensorDeviceRecord> {
+  const row = await prisma.sensorDevice.create({
+    data: {
+      id: device.id,
+      farmId: device.farmId,
+      name: device.name,
+      tokenHash: device.tokenHash,
+      createdAt: new Date(device.createdAt),
+      lastSeenAt: device.lastSeenAt ? new Date(device.lastSeenAt) : null,
+      revokedAt: device.revokedAt ? new Date(device.revokedAt) : null,
+    },
+  });
+  return sensorDeviceRowToRecord(row);
+}
+
+export async function pgListSensorDevices(
+  prisma: PrismaClient,
+  farmId: string
+): Promise<SensorDeviceRecord[]> {
+  const rows = await prisma.sensorDevice.findMany({
+    where: { farmId, revokedAt: null },
+    orderBy: { createdAt: "asc" },
+  });
+  return rows.map(sensorDeviceRowToRecord);
+}
+
+export async function pgFindSensorDeviceByTokenHash(
+  prisma: PrismaClient,
+  tokenHash: string
+): Promise<SensorDeviceRecord | null> {
+  const row = await prisma.sensorDevice.findUnique({ where: { tokenHash } });
+  return row ? sensorDeviceRowToRecord(row) : null;
+}
+
+export async function pgRevokeSensorDevice(
+  prisma: PrismaClient,
+  farmId: string,
+  deviceId: string,
+  revokedAt: string
+): Promise<boolean> {
+  const res = await prisma.sensorDevice.updateMany({
+    where: { id: deviceId, farmId, revokedAt: null },
+    data: { revokedAt: new Date(revokedAt) },
+  });
+  return res.count > 0;
+}
+
+export async function pgInsertSensorReadings(
+  prisma: PrismaClient,
+  deviceId: string,
+  farmId: string,
+  readings: SensorReadingRecord[],
+  lastSeenAt: string
+): Promise<SensorReadingRecord[]> {
+  await prisma.$transaction(async (tx: Tx) => {
+    await tx.sensorReading.createMany({
+      data: readings.map((r) => ({
+        id: r.id,
+        deviceId: r.deviceId,
+        farmId: r.farmId,
+        recordedAt: new Date(r.recordedAt),
+        receivedAt: new Date(r.receivedAt),
+        airTempC: r.airTempC,
+        airHumidityPct: r.airHumidityPct,
+        soilMoisturePct: r.soilMoisturePct,
+        soilRaw: r.soilRaw,
+        waterLevelPct: r.waterLevelPct,
+        waterRaw: r.waterRaw,
+        pumpOn: r.pumpOn,
+        soilFault: r.soilFault,
+      })),
+    });
+    await tx.sensorDevice.updateMany({
+      where: { id: deviceId, farmId },
+      data: { lastSeenAt: new Date(lastSeenAt) },
+    });
+  });
+  return readings;
+}
+
+export async function pgGetFarmSensorsBundle(
+  prisma: PrismaClient,
+  farmId: string,
+  since24hIso: string
+): Promise<FarmSensorsBundle> {
+  const deviceRows = await prisma.sensorDevice.findMany({
+    where: { farmId, revokedAt: null },
+    orderBy: { createdAt: "asc" },
+  });
+  const activeIds = deviceRows.map((d) => d.id);
+  if (activeIds.length === 0) {
+    return { farmId, devices: [], latestReading: null, readings24h: [] };
+  }
+
+  const [recentRows, latestPerDeviceRows] = await Promise.all([
+    prisma.sensorReading.findMany({
+      where: {
+        farmId,
+        deviceId: { in: activeIds },
+        recordedAt: { gte: new Date(since24hIso) },
+      },
+      orderBy: [{ recordedAt: "desc" }, { receivedAt: "desc" }],
+      take: 1500,
+    }),
+    Promise.all(
+      activeIds.map((id) =>
+        prisma.sensorReading.findFirst({
+          where: { farmId, deviceId: id },
+          orderBy: [{ recordedAt: "desc" }, { receivedAt: "desc" }],
+        })
+      )
+    ),
+  ]);
+
+  const readings24h = recentRows.map(sensorReadingRowToRecord);
+  const latestMap = new Map<string, SensorReadingRecord>();
+  latestPerDeviceRows.forEach((row, idx) => {
+    if (row) latestMap.set(activeIds[idx], sensorReadingRowToRecord(row));
+  });
+
+  const devices: SensorDevicePublicRecord[] = deviceRows.map((d) => ({
+    id: d.id,
+    farmId: d.farmId,
+    name: d.name,
+    createdAt: d.createdAt.toISOString(),
+    lastSeenAt: iso(d.lastSeenAt),
+    revokedAt: iso(d.revokedAt),
+    latestReading: latestMap.get(d.id) ?? null,
+  }));
+
+  const sortedLatest = Array.from(latestMap.values()).sort(
+    (a, b) => new Date(b.recordedAt).getTime() - new Date(a.recordedAt).getTime()
+  );
+
+  return {
+    farmId,
+    devices,
+    latestReading: sortedLatest[0] ?? null,
+    readings24h,
+  };
+}
+
+// ---------------------------------------------------------------------------
+// FarmBrain Analyses, Simulator Scenarios & ML Metadata
+// ---------------------------------------------------------------------------
+
+type FarmBrainAnalysisRow = Prisma.FarmBrainAnalysisGetPayload<object>;
+type SimulationScenarioRow = Prisma.SimulationScenarioGetPayload<object>;
+type MLModelMetadataRow = Prisma.MLModelMetadataGetPayload<object>;
+
+export function isMissingFarmBrainTableError(err: unknown): boolean {
+  const e = err as { code?: string; message?: string };
+  if (e?.code === "P2021" || e?.code === "P2022") return true;
+  const msg = String(e?.message ?? "");
+  return (
+    msg.includes("FarmBrainAnalysis") ||
+    msg.includes("SimulationScenario") ||
+    msg.includes("MLModelMetadata") ||
+    msg.includes("MLPredictionLog")
+  );
+}
+
+function farmBrainRowToRecord(row: FarmBrainAnalysisRow): FarmBrainAnalysisRecord {
+  return {
+    id: row.id,
+    farmId: row.farmId,
+    userId: row.userId,
+    version: row.version,
+    dataCompletenessPct: row.dataCompletenessPct,
+    completenessItems: row.completenessJson as unknown as FarmBrainCompletenessItem[],
+    savings: row.savingsJson as unknown as FarmBrainSavingsBreakdown,
+    verifiedTracking: row.verifiedTrackingJson as unknown as FarmBrainVerifiedSavingsTracking,
+    soilMoistureForecast7d:
+      row.forecastJson as unknown as FarmBrainDailyMoistureForecastPoint[],
+    plotBreakdowns: row.plotBreakdownsJson as unknown as FarmBrainPlotBreakdown[],
+    recommendations: row.recommendationsJson as unknown as FarmBrainExplainableAdvice[],
+    soilAnomalyDetected: row.soilAnomalyDetected,
+    soilAnomalyReason: row.soilAnomalyReason,
+    mlModelsUsed: row.mlModelsJson as unknown as FarmBrainAnalysisRecord["mlModelsUsed"],
+    assumptions: row.assumptionsJson as unknown as string[],
+    limitations: row.limitationsJson as unknown as string[],
+    generatedAt: row.generatedAt.toISOString(),
+    updatedAt: row.updatedAt.toISOString(),
+  };
+}
+
+function scenarioRowToRecord(row: SimulationScenarioRow): SimulationScenarioRecord {
+  return {
+    id: row.id,
+    farmId: row.farmId,
+    userId: row.userId,
+    name: row.name,
+    scenarioType: row.scenarioType,
+    inputs: row.inputsJson as unknown as SimulationScenarioInputs,
+    result: row.resultJson ? (row.resultJson as unknown as SimulationScenarioResult) : null,
+    isArchived: row.isArchived,
+    createdAt: row.createdAt.toISOString(),
+    updatedAt: row.updatedAt.toISOString(),
+    lastRunAt: iso(row.lastRunAt),
+  };
+}
+
+function mlMetaRowToRecord(row: MLModelMetadataRow): MLModelMetadataRecord {
+  return {
+    id: row.id,
+    modelName: row.modelName,
+    algorithm: row.algorithm,
+    version: row.version,
+    targetVariable: row.targetVariable,
+    mae: row.mae,
+    rmse: row.rmse,
+    r2: row.r2,
+    trainSamples: row.trainSamples,
+    testSamples: row.testSamples,
+    featureNames: row.featureNames as unknown as string[],
+    trainedAt: row.trainedAt.toISOString(),
+  };
+}
+
+export async function pgSaveFarmBrainAnalysis(
+  prisma: PrismaClient,
+  record: FarmBrainAnalysisRecord
+): Promise<FarmBrainAnalysisRecord> {
+  const row = await prisma.farmBrainAnalysis.upsert({
+    where: { id: record.id },
+    update: {
+      version: record.version,
+      dataCompletenessPct: record.dataCompletenessPct,
+      completenessJson: record.completenessItems as unknown as Prisma.InputJsonValue,
+      savingsJson: record.savings as unknown as Prisma.InputJsonValue,
+      verifiedTrackingJson: record.verifiedTracking as unknown as Prisma.InputJsonValue,
+      forecastJson: record.soilMoistureForecast7d as unknown as Prisma.InputJsonValue,
+      plotBreakdownsJson: record.plotBreakdowns as unknown as Prisma.InputJsonValue,
+      recommendationsJson: record.recommendations as unknown as Prisma.InputJsonValue,
+      soilAnomalyDetected: record.soilAnomalyDetected,
+      soilAnomalyReason: record.soilAnomalyReason,
+      mlModelsJson: record.mlModelsUsed as unknown as Prisma.InputJsonValue,
+      assumptionsJson: record.assumptions as unknown as Prisma.InputJsonValue,
+      limitationsJson: record.limitations as unknown as Prisma.InputJsonValue,
+      generatedAt: new Date(record.generatedAt),
+    },
+    create: {
+      id: record.id,
+      farmId: record.farmId,
+      userId: record.userId,
+      version: record.version,
+      dataCompletenessPct: record.dataCompletenessPct,
+      completenessJson: record.completenessItems as unknown as Prisma.InputJsonValue,
+      savingsJson: record.savings as unknown as Prisma.InputJsonValue,
+      verifiedTrackingJson: record.verifiedTracking as unknown as Prisma.InputJsonValue,
+      forecastJson: record.soilMoistureForecast7d as unknown as Prisma.InputJsonValue,
+      plotBreakdownsJson: record.plotBreakdowns as unknown as Prisma.InputJsonValue,
+      recommendationsJson: record.recommendations as unknown as Prisma.InputJsonValue,
+      soilAnomalyDetected: record.soilAnomalyDetected,
+      soilAnomalyReason: record.soilAnomalyReason,
+      mlModelsJson: record.mlModelsUsed as unknown as Prisma.InputJsonValue,
+      assumptionsJson: record.assumptions as unknown as Prisma.InputJsonValue,
+      limitationsJson: record.limitations as unknown as Prisma.InputJsonValue,
+      generatedAt: new Date(record.generatedAt),
+    },
+  });
+  return farmBrainRowToRecord(row);
+}
+
+export async function pgGetLatestFarmBrainAnalysis(
+  prisma: PrismaClient,
+  farmId: string
+): Promise<FarmBrainAnalysisRecord | null> {
+  const row = await prisma.farmBrainAnalysis.findFirst({
+    where: { farmId },
+    orderBy: [{ version: "desc" }, { generatedAt: "desc" }],
+  });
+  return row ? farmBrainRowToRecord(row) : null;
+}
+
+export async function pgListFarmBrainHistory(
+  prisma: PrismaClient,
+  farmId: string,
+  limit = 20
+): Promise<FarmBrainAnalysisRecord[]> {
+  const rows = await prisma.farmBrainAnalysis.findMany({
+    where: { farmId },
+    orderBy: [{ version: "desc" }, { generatedAt: "desc" }],
+    take: limit,
+  });
+  return rows.map(farmBrainRowToRecord);
+}
+
+export async function pgSaveSimulationScenario(
+  prisma: PrismaClient,
+  scenario: SimulationScenarioRecord
+): Promise<SimulationScenarioRecord> {
+  const row = await prisma.simulationScenario.upsert({
+    where: { id: scenario.id },
+    update: {
+      name: scenario.name,
+      scenarioType: scenario.scenarioType,
+      inputsJson: scenario.inputs as unknown as Prisma.InputJsonValue,
+      resultJson: scenario.result
+        ? (scenario.result as unknown as Prisma.InputJsonValue)
+        : undefined,
+      isArchived: scenario.isArchived,
+      lastRunAt: scenario.lastRunAt ? new Date(scenario.lastRunAt) : null,
+    },
+    create: {
+      id: scenario.id,
+      farmId: scenario.farmId,
+      userId: scenario.userId,
+      name: scenario.name,
+      scenarioType: scenario.scenarioType,
+      inputsJson: scenario.inputs as unknown as Prisma.InputJsonValue,
+      resultJson: scenario.result
+        ? (scenario.result as unknown as Prisma.InputJsonValue)
+        : undefined,
+      isArchived: scenario.isArchived,
+      createdAt: new Date(scenario.createdAt),
+      lastRunAt: scenario.lastRunAt ? new Date(scenario.lastRunAt) : null,
+    },
+  });
+  return scenarioRowToRecord(row);
+}
+
+export async function pgGetSimulationScenarioById(
+  prisma: PrismaClient,
+  id: string
+): Promise<SimulationScenarioRecord | null> {
+  const row = await prisma.simulationScenario.findUnique({ where: { id } });
+  return row ? scenarioRowToRecord(row) : null;
+}
+
+export async function pgListSimulationScenarios(
+  prisma: PrismaClient,
+  userId: string,
+  farmId?: string,
+  includeArchived = false
+): Promise<SimulationScenarioRecord[]> {
+  const rows = await prisma.simulationScenario.findMany({
+    where: {
+      userId,
+      ...(farmId ? { farmId } : {}),
+      ...(includeArchived ? {} : { isArchived: false }),
+    },
+    orderBy: [{ updatedAt: "desc" }],
+    take: 100,
+  });
+  return rows.map(scenarioRowToRecord);
+}
+
+export async function pgDeleteSimulationScenario(
+  prisma: PrismaClient,
+  id: string,
+  userId: string
+): Promise<boolean> {
+  const res = await prisma.simulationScenario.deleteMany({
+    where: { id, userId },
+  });
+  return res.count > 0;
+}
+
+export async function pgUpsertMLModelMetadata(
+  prisma: PrismaClient,
+  meta: MLModelMetadataRecord
+): Promise<MLModelMetadataRecord> {
+  const row = await prisma.mLModelMetadata.upsert({
+    where: { modelName: meta.modelName },
+    update: {
+      algorithm: meta.algorithm,
+      version: meta.version,
+      targetVariable: meta.targetVariable,
+      mae: meta.mae,
+      rmse: meta.rmse,
+      r2: meta.r2,
+      trainSamples: meta.trainSamples,
+      testSamples: meta.testSamples,
+      featureNames: meta.featureNames as unknown as Prisma.InputJsonValue,
+      trainedAt: new Date(meta.trainedAt),
+    },
+    create: {
+      id: meta.id,
+      modelName: meta.modelName,
+      algorithm: meta.algorithm,
+      version: meta.version,
+      targetVariable: meta.targetVariable,
+      mae: meta.mae,
+      rmse: meta.rmse,
+      r2: meta.r2,
+      trainSamples: meta.trainSamples,
+      testSamples: meta.testSamples,
+      featureNames: meta.featureNames as unknown as Prisma.InputJsonValue,
+      trainedAt: new Date(meta.trainedAt),
+    },
+  });
+  return mlMetaRowToRecord(row);
+}
+
+export async function pgListMLModelMetadata(
+  prisma: PrismaClient
+): Promise<MLModelMetadataRecord[]> {
+  const rows = await prisma.mLModelMetadata.findMany({
+    orderBy: { modelName: "asc" },
+  });
+  return rows.map(mlMetaRowToRecord);
+}
+
+export async function pgInsertMLPredictionLog(
+  prisma: PrismaClient,
+  log: MLPredictionLogRecord
+): Promise<void> {
+  await prisma.mLPredictionLog.create({
+    data: {
+      id: log.id,
+      farmId: log.farmId,
+      modelName: log.modelName,
+      inputSummary: log.inputSummary as unknown as Prisma.InputJsonValue,
+      outputSummary: log.outputSummary as unknown as Prisma.InputJsonValue,
+      provenance: log.provenance,
+      createdAt: new Date(log.createdAt),
+    },
   });
 }

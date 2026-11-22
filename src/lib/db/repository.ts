@@ -1,16 +1,25 @@
+import crypto from "node:crypto";
 import * as turf from "@turf/turf";
 import type {
   AIChatMessageRecord,
   CompleteFarmAnalysisBundle,
+  FarmBrainAnalysisRecord,
   FarmCropRecord,
   FarmerProfileRecord,
   FarmerWaterSourceRecord,
   FarmPin,
   FarmRecord,
+  FarmSensorsBundle,
   FeasibilityReportPayload,
   GeoPolygon,
   IrrigationMethod,
+  MLModelMetadataRecord,
+  MLPredictionLogRecord,
   OnboardingProgressRecord,
+  SensorDevicePublicRecord,
+  SensorDeviceRecord,
+  SensorReadingRecord,
+  SimulationScenarioRecord,
   SoilTextureClass,
   UserAccountRecord,
 } from "@/types/agri";
@@ -19,17 +28,34 @@ import { readLocalDb, writeLocalDb } from "./local-store";
 import { getPrismaClient } from "./prisma";
 import {
   DatabaseWriteError,
+  isMissingFarmBrainTableError,
+  isMissingSensorTableError,
   isUniqueViolation,
   pgAppendConversation,
+  pgCreateSensorDevice,
+  pgDeleteSimulationScenario,
+  pgFindSensorDeviceByTokenHash,
   pgGetConversation,
   pgGetFarm,
+  pgGetFarmSensorsBundle,
+  pgGetLatestFarmBrainAnalysis,
+  pgGetSimulationScenarioById,
+  pgInsertMLPredictionLog,
+  pgInsertSensorReadings,
+  pgListFarmBrainHistory,
   pgListFarms,
+  pgListMLModelMetadata,
   pgListReports,
+  pgListSimulationScenarios,
+  pgRevokeSensorDevice,
   pgSaveFarm,
+  pgSaveFarmBrainAnalysis,
   pgSaveProfile,
   pgSaveProgress,
   pgSaveReport,
+  pgSaveSimulationScenario,
   pgSaveUser,
+  pgUpsertMLModelMetadata,
   profileRowToRecord,
   progressRowToRecord,
   userRowToRecord,
@@ -41,6 +67,7 @@ async function dbWrite<T>(operation: string, fn: () => Promise<T>): Promise<T> {
     return await fn();
   } catch (err) {
     if (err instanceof Error && err.message === "DUPLICATE_EMAIL") throw err;
+    if (isMissingSensorTableError(err) || isMissingFarmBrainTableError(err)) throw err;
     console.error(`[db] ${operation} failed`, err);
     throw new DatabaseWriteError(operation);
   }
@@ -888,4 +915,574 @@ export async function processSyncOperations(
   }
 
   return results;
+}
+
+// ---------------------------------------------------------------------------
+// ESP32 Sensor Devices & Readings
+// ---------------------------------------------------------------------------
+
+export function hashDeviceToken(rawKey: string): string {
+  return crypto.createHash("sha256").update(rawKey).digest("hex");
+}
+
+function generateDeviceKey(): string {
+  return `tp_dev_${crypto.randomBytes(24).toString("hex")}`;
+}
+
+function toPublicDevice(
+  device: SensorDeviceRecord,
+  latestReading: SensorReadingRecord | null
+): SensorDevicePublicRecord {
+  return {
+    id: device.id,
+    farmId: device.farmId,
+    name: device.name,
+    createdAt: device.createdAt,
+    lastSeenAt: device.lastSeenAt,
+    revokedAt: device.revokedAt,
+    latestReading,
+  };
+}
+
+export async function createSensorDevice(params: {
+  farmId: string;
+  ownerUserId: string;
+  name: string;
+}): Promise<{ device: SensorDevicePublicRecord; deviceKey: string }> {
+  const farm = await getFarmById(params.farmId, params.ownerUserId);
+  if (!farm) {
+    throw new Error("Farm not found");
+  }
+
+  const deviceKey = generateDeviceKey();
+  const device: SensorDeviceRecord = {
+    id: `dev_${Date.now()}_${crypto.randomBytes(4).toString("hex")}`,
+    farmId: farm.id,
+    name: params.name.trim() || "Field sensor",
+    tokenHash: hashDeviceToken(deviceKey),
+    createdAt: new Date().toISOString(),
+    lastSeenAt: null,
+    revokedAt: null,
+  };
+
+  const prisma = getPrismaClient();
+  if (prisma) {
+    try {
+      const saved = await pgCreateSensorDevice(prisma, device);
+      return { device: toPublicDevice(saved, null), deviceKey };
+    } catch (err) {
+      if (!isMissingSensorTableError(err)) {
+        throw err;
+      }
+    }
+  }
+
+  const db = readLocalDb();
+  const list = db.sensorDevices ?? [];
+  list.push(device);
+  db.sensorDevices = list;
+  writeLocalDb(db);
+  return { device: toPublicDevice(device, null), deviceKey };
+}
+
+export async function revokeSensorDevice(params: {
+  farmId: string;
+  deviceId: string;
+  ownerUserId: string;
+}): Promise<boolean> {
+  const farm = await getFarmById(params.farmId, params.ownerUserId);
+  if (!farm) return false;
+
+  const revokedAt = new Date().toISOString();
+  const prisma = getPrismaClient();
+  if (prisma) {
+    try {
+      return await pgRevokeSensorDevice(prisma, farm.id, params.deviceId, revokedAt);
+    } catch (err) {
+      if (!isMissingSensorTableError(err)) {
+        throw err;
+      }
+    }
+  }
+
+  const db = readLocalDb();
+  const list = db.sensorDevices ?? [];
+  const target = list.find(
+    (d) => d.id === params.deviceId && d.farmId === farm.id && !d.revokedAt
+  );
+  if (!target) return false;
+  target.revokedAt = revokedAt;
+  writeLocalDb(db);
+  return true;
+}
+
+export async function authenticateSensorDevice(
+  rawKey: string
+): Promise<SensorDeviceRecord | null> {
+  const trimmed = rawKey.trim();
+  if (!trimmed) return null;
+  const tokenHash = hashDeviceToken(trimmed);
+
+  const prisma = getPrismaClient();
+  if (prisma) {
+    try {
+      const row = await pgFindSensorDeviceByTokenHash(prisma, tokenHash);
+      if (row) {
+        return row.revokedAt ? null : row;
+      }
+    } catch (err) {
+      if (!isMissingSensorTableError(err)) {
+        throw err;
+      }
+    }
+  }
+
+  const db = readLocalDb();
+  const local = (db.sensorDevices ?? []).find((d) => d.tokenHash === tokenHash);
+  if (!local || local.revokedAt) return null;
+  return local;
+}
+
+export interface IngestSensorReadingInput {
+  recordedAt?: string;
+  ageSeconds?: number;
+  airTempC?: number | null;
+  airHumidityPct?: number | null;
+  soilMoisturePct?: number | null;
+  soilRaw?: number | null;
+  waterLevelPct?: number | null;
+  waterRaw?: number | null;
+  pumpOn?: boolean;
+  soilFault?: boolean;
+}
+
+export async function ingestSensorReadings(params: {
+  device: SensorDeviceRecord;
+  readings: IngestSensorReadingInput[];
+}): Promise<SensorReadingRecord[]> {
+  const nowMs = Date.now();
+  const receivedAt = new Date(nowMs).toISOString();
+
+  const records: SensorReadingRecord[] = params.readings.map((input, idx) => {
+    const soilRaw = input.soilRaw ?? null;
+    const isSoilFault = Boolean(
+      input.soilFault || (soilRaw !== null && soilRaw >= 4000)
+    );
+    let recordedAt = receivedAt;
+    if (input.recordedAt) {
+      recordedAt = new Date(input.recordedAt).toISOString();
+    } else if (typeof input.ageSeconds === "number" && Number.isFinite(input.ageSeconds)) {
+      recordedAt = new Date(nowMs - Math.max(0, input.ageSeconds) * 1000).toISOString();
+    }
+
+    return {
+      id: `sr_${nowMs}_${idx}_${crypto.randomBytes(3).toString("hex")}`,
+      deviceId: params.device.id,
+      farmId: params.device.farmId,
+      recordedAt,
+      receivedAt,
+      airTempC: input.airTempC ?? null,
+      airHumidityPct: input.airHumidityPct ?? null,
+      // Store fault-flagged soil reading as soilFault=true and soilMoisturePct=null (never 0%)
+      soilMoisturePct: isSoilFault ? null : (input.soilMoisturePct ?? null),
+      soilRaw,
+      waterLevelPct: input.waterLevelPct ?? null,
+      waterRaw: input.waterRaw ?? null,
+      pumpOn: Boolean(input.pumpOn),
+      soilFault: isSoilFault,
+    };
+  });
+
+  const prisma = getPrismaClient();
+  if (prisma) {
+    try {
+      return await pgInsertSensorReadings(
+        prisma,
+        params.device.id,
+        params.device.farmId,
+        records,
+        receivedAt
+      );
+    } catch (err) {
+      if (!isMissingSensorTableError(err)) {
+        throw err;
+      }
+    }
+  }
+
+  const db = readLocalDb();
+  const existingReadings = db.sensorReadings ?? [];
+  existingReadings.push(...records);
+  db.sensorReadings = existingReadings;
+  const targetDevice = (db.sensorDevices ?? []).find((d) => d.id === params.device.id);
+  if (targetDevice) {
+    targetDevice.lastSeenAt = receivedAt;
+  }
+  writeLocalDb(db);
+  return records;
+}
+
+export async function getFarmSensorsBundle(
+  farmId: string,
+  ownerUserId?: string
+): Promise<FarmSensorsBundle | null> {
+  const farm = await getFarmById(farmId, ownerUserId);
+  if (!farm) return null;
+
+  const since24hMs = Date.now() - 24 * 60 * 60 * 1000;
+  const since24hIso = new Date(since24hMs).toISOString();
+
+  const prisma = getPrismaClient();
+  if (prisma) {
+    try {
+      return await pgGetFarmSensorsBundle(prisma, farm.id, since24hIso);
+    } catch (err) {
+      if (!isMissingSensorTableError(err)) {
+        throw err;
+      }
+    }
+  }
+
+  const db = readLocalDb();
+  const activeDevices = (db.sensorDevices ?? []).filter(
+    (d) => d.farmId === farm.id && !d.revokedAt
+  );
+  if (activeDevices.length === 0) {
+    return { farmId: farm.id, devices: [], latestReading: null, readings24h: [] };
+  }
+
+  const activeIds = new Set(activeDevices.map((d) => d.id));
+  const allFarmReadings = (db.sensorReadings ?? [])
+    .filter((r) => r.farmId === farm.id && activeIds.has(r.deviceId))
+    .sort((a, b) => new Date(b.recordedAt).getTime() - new Date(a.recordedAt).getTime());
+
+  const readings24h = allFarmReadings.filter(
+    (r) => new Date(r.recordedAt).getTime() >= since24hMs
+  );
+
+  const devices: SensorDevicePublicRecord[] = activeDevices.map((d) => ({
+    ...toPublicDevice(
+      d,
+      allFarmReadings.find((r) => r.deviceId === d.id) ?? null
+    ),
+  }));
+
+  return {
+    farmId: farm.id,
+    devices,
+    latestReading: allFarmReadings[0] ?? null,
+    readings24h,
+  };
+}
+
+export async function ingestOwnerBluetoothReading(params: {
+  farmId: string;
+  ownerUserId: string;
+  deviceName?: string;
+  reading: IngestSensorReadingInput;
+}): Promise<FarmSensorsBundle> {
+  const farm = await getFarmById(params.farmId, params.ownerUserId);
+  if (!farm) {
+    throw new Error("Farm not found");
+  }
+
+  const targetName = params.deviceName?.trim() || "TerraPulse-Node (Bluetooth)";
+  const bundle = await getFarmSensorsBundle(farm.id, params.ownerUserId);
+  const existing = bundle?.devices.find((d) => d.name === targetName) ?? null;
+
+  let deviceId: string;
+  if (existing) {
+    deviceId = existing.id;
+  } else {
+    const created = await createSensorDevice({
+      farmId: farm.id,
+      ownerUserId: params.ownerUserId,
+      name: targetName,
+    });
+    deviceId = created.device.id;
+  }
+
+  await ingestSensorReadings({
+    device: {
+      id: deviceId,
+      farmId: farm.id,
+      name: targetName,
+      tokenHash: "",
+      createdAt: new Date().toISOString(),
+      lastSeenAt: null,
+      revokedAt: null,
+    },
+    readings: [params.reading],
+  });
+
+  return (await getFarmSensorsBundle(farm.id, params.ownerUserId))!;
+}
+
+// ---------------------------------------------------------------------------
+// FarmBrain Analyses, Simulator Scenarios & ML Metadata Repository
+// ---------------------------------------------------------------------------
+
+export async function saveFarmBrainAnalysis(
+  record: FarmBrainAnalysisRecord
+): Promise<FarmBrainAnalysisRecord> {
+  const prisma = getPrismaClient();
+  if (prisma) {
+    try {
+      await dbWrite(`save FarmBrain analysis ${record.id}`, async () => {
+        await ensureUserRow(record.userId);
+        await pgSaveFarmBrainAnalysis(prisma, record);
+      });
+      // Mirror in local snapshot for instant offline availability
+      const db = readLocalDb();
+      db.farmBrainAnalyses = [
+        record,
+        ...(db.farmBrainAnalyses ?? []).filter((a) => a.id !== record.id),
+      ].slice(0, 60);
+      writeLocalDb(db);
+      return record;
+    } catch (err) {
+      if (!isMissingFarmBrainTableError(err)) {
+        throw err;
+      }
+    }
+  }
+
+  const db = readLocalDb();
+  db.farmBrainAnalyses = [
+    record,
+    ...(db.farmBrainAnalyses ?? []).filter((a) => a.id !== record.id),
+  ].slice(0, 60);
+  writeLocalDb(db);
+  return record;
+}
+
+export async function getLatestFarmBrainAnalysis(
+  farmId: string,
+  ownerUserId?: string
+): Promise<FarmBrainAnalysisRecord | null> {
+  const farm = await getFarmById(farmId, ownerUserId);
+  if (!farm) return null;
+
+  const prisma = getPrismaClient();
+  if (prisma) {
+    try {
+      const pgRow = await pgGetLatestFarmBrainAnalysis(prisma, farm.id);
+      if (pgRow) return pgRow;
+    } catch (err) {
+      if (!isMissingFarmBrainTableError(err)) {
+        throw err;
+      }
+    }
+  }
+
+  const db = readLocalDb();
+  const list = (db.farmBrainAnalyses ?? [])
+    .filter((a) => a.farmId === farm.id)
+    .sort(
+      (a, b) =>
+        b.version - a.version ||
+        new Date(b.generatedAt).getTime() - new Date(a.generatedAt).getTime()
+    );
+  return list[0] ?? null;
+}
+
+export async function listFarmBrainHistory(
+  farmId: string,
+  ownerUserId?: string,
+  limit = 20
+): Promise<FarmBrainAnalysisRecord[]> {
+  const farm = await getFarmById(farmId, ownerUserId);
+  if (!farm) return [];
+
+  const prisma = getPrismaClient();
+  if (prisma) {
+    try {
+      const rows = await pgListFarmBrainHistory(prisma, farm.id, limit);
+      if (rows.length > 0) return rows;
+    } catch (err) {
+      if (!isMissingFarmBrainTableError(err)) {
+        throw err;
+      }
+    }
+  }
+
+  const db = readLocalDb();
+  return (db.farmBrainAnalyses ?? [])
+    .filter((a) => a.farmId === farm.id)
+    .sort(
+      (a, b) =>
+        b.version - a.version ||
+        new Date(b.generatedAt).getTime() - new Date(a.generatedAt).getTime()
+    )
+    .slice(0, limit);
+}
+
+export async function saveSimulationScenario(
+  scenario: SimulationScenarioRecord
+): Promise<SimulationScenarioRecord> {
+  const prisma = getPrismaClient();
+  if (prisma) {
+    try {
+      await dbWrite(`save simulation scenario ${scenario.id}`, async () => {
+        await ensureUserRow(scenario.userId);
+        await pgSaveSimulationScenario(prisma, scenario);
+      });
+      const db = readLocalDb();
+      db.simulationScenarios = [
+        scenario,
+        ...(db.simulationScenarios ?? []).filter((s) => s.id !== scenario.id),
+      ].slice(0, 100);
+      writeLocalDb(db);
+      return scenario;
+    } catch (err) {
+      if (!isMissingFarmBrainTableError(err)) {
+        throw err;
+      }
+    }
+  }
+
+  const db = readLocalDb();
+  db.simulationScenarios = [
+    scenario,
+    ...(db.simulationScenarios ?? []).filter((s) => s.id !== scenario.id),
+  ].slice(0, 100);
+  writeLocalDb(db);
+  return scenario;
+}
+
+export async function getSimulationScenario(
+  scenarioId: string,
+  ownerUserId?: string
+): Promise<SimulationScenarioRecord | null> {
+  const prisma = getPrismaClient();
+  if (prisma) {
+    try {
+      const row = await pgGetSimulationScenarioById(prisma, scenarioId);
+      if (row) {
+        if (ownerUserId && row.userId !== ownerUserId) return null;
+        return row;
+      }
+    } catch (err) {
+      if (!isMissingFarmBrainTableError(err)) {
+        throw err;
+      }
+    }
+  }
+
+  const db = readLocalDb();
+  const found = (db.simulationScenarios ?? []).find((s) => s.id === scenarioId) ?? null;
+  if (!found) return null;
+  if (ownerUserId && found.userId !== ownerUserId) return null;
+  return found;
+}
+
+export async function listSimulationScenarios(
+  userId: string,
+  farmId?: string,
+  includeArchived = false
+): Promise<SimulationScenarioRecord[]> {
+  const prisma = getPrismaClient();
+  if (prisma) {
+    try {
+      const rows = await pgListSimulationScenarios(prisma, userId, farmId, includeArchived);
+      if (rows.length > 0) return rows;
+    } catch (err) {
+      if (!isMissingFarmBrainTableError(err)) {
+        throw err;
+      }
+    }
+  }
+
+  const db = readLocalDb();
+  return (db.simulationScenarios ?? [])
+    .filter((s) => {
+      if (s.userId !== userId) return false;
+      if (farmId && s.farmId !== farmId) return false;
+      if (!includeArchived && s.isArchived) return false;
+      return true;
+    })
+    .sort((a, b) => new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime());
+}
+
+export async function deleteSimulationScenario(
+  scenarioId: string,
+  userId: string
+): Promise<boolean> {
+  let deletedInPg = false;
+  const prisma = getPrismaClient();
+  if (prisma) {
+    try {
+      deletedInPg = await pgDeleteSimulationScenario(prisma, scenarioId, userId);
+    } catch (err) {
+      if (!isMissingFarmBrainTableError(err)) {
+        throw err;
+      }
+    }
+  }
+
+  const db = readLocalDb();
+  const prevLen = (db.simulationScenarios ?? []).length;
+  db.simulationScenarios = (db.simulationScenarios ?? []).filter(
+    (s) => !(s.id === scenarioId && s.userId === userId)
+  );
+  const deletedLocal = db.simulationScenarios.length < prevLen;
+  if (deletedLocal) {
+    writeLocalDb(db);
+  }
+  return deletedInPg || deletedLocal;
+}
+
+export async function upsertMLModelMetadata(
+  meta: MLModelMetadataRecord
+): Promise<MLModelMetadataRecord> {
+  const prisma = getPrismaClient();
+  if (prisma) {
+    try {
+      await dbWrite(`upsert ML metadata ${meta.modelName}`, () =>
+        pgUpsertMLModelMetadata(prisma, meta)
+      );
+    } catch (err) {
+      if (!isMissingFarmBrainTableError(err)) {
+        throw err;
+      }
+    }
+  }
+  const db = readLocalDb();
+  db.mlModelMetadata = [
+    meta,
+    ...(db.mlModelMetadata ?? []).filter((m) => m.modelName !== meta.modelName),
+  ];
+  writeLocalDb(db);
+  return meta;
+}
+
+export async function listMLModelMetadata(): Promise<MLModelMetadataRecord[]> {
+  const prisma = getPrismaClient();
+  if (prisma) {
+    try {
+      const rows = await pgListMLModelMetadata(prisma);
+      if (rows.length > 0) return rows;
+    } catch (err) {
+      if (!isMissingFarmBrainTableError(err)) {
+        throw err;
+      }
+    }
+  }
+  return readLocalDb().mlModelMetadata ?? [];
+}
+
+export async function logMLPrediction(log: MLPredictionLogRecord): Promise<void> {
+  const prisma = getPrismaClient();
+  if (prisma) {
+    try {
+      await pgInsertMLPredictionLog(prisma, log);
+    } catch (err) {
+      if (!isMissingFarmBrainTableError(err)) {
+        throw err;
+      }
+    }
+  }
+  const db = readLocalDb();
+  db.mlPredictionLogs = [log, ...(db.mlPredictionLogs ?? [])].slice(0, 200);
+  writeLocalDb(db);
 }

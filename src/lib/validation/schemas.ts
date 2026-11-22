@@ -237,3 +237,176 @@ export const aiChatRequestSchema = z.object({
   groqApiKeyOverride: z.string().max(256).optional(),
   groqModelOverride: z.string().max(128).optional(),
 });
+
+export const createSensorDeviceSchema = z.object({
+  name: z.string().trim().min(1, "Sensor name is required").max(80).default("Field sensor"),
+});
+
+export const singleSensorReadingInputSchema = z
+  .object({
+    recordedAt: z.string().datetime().optional(),
+    ageSeconds: z.number().min(0).max(7 * 86400).optional(),
+    airTempC: z.number().finite().min(-40).max(85).nullable().optional(),
+    airHumidityPct: z.number().finite().min(0).max(100).nullable().optional(),
+    soilMoisturePct: z.number().finite().min(0).max(100).nullable().optional(),
+    soilRaw: z.number().int().min(0).max(4095).nullable().optional(),
+    waterLevelPct: z.number().finite().min(0).max(100).nullable().optional(),
+    waterRaw: z.number().int().min(0).max(4095).nullable().optional(),
+    pumpOn: z.boolean().optional(),
+    soilFault: z.boolean().optional(),
+  })
+  .superRefine((val, ctx) => {
+    const hasMetric =
+      val.airTempC !== undefined ||
+      val.airHumidityPct !== undefined ||
+      val.soilMoisturePct !== undefined ||
+      val.soilRaw !== undefined ||
+      val.waterLevelPct !== undefined ||
+      val.waterRaw !== undefined ||
+      val.pumpOn !== undefined ||
+      val.soilFault !== undefined;
+    if (!hasMetric) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: "At least one sensor measurement must be provided",
+      });
+    }
+  })
+  .transform((val) => {
+    const isSoilFault = Boolean(
+      val.soilFault || (val.soilRaw !== null && val.soilRaw !== undefined && val.soilRaw >= 4000)
+    );
+    return {
+      ...val,
+      pumpOn: Boolean(val.pumpOn),
+      soilFault: isSoilFault,
+      soilMoisturePct: isSoilFault ? null : (val.soilMoisturePct ?? null),
+    };
+  });
+
+export const sensorReadingsPayloadSchema = z
+  .union([
+    singleSensorReadingInputSchema.transform((item) => [item]),
+    z
+      .array(singleSensorReadingInputSchema)
+      .min(1, "At least one reading is required")
+      .max(50, "Cannot accept more than 50 readings per batch"),
+    z.object({
+      readings: z
+        .array(singleSensorReadingInputSchema)
+        .min(1, "At least one reading is required")
+        .max(50, "Cannot accept more than 50 readings per batch"),
+    }).transform((obj) => obj.readings),
+  ]);
+
+// ---------------------------------------------------------------------------
+// FarmBrain & Decision Simulator Schemas
+// ---------------------------------------------------------------------------
+
+export const farmBrainAnalyzeSchema = z.object({
+  farmId: z.string().min(1, "farmId is required"),
+  waterTariffTndPerM3: z.coerce.number().min(0).max(50).nullable().optional(),
+  electricityTariffTndPerKwh: z.coerce.number().min(0).max(10).nullable().optional(),
+});
+
+export const simulationScenarioTypeEnum = z.enum([
+  "WATER_SHORTAGE",
+  "CHANGE_CROP",
+  "WEATHER_CLIMATE",
+  "IRRIGATION_STRATEGY",
+  "FARM_EXPANSION",
+]);
+
+export const simulationInputsSchema = z.object({
+  scenarioType: simulationScenarioTypeEnum,
+  availableWaterLitres: z.coerce.number().min(0).max(50_000_000).optional(),
+  targetPlotId: z.string().max(120).optional(),
+  newCropCode: z.string().min(1).max(60).optional(),
+  tempDeltaC: z.coerce.number().min(-10).max(12).optional(),
+  rainChangePct: z.coerce.number().min(-100).max(300).optional(),
+  humidityDeltaPct: z.coerce.number().min(-40).max(40).optional(),
+  horizonDays: z.coerce.number().int().min(7).max(365).optional(),
+  strategy: z
+    .enum(["CURRENT", "DAILY", "EVERY_2_DAYS", "MOISTURE_TRIGGER", "AI_OPTIMIZED"])
+    .optional(),
+  moistureThresholdPct: z.coerce.number().min(10).max(90).optional(),
+  addedAreaHa: z.coerce.number().min(0.05).max(500).optional(),
+  addedCropCode: z.string().min(1).max(60).optional(),
+  addedIrrigationMethod: z
+    .enum([
+      "DRIP",
+      "SUBSURFACE_DRIP",
+      "SPRINKLER",
+      "CENTER_PIVOT",
+      "FURROW",
+      "MANUAL",
+      "NONE",
+      "OTHER",
+    ])
+    .optional(),
+  waterTariffTndPerM3: z.coerce.number().min(0).max(50).nullable().optional(),
+  electricityTariffTndPerKwh: z.coerce.number().min(0).max(10).nullable().optional(),
+});
+
+export const createSimulationScenarioSchema = z.object({
+  farmId: z.string().min(1),
+  name: z.string().trim().min(1).max(140),
+  inputs: simulationInputsSchema,
+  runImmediately: z.boolean().default(true),
+});
+
+export const updateSimulationScenarioSchema = z.object({
+  name: z.string().trim().min(1).max(140).optional(),
+  inputs: simulationInputsSchema.optional(),
+  isArchived: z.boolean().optional(),
+});
+
+export const compareScenariosSchema = z.object({
+  farmId: z.string().min(1),
+  scenarioIds: z.array(z.string().min(1)).min(2).max(10),
+});
+
+export const predictSoilMoistureSchema = z.object({
+  farmId: z.string().optional(),
+  initialMoisturePct: z.coerce.number().min(0).max(100).default(50),
+  kc: z.coerce.number().min(0.2).max(1.5).default(0.9),
+  tawMmM: z.coerce.number().min(50).max(320).default(160),
+  infiltrationMmHr: z.coerce.number().min(1).max(100).default(16),
+});
+
+export const predictWaterDemandSchema = z.object({
+  soilMoisturePct: z.coerce.number().min(0).max(100),
+  tempMaxC: z.coerce.number().min(-15).max(60),
+  humidityPct: z.coerce.number().min(0).max(100),
+  rainMm: z.coerce.number().min(0).max(500).default(0),
+  et0Mm: z.coerce.number().min(0).max(20),
+  kc: z.coerce.number().min(0.2).max(1.5).default(0.9),
+  tawMmM: z.coerce.number().min(50).max(320).default(160),
+  dayOfYear: z.coerce.number().int().min(1).max(366).default(165),
+});
+
+export const optimizeWaterAllocationSchema = z.object({
+  availableLitres: z.coerce.number().min(0).max(100_000_000),
+  plots: z
+    .array(
+      z.object({
+        plotId: z.string().min(1),
+        cropCode: z.string().min(1),
+        cropName: z.string().min(1),
+        areaHa: z.coerce.number().positive(),
+        growthStage: z.string().default("MID"),
+        dailyNeedLitres: z.coerce.number().min(0),
+        priorityWeight: z.coerce.number().positive(),
+        ky: z.coerce.number().positive().default(1.0),
+      })
+    )
+    .min(1),
+});
+
+export const simulateCropGrowthSchema = z.object({
+  cropCode: z.string().min(1),
+  dailyEt0Mm: z.array(z.coerce.number().min(0).max(25)).min(7).max(366),
+  dailyRainMm: z.array(z.coerce.number().min(0).max(300)).min(7).max(366),
+  dailyIrrigationMm: z.array(z.coerce.number().min(0).max(200)).optional(),
+  tawMmM: z.coerce.number().min(50).max(320).default(160),
+});

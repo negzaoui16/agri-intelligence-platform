@@ -5,18 +5,24 @@ import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import {
   AlertTriangle,
+  Brain,
   ChevronDown,
   FileText,
   Home,
   LogOut,
   MessageCircle,
+  Mic,
   RefreshCw,
+  SlidersHorizontal,
   Sprout,
   Tractor,
   WifiOff,
 } from "lucide-react";
 import { ThemeToggle } from "@/components/farmer/FarmerUI";
+import { TunisianVoiceGuide } from "@/components/farmer/TunisianVoiceGuide";
 import { useLanguage } from "@/components/i18n/LanguageProvider";
+import { FARMBRAIN_STRINGS } from "@/lib/i18n/farmbrain-strings";
+import { TOUR_UI_STRINGS } from "@/lib/tour/tunisian-tour-steps";
 import { fillTemplate } from "@/lib/i18n/farm-ui-strings";
 import { SCREEN_STRINGS } from "@/lib/i18n/screen-strings";
 import { Button } from "@/components/ui/primitives";
@@ -145,7 +151,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   return (
     <div className="min-h-screen flex flex-col lg:flex-row bg-[var(--tp-bg-F6F4EE)] text-[var(--tp-fg-17251C)]">
       {/* Desktop Left Sidebar */}
-      <aside className="no-print hidden lg:flex lg:w-[256px] lg:flex-col lg:fixed lg:inset-y-0 lg:start-0 border-e-[1.5px] border-[var(--tp-bd-E4DFD2)] bg-[var(--tp-bg-FFFFFF)] z-30 px-[18px] py-6 gap-[22px]">
+      <aside className="no-print hidden lg:flex lg:w-[256px] lg:flex-col lg:fixed lg:inset-y-0 lg:start-0 overflow-y-auto border-e-[1.5px] border-[var(--tp-bd-E4DFD2)] bg-[var(--tp-bg-FFFFFF)] z-30 px-[16px] py-4 gap-3.5">
         {/* Logo */}
         <div className="flex items-center gap-2.5">
           <span className="w-10 h-10 rounded-[12px] bg-[var(--tp-bg-2E6B3A)] text-white flex items-center justify-center shrink-0">
@@ -200,7 +206,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
                 href={item.href}
                 aria-current={active ? "page" : undefined}
                 className={cn(
-                  "min-h-[48px] rounded-[12px] px-3.5 flex items-center gap-3 text-[17px] transition-colors",
+                  "min-h-[42px] rounded-[12px] px-3.5 flex items-center gap-3 text-[16px] transition-colors",
                   active
                     ? "bg-[var(--tp-bg-E3EFE2)] text-[var(--tp-fg-1F4D28)] font-bold"
                     : "text-[var(--tp-fg-17251C)] font-normal hover:bg-[var(--tp-bg-F6F4EE)]"
@@ -228,7 +234,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
             href="/water"
             aria-current={pathname === "/water" ? "page" : undefined}
             className={cn(
-              "min-h-[44px] rounded-[12px] px-3.5 flex items-center justify-between gap-2 text-[16px] transition-colors",
+              "min-h-[38px] rounded-[12px] px-3.5 flex items-center justify-between gap-2 text-[15px] transition-colors",
               pathname === "/water"
                 ? "bg-[var(--tp-bg-E6EEF9)] text-[var(--tp-fg-123766)] font-bold"
                 : "text-[var(--tp-fg-17251C)] hover:bg-[var(--tp-bg-F6F4EE)]"
@@ -253,7 +259,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
             href="/solar"
             aria-current={pathname === "/solar" ? "page" : undefined}
             className={cn(
-              "min-h-[44px] rounded-[12px] px-3.5 flex items-center justify-between gap-2 text-[16px] transition-colors",
+              "min-h-[38px] rounded-[12px] px-3.5 flex items-center justify-between gap-2 text-[15px] transition-colors",
               pathname === "/solar"
                 ? "bg-[var(--tp-bg-F6ECD6)] text-[var(--tp-fg-5B3A00)] font-bold"
                 : "text-[var(--tp-fg-17251C)] hover:bg-[var(--tp-bg-F6F4EE)]"
@@ -278,7 +284,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
             href="/environmental"
             aria-current={pathname === "/environmental" ? "page" : undefined}
             className={cn(
-              "min-h-[44px] rounded-[12px] px-3.5 flex items-center justify-between gap-2 text-[16px] transition-colors",
+              "min-h-[38px] rounded-[12px] px-3.5 flex items-center justify-between gap-2 text-[15px] transition-colors",
               pathname === "/environmental"
                 ? "bg-[var(--tp-bg-E3EFE2)] text-[var(--tp-fg-1F4D28)] font-bold"
                 : "text-[var(--tp-fg-17251C)] hover:bg-[var(--tp-bg-F6F4EE)]"
@@ -300,8 +306,52 @@ export function AppShell({ children }: { children: React.ReactNode }) {
           </Link>
         </div>
 
+        {/* FARMBRAIN Group */}
+        <div className="flex flex-col gap-1">
+          <span className="text-[13px] font-bold text-[var(--tp-fg-4A5A4F)] tracking-[0.06em] px-3.5 uppercase">
+            {FARMBRAIN_STRINGS[lang].navGroupLabel}
+          </span>
+          <Link
+            href="/farmbrain"
+            aria-current={pathname === "/farmbrain" ? "page" : undefined}
+            className={cn(
+              "min-h-[38px] rounded-[12px] px-3.5 flex items-center gap-2.5 text-[15px] transition-colors",
+              pathname === "/farmbrain"
+                ? "bg-[var(--tp-bg-E3EFE2)] text-[var(--tp-fg-1F4D28)] font-bold"
+                : "text-[var(--tp-fg-17251C)] hover:bg-[var(--tp-bg-F6F4EE)]"
+            )}
+          >
+            <Brain className="w-5 h-5 shrink-0 text-[var(--tp-fg-2E6B3A)]" aria-hidden="true" />
+            <span className="truncate">{FARMBRAIN_STRINGS[lang].navFarmBrain}</span>
+          </Link>
+          <Link
+            href="/simulator"
+            aria-current={pathname === "/simulator" ? "page" : undefined}
+            className={cn(
+              "min-h-[38px] rounded-[12px] px-3.5 flex items-center gap-2.5 text-[15px] transition-colors",
+              pathname === "/simulator"
+                ? "bg-[var(--tp-bg-E3EFE2)] text-[var(--tp-fg-1F4D28)] font-bold"
+                : "text-[var(--tp-fg-17251C)] hover:bg-[var(--tp-bg-F6F4EE)]"
+            )}
+          >
+            <SlidersHorizontal
+              className="w-5 h-5 shrink-0 text-[var(--tp-fg-1D4F91)]"
+              aria-hidden="true"
+            />
+            <span className="truncate">{FARMBRAIN_STRINGS[lang].navSimulator}</span>
+          </Link>
+          <button
+            type="button"
+            onClick={() => window.dispatchEvent(new Event("tp:start-tunisian-tour"))}
+            className="min-h-[38px] rounded-[12px] px-3.5 flex items-center gap-2.5 text-[15px] text-[var(--tp-fg-1F4D28)] bg-[var(--tp-bg-E3EFE2)]/65 hover:bg-[var(--tp-bg-E3EFE2)] font-bold transition-colors text-start"
+          >
+            <Mic className="w-5 h-5 shrink-0 text-[var(--tp-fg-2E6B3A)]" aria-hidden="true" />
+            <span className="truncate">{TOUR_UI_STRINGS[lang].floatingButton}</span>
+          </button>
+        </div>
+
         {/* Footer Controls */}
-        <div className="mt-auto flex flex-col gap-3">
+        <div className="mt-auto flex flex-col gap-2">
           {(!isOnline || pendingSyncCount > 0) && (
             <div className="rounded-[12px] border border-[var(--tp-bd-E2B66B)] bg-[var(--tp-bg-FCEFD9)] px-3 py-2 flex items-center justify-between gap-2 text-[14px] text-[var(--tp-fg-6B3A00)]">
               <span className="inline-flex items-center gap-1.5 font-bold">
@@ -475,6 +525,8 @@ export function AppShell({ children }: { children: React.ReactNode }) {
           );
         })}
       </nav>
+
+      <TunisianVoiceGuide />
     </div>
   );
 }

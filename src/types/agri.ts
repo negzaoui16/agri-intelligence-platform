@@ -748,3 +748,331 @@ export interface SyncQueueItem {
   conflictServerRecord?: unknown;
   errorMessage?: string;
 }
+
+export interface SensorDeviceRecord {
+  id: string;
+  farmId: string;
+  name: string;
+  tokenHash: string;
+  createdAt: string;
+  lastSeenAt: string | null;
+  revokedAt: string | null;
+}
+
+export interface SensorReadingRecord {
+  id: string;
+  deviceId: string;
+  farmId: string;
+  recordedAt: string;
+  receivedAt: string;
+  airTempC: number | null;
+  airHumidityPct: number | null;
+  soilMoisturePct: number | null;
+  soilRaw: number | null;
+  waterLevelPct: number | null;
+  waterRaw: number | null;
+  pumpOn: boolean;
+  soilFault: boolean;
+}
+
+export interface SensorDevicePublicRecord {
+  id: string;
+  farmId: string;
+  name: string;
+  createdAt: string;
+  lastSeenAt: string | null;
+  revokedAt: string | null;
+  latestReading: SensorReadingRecord | null;
+}
+
+export interface FarmSensorsBundle {
+  farmId: string;
+  devices: SensorDevicePublicRecord[];
+  latestReading: SensorReadingRecord | null;
+  readings24h: SensorReadingRecord[];
+}
+
+// ---------------------------------------------------------------------------
+// FarmBrain Potential & Savings + Agricultural Decision Simulator
+// ---------------------------------------------------------------------------
+
+export type FarmBrainProvenance =
+  | "MEASURED"
+  | "FARMER_PROVIDED"
+  | "ESTIMATED"
+  | "SCIENTIFIC_DEFAULT";
+
+export interface FarmBrainCompletenessItem {
+  key: string;
+  label: string;
+  present: boolean;
+  provenance: FarmBrainProvenance;
+  impact: "HIGH" | "MEDIUM" | "LOW";
+  detail: string;
+}
+
+export interface FarmBrainSavingsBreakdown {
+  baselineWaterM3Yr: number;
+  smartWaterM3Yr: number;
+  waterSavedM3Yr: number;
+  waterSavedLitresYr: number;
+  waterSavingsPct: number;
+  baselineEnergyKwhYr: number;
+  smartEnergyKwhYr: number;
+  energySavedKwhYr: number;
+  energySavingsPct: number;
+  baselineManualHoursYr: number;
+  smartManualHoursYr: number;
+  timeSavedHoursYr: number;
+  baselineWaterCostTndYr: number;
+  smartWaterCostTndYr: number;
+  waterCostSavedTndYr: number;
+  baselineEnergyCostTndYr: number;
+  smartEnergyCostTndYr: number;
+  energyCostSavedTndYr: number;
+  totalEstimatedSavingsTndYr: number;
+  solarCoversPumpElectricity: boolean;
+  electricityTariffTndPerKwh: number | null;
+  waterTariffTndPerM3: number | null;
+  methodologyNotes: string[];
+}
+
+export interface FarmBrainVerifiedSavingsTracking {
+  tier: "INITIAL_PROJECTION" | "SENSOR_UPDATED_PROJECTION" | "VERIFIED_ACTUAL";
+  initialProjectedWaterSavedM3Yr: number;
+  sensorUpdatedWaterSavedM3Yr: number | null;
+  verifiedActualWaterSavedM3: number | null;
+  verifiedActualEnergySavedKwh: number | null;
+  verifiedActualSavingsTnd: number | null;
+  observedPumpHours24h: number;
+  observedPumpCycles24h: number;
+  freshSensorUsed: boolean;
+  lastSensorAt: string | null;
+  explanation: string;
+}
+
+export interface FarmBrainDailyMoistureForecastPoint {
+  dayIndex: number;
+  date: string;
+  expectedMoisturePct: number;
+  lowerBandPct: number;
+  upperBandPct: number;
+  rainMm: number;
+  et0Mm: number;
+  recommendedIrrigationMm: number;
+  method: "ML_RANDOM_FOREST" | "PHYSICS_WATER_BALANCE";
+}
+
+export interface FarmBrainPlotBreakdown {
+  plotId: string;
+  cropCode: string;
+  cropName: string;
+  areaHa: number;
+  growthStage: string;
+  irrigationMethod: IrrigationMethod;
+  baselineWaterM3Yr: number;
+  smartWaterM3Yr: number;
+  waterSavedM3Yr: number;
+  efficiencyGainPct: number;
+  suitabilityScore: number;
+  yieldResponseModel: "FAO_AQUACROP_P66" | "FAO33_WATER_PRODUCTION";
+  estimatedYieldTonHa: number | null;
+  priorityScore: number;
+}
+
+export interface FarmBrainExplainableAdvice {
+  id: string;
+  priority: "HIGH" | "MEDIUM" | "LOW";
+  whatIsHappening: string;
+  why: string;
+  whatToDo: string;
+  estimatedImpact?: string;
+  provenance: FarmBrainProvenance;
+}
+
+export interface FarmBrainAnalysisRecord {
+  id: string;
+  farmId: string;
+  userId: string;
+  version: number;
+  dataCompletenessPct: number;
+  completenessItems: FarmBrainCompletenessItem[];
+  savings: FarmBrainSavingsBreakdown;
+  verifiedTracking: FarmBrainVerifiedSavingsTracking;
+  soilMoistureForecast7d: FarmBrainDailyMoistureForecastPoint[];
+  plotBreakdowns: FarmBrainPlotBreakdown[];
+  recommendations: FarmBrainExplainableAdvice[];
+  soilAnomalyDetected: boolean;
+  soilAnomalyReason: string | null;
+  mlModelsUsed: Array<{
+    modelName: string;
+    algorithm: string;
+    validationR2: number | null;
+    validationMae: number | null;
+    source: "ARTIFACT_MODEL" | "PYTHON_SERVICE" | "PHYSICS_FALLBACK";
+  }>;
+  assumptions: string[];
+  limitations: string[];
+  generatedAt: string;
+  updatedAt: string;
+}
+
+export type SimulationScenarioType =
+  | "WATER_SHORTAGE"
+  | "CHANGE_CROP"
+  | "WEATHER_CLIMATE"
+  | "IRRIGATION_STRATEGY"
+  | "FARM_EXPANSION";
+
+export type IrrigationScheduleStrategy =
+  | "CURRENT"
+  | "DAILY"
+  | "EVERY_2_DAYS"
+  | "MOISTURE_TRIGGER"
+  | "AI_OPTIMIZED";
+
+export interface SimulationScenarioInputs {
+  scenarioType: SimulationScenarioType;
+  availableWaterLitres?: number;
+  targetPlotId?: string;
+  newCropCode?: string;
+  tempDeltaC?: number;
+  rainChangePct?: number;
+  humidityDeltaPct?: number;
+  horizonDays?: number;
+  strategy?: IrrigationScheduleStrategy;
+  moistureThresholdPct?: number;
+  addedAreaHa?: number;
+  addedCropCode?: string;
+  addedIrrigationMethod?: IrrigationMethod;
+  waterTariffTndPerM3?: number | null;
+  electricityTariffTndPerKwh?: number | null;
+}
+
+export interface SimulationPlotAllocation {
+  plotId: string;
+  cropCode: string;
+  cropName: string;
+  areaHa: number;
+  growthStage: string;
+  requestedLitresDay: number;
+  allocatedLitresDay: number;
+  fulfillmentPct: number;
+  estimatedYieldImpactPct: number;
+  priorityWeight: number;
+  rationale: string;
+}
+
+export interface SimulationDailyTrajectoryPoint {
+  day: number;
+  date: string;
+  baselineMoisturePct: number;
+  simulatedMoisturePct: number;
+  baselineIrrigationMm: number;
+  simulatedIrrigationMm: number;
+  cumulativeWaterSavedM3: number;
+}
+
+export interface SimulationScenarioResult {
+  scenarioType: SimulationScenarioType;
+  headlineOutcome: string;
+  riskLevel: "LOW" | "MODERATE" | "HIGH";
+  baselineWaterM3Season: number;
+  simulatedWaterM3Season: number;
+  waterDeltaM3Season: number;
+  waterDeltaPct: number;
+  baselineEnergyKwhSeason: number;
+  simulatedEnergyKwhSeason: number;
+  energyDeltaKwhSeason: number;
+  estimatedCostDeltaTnd: number | null;
+  estimatedYieldChangePct: number;
+  pumpOverloadRisk: boolean;
+  pumpRequiredHoursDay: number;
+  pumpMaxSafeHoursDay: number;
+  solarCoverageBeforePct: number;
+  solarCoverageAfterPct: number;
+  allocations?: SimulationPlotAllocation[];
+  trajectory30d: SimulationDailyTrajectoryPoint[];
+  cropComparison?: {
+    currentCropCode: string;
+    currentCropName: string;
+    newCropCode: string;
+    newCropName: string;
+    currentSuitabilityScore: number;
+    newSuitabilityScore: number;
+    currentCycleDays: number;
+    newCycleDays: number;
+    currentWaterM3Ha: number;
+    newWaterM3Ha: number;
+    currentEstimatedYieldTonHa: number | null;
+    newEstimatedYieldTonHa: number | null;
+    yieldModelUsed: "FAO_AQUACROP_P66" | "FAO33_WATER_PRODUCTION";
+  };
+  explanation: {
+    whatChanges: string;
+    whyItHappens: string;
+    whatFarmerShouldDo: string;
+  };
+  assumptions: string[];
+  computedAt: string;
+}
+
+export interface SimulationScenarioRecord {
+  id: string;
+  farmId: string;
+  userId: string;
+  name: string;
+  scenarioType: SimulationScenarioType;
+  inputs: SimulationScenarioInputs;
+  result: SimulationScenarioResult | null;
+  isArchived: boolean;
+  createdAt: string;
+  updatedAt: string;
+  lastRunAt: string | null;
+}
+
+export interface SimulationComparisonResult {
+  farmId: string;
+  scenarios: Array<{
+    id: string;
+    name: string;
+    scenarioType: SimulationScenarioType;
+    waterDeltaM3Season: number;
+    waterDeltaPct: number;
+    energyDeltaKwhSeason: number;
+    estimatedCostDeltaTnd: number | null;
+    estimatedYieldChangePct: number;
+    riskLevel: "LOW" | "MODERATE" | "HIGH";
+    headlineOutcome: string;
+  }>;
+  bestForWaterSavingId: string | null;
+  bestForYieldProtectionId: string | null;
+  bestOverallId: string | null;
+  summary: string;
+  generatedAt: string;
+}
+
+export interface MLModelMetadataRecord {
+  id: string;
+  modelName: string;
+  algorithm: string;
+  version: string;
+  targetVariable: string;
+  mae: number;
+  rmse: number;
+  r2: number;
+  trainSamples: number;
+  testSamples: number;
+  featureNames: string[];
+  trainedAt: string;
+}
+
+export interface MLPredictionLogRecord {
+  id: string;
+  farmId: string;
+  modelName: string;
+  inputSummary: Record<string, unknown>;
+  outputSummary: Record<string, unknown>;
+  provenance: FarmBrainProvenance;
+  createdAt: string;
+}

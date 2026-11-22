@@ -259,3 +259,10 @@ export function useSyncController() {
 
   return { syncNow, resolveConflict };
 }
+
+export {
+  useFarmSensors,
+  useCreateSensorDevice,
+  useRevokeSensorDevice,
+} from "./useFarmSensors";
+export { useBluetoothSensor } from "./useBluetoothSensor";

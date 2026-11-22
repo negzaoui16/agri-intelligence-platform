@@ -27,3 +27,12 @@ next-env.d.ts
 
 # Throwaway store used by vitest
 .data-test
+
+# Hardware secrets
+hardware/terrapulse_node/secrets.h
+secrets.h
+
+# Python caches
+__pycache__/
+*.py[cod]
+.pytest_cache/

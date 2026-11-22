@@ -3,9 +3,13 @@ import { apiError, withApiRateLimit } from "@/lib/api/http";
 import { getSessionState } from "@/lib/auth/session";
 import {
   getFarmById,
+  getFarmSensorsBundle,
+  getLatestFarmBrainAnalysis,
   saveAnalysisBundle,
+  saveFarmBrainAnalysis,
   upsertFarm,
 } from "@/lib/db/repository";
+import { computeFarmBrainAnalysis } from "@/lib/engines/farmbrain-engine";
 import { runCompleteFarmAnalysis } from "@/lib/services/analysis-orchestrator";
 import { coordinatesSchema } from "@/lib/validation/schemas";
 
@@ -32,6 +36,19 @@ export async function POST(request: Request) {
         elevationM: analysis.elevation.farmElevationM,
       });
       saveAnalysisBundle(analysis);
+      try {
+        const sensors = await getFarmSensorsBundle(farm.id, state.user.id).catch(() => null);
+        const prevBrain = await getLatestFarmBrainAnalysis(farm.id, state.user.id).catch(() => null);
+        const farmBrain = computeFarmBrainAnalysis({
+          farm,
+          analysis,
+          sensors,
+          previousVersion: prevBrain?.version ?? 0,
+        });
+        await saveFarmBrainAnalysis(farmBrain);
+      } catch {
+        // Non-fatal
+      }
       return NextResponse.json({ analysis });
     }
 

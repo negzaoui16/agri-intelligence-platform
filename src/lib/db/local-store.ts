@@ -4,10 +4,16 @@ import { hashPassword } from "@/lib/auth/session";
 import type {
   AIChatMessageRecord,
   CompleteFarmAnalysisBundle,
+  FarmBrainAnalysisRecord,
   FarmerProfileRecord,
   FarmRecord,
   FeasibilityReportPayload,
+  MLModelMetadataRecord,
+  MLPredictionLogRecord,
   OnboardingProgressRecord,
+  SensorDeviceRecord,
+  SensorReadingRecord,
+  SimulationScenarioRecord,
   UserAccountRecord,
 } from "@/types/agri";
 import { IRRIGATION_EFFICIENCY_DEFAULTS, SOIL_TEXTURE_DEFAULTS } from "./defaults";
@@ -39,6 +45,12 @@ export interface LocalDbSnapshot {
     updatedAt: string;
   }>;
   syncLog: SyncLogEntry[];
+  sensorDevices?: SensorDeviceRecord[];
+  sensorReadings?: SensorReadingRecord[];
+  farmBrainAnalyses?: FarmBrainAnalysisRecord[];
+  simulationScenarios?: SimulationScenarioRecord[];
+  mlModelMetadata?: MLModelMetadataRecord[];
+  mlPredictionLogs?: MLPredictionLogRecord[];
 }
 
 // LOCAL_DATA_DIR lets tests use their own throwaway store instead of the real .data folder
@@ -276,6 +288,12 @@ function createSeedData(): LocalDbSnapshot {
     reports: [],
     conversations: [],
     syncLog: [],
+    sensorDevices: [],
+    sensorReadings: [],
+    farmBrainAnalyses: [],
+    simulationScenarios: [],
+    mlModelMetadata: [],
+    mlPredictionLogs: [],
   };
 }
 
@@ -294,6 +312,12 @@ function normalizeSnapshot(raw: Partial<LocalDbSnapshot>): LocalDbSnapshot {
     reports: Array.isArray(raw.reports) ? raw.reports : [],
     conversations: Array.isArray(raw.conversations) ? raw.conversations : [],
     syncLog: Array.isArray(raw.syncLog) ? raw.syncLog : [],
+    sensorDevices: Array.isArray(raw.sensorDevices) ? raw.sensorDevices : [],
+    sensorReadings: Array.isArray(raw.sensorReadings) ? raw.sensorReadings : [],
+    farmBrainAnalyses: Array.isArray(raw.farmBrainAnalyses) ? raw.farmBrainAnalyses : [],
+    simulationScenarios: Array.isArray(raw.simulationScenarios) ? raw.simulationScenarios : [],
+    mlModelMetadata: Array.isArray(raw.mlModelMetadata) ? raw.mlModelMetadata : [],
+    mlPredictionLogs: Array.isArray(raw.mlPredictionLogs) ? raw.mlPredictionLogs : [],
   };
 }
 

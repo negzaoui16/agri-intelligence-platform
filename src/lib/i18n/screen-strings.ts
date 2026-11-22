@@ -209,6 +209,56 @@ export interface ScreenStrings {
   engScore: string;
   engPumpPower: string;
   engApplicationEfficiency: string;
+
+  // Live Field Sensors (Home card, modal & metrics)
+  rightNowInField: string;
+  fromYourSensor: string;
+  fromTheForecast: string;
+  sensorNotSending: string;
+  sensorNotSendingBody: string;
+  sensorConnectedWaiting: string;
+  lastUpdateJustNow: string;
+  lastUpdateMinAgo: string; // {minutes}
+  soilWetness: string;
+  soilDryLabel: string;
+  soilGoodLabel: string;
+  soilWetLabel: string;
+  soilWireProblem: string;
+  airTempAndHumidity: string;
+  airHumidityWord: string;
+  tankLevel: string;
+  tankEmptyLabel: string;
+  tankLowLabel: string;
+  tankGoodLabel: string;
+  tankFullLabel: string;
+  pumpRunningState: string;
+  pumpOnLabel: string;
+  pumpOffLabel: string;
+  noSensorYetBody: string;
+  addASensor: string;
+  addAnotherSensor: string;
+  addSensorModalTitle: string;
+  addSensorModalBody: string;
+  sensorNameLabel: string;
+  sensorNamePlaceholder: string;
+  createSensorBtn: string;
+  creatingSensor: string;
+  sensorCreateError: string;
+  sensorKeyReadyTitle: string;
+  sensorKeyOnceWarning: string;
+  sensorKeyInstructions: string;
+  copyKeyBtn: string;
+  keyCopied: string;
+  closeBtn: string;
+  removeSensorBtn: string;
+  waterTodayFromSensorDry: string;
+  skipWaterTodayFromSensorWet: string;
+  connectBluetoothBtn: string;
+  connectingBluetooth: string;
+  bluetoothConnectedBadge: string;
+  disconnectBluetoothBtn: string;
+  bluetoothConnectionFailed: string;
+  bluetoothUnsupportedHint: string;
 }
 
 const EN: ScreenStrings = {
@@ -407,6 +457,55 @@ const EN: ScreenStrings = {
   engScore: "Composite score",
   engPumpPower: "Pump power",
   engApplicationEfficiency: "application efficiency",
+
+  rightNowInField: "Right now in your field",
+  fromYourSensor: "from your sensor",
+  fromTheForecast: "from the forecast",
+  sensorNotSending: "Sensor not sending",
+  sensorNotSendingBody: "No new message for more than 15 minutes. Check its power or Wi-Fi.",
+  sensorConnectedWaiting: "Waiting for the first reading from your sensor.",
+  lastUpdateJustNow: "Last update just now",
+  lastUpdateMinAgo: "Last update {minutes} min ago",
+  soilWetness: "Soil wetness",
+  soilDryLabel: "Dry — needs water",
+  soilGoodLabel: "Good moisture",
+  soilWetLabel: "Wet — plenty of water",
+  soilWireProblem: "Soil sensor wire problem — check probe",
+  airTempAndHumidity: "Air temperature & humidity",
+  airHumidityWord: "humidity",
+  tankLevel: "Water tank",
+  tankEmptyLabel: "Empty",
+  tankLowLabel: "Low",
+  tankGoodLabel: "Enough",
+  tankFullLabel: "Full",
+  pumpRunningState: "Pump",
+  pumpOnLabel: "On now",
+  pumpOffLabel: "Off",
+  noSensorYetBody: "Connect your field box to see live soil moisture, tank water and air readings right here.",
+  addASensor: "Add a sensor",
+  addAnotherSensor: "Add another sensor",
+  addSensorModalTitle: "Add a field sensor",
+  addSensorModalBody: "Give your sensor box a simple name. You will get one private key to put inside it.",
+  sensorNameLabel: "Sensor name",
+  sensorNamePlaceholder: "For example: North trees sensor",
+  createSensorBtn: "Create key",
+  creatingSensor: "Creating key…",
+  sensorCreateError: "Could not create the sensor key. Check your connection and try again.",
+  sensorKeyReadyTitle: "Copy your sensor key now",
+  sensorKeyOnceWarning: "You will only see this key once. Copy and save it in your field box now.",
+  sensorKeyInstructions: "Paste this key next to DEVICE_KEY inside secrets.h on your sensor box.",
+  copyKeyBtn: "Copy key",
+  keyCopied: "Copied!",
+  closeBtn: "Done",
+  removeSensorBtn: "Disconnect sensor",
+  waterTodayFromSensorDry: "Water today — soil is dry",
+  skipWaterTodayFromSensorWet: "Skip watering today — soil is already wet",
+  connectBluetoothBtn: "Connect Bluetooth",
+  connectingBluetooth: "Connecting…",
+  bluetoothConnectedBadge: "Bluetooth live",
+  disconnectBluetoothBtn: "Disconnect",
+  bluetoothConnectionFailed: "Could not connect to the sensor over Bluetooth. Make sure the box is turned on and nearby.",
+  bluetoothUnsupportedHint: "Use Chrome or Edge to connect directly by Bluetooth, or add a Wi-Fi sensor key.",
 };
 
 const FR: ScreenStrings = {
@@ -606,6 +705,55 @@ const FR: ScreenStrings = {
   engScore: "Score global",
   engPumpPower: "Puissance de la pompe",
   engApplicationEfficiency: "efficience d'application",
+
+  rightNowInField: "En ce moment dans votre champ",
+  fromYourSensor: "de votre capteur",
+  fromTheForecast: "de la météo prévue",
+  sensorNotSending: "Le capteur n'envoie plus",
+  sensorNotSendingBody: "Aucun message depuis plus de 15 minutes. Vérifiez son alimentation ou le Wi-Fi.",
+  sensorConnectedWaiting: "En attente de la première mesure de votre capteur.",
+  lastUpdateJustNow: "Dernière mise à jour à l'instant",
+  lastUpdateMinAgo: "Dernière mise à jour il y a {minutes} min",
+  soilWetness: "Humidité du sol",
+  soilDryLabel: "Sec — a besoin d'eau",
+  soilGoodLabel: "Bonne humidité",
+  soilWetLabel: "Humide — assez d'eau",
+  soilWireProblem: "Problème de fil du capteur de sol — vérifiez la sonde",
+  airTempAndHumidity: "Air : chaleur et humidité",
+  airHumidityWord: "humidité",
+  tankLevel: "Réservoir d'eau",
+  tankEmptyLabel: "Vide",
+  tankLowLabel: "Bas",
+  tankGoodLabel: "Suffisant",
+  tankFullLabel: "Plein",
+  pumpRunningState: "Pompe",
+  pumpOnLabel: "Allumée",
+  pumpOffLabel: "Éteinte",
+  noSensorYetBody: "Connectez votre boîtier de terrain pour voir en direct l'humidité du sol, le niveau du réservoir et l'air.",
+  addASensor: "Ajouter un capteur",
+  addAnotherSensor: "Ajouter un autre capteur",
+  addSensorModalTitle: "Ajouter un capteur de terrain",
+  addSensorModalBody: "Donnez un nom simple à votre boîtier. Vous recevrez une clé privée à copier dedans.",
+  sensorNameLabel: "Nom du capteur",
+  sensorNamePlaceholder: "Par exemple : Capteur parcelle nord",
+  createSensorBtn: "Créer la clé",
+  creatingSensor: "Création de la clé…",
+  sensorCreateError: "Impossible de créer la clé. Vérifiez internet et réessayez.",
+  sensorKeyReadyTitle: "Copiez votre clé maintenant",
+  sensorKeyOnceWarning: "Cette clé ne s'affiche qu'une seule fois. Copiez-la et mettez-la dans votre boîtier.",
+  sensorKeyInstructions: "Collez cette clé dans DEVICE_KEY dans le fichier secrets.h du boîtier.",
+  copyKeyBtn: "Copier la clé",
+  keyCopied: "Copié !",
+  closeBtn: "Terminer",
+  removeSensorBtn: "Déconnecter",
+  waterTodayFromSensorDry: "Arroser aujourd'hui — la terre est sèche",
+  skipWaterTodayFromSensorWet: "Pas besoin d'arroser aujourd'hui — la terre est humide",
+  connectBluetoothBtn: "Connecter en Bluetooth",
+  connectingBluetooth: "Connexion…",
+  bluetoothConnectedBadge: "Bluetooth en direct",
+  disconnectBluetoothBtn: "Déconnecter",
+  bluetoothConnectionFailed: "Connexion Bluetooth impossible. Vérifiez que le boîtier est allumé et proche de vous.",
+  bluetoothUnsupportedHint: "Utilisez Chrome ou Edge pour vous connecter en Bluetooth, ou créez une clé Wi-Fi.",
 };
 
 const AR: ScreenStrings = {
@@ -803,6 +951,55 @@ const AR: ScreenStrings = {
   engScore: "النتيجة الإجمالية",
   engPumpPower: "قدرة المضخة",
   engApplicationEfficiency: "كفاءة الري",
+
+  rightNowInField: "الآن في حقلك",
+  fromYourSensor: "من حساسك",
+  fromTheForecast: "من التوقعات",
+  sensorNotSending: "الحساس لا يرسل",
+  sensorNotSendingBody: "لا توجد قراءة جديدة منذ أكثر من 15 دقيقة. افحص الكهرباء أو الواي فاي.",
+  sensorConnectedWaiting: "في انتظار أول قراءة من حساسك.",
+  lastUpdateJustNow: "آخر تحديث الآن",
+  lastUpdateMinAgo: "آخر تحديث منذ {minutes} د",
+  soilWetness: "رطوبة التربة",
+  soilDryLabel: "جافة — تحتاج إلى السقي",
+  soilGoodLabel: "رطوبة جيدة",
+  soilWetLabel: "مبلّلة — فيها ما يكفي من الماء",
+  soilWireProblem: "مشكلة في سلك حساس التربة — افحص السلك",
+  airTempAndHumidity: "حرارة الهواء ورطوبته",
+  airHumidityWord: "رطوبة",
+  tankLevel: "خزان الماء",
+  tankEmptyLabel: "فارغ",
+  tankLowLabel: "منخفض",
+  tankGoodLabel: "جيد",
+  tankFullLabel: "ممتلئ",
+  pumpRunningState: "المضخة",
+  pumpOnLabel: "تعمل الآن",
+  pumpOffLabel: "متوقفة",
+  noSensorYetBody: "اربط جهاز الحقل لترى مباشرة رطوبة التربة ومستوى الخزان وحرارة الهواء هنا.",
+  addASensor: "أضف حساساً",
+  addAnotherSensor: "أضف حساساً آخر",
+  addSensorModalTitle: "إضافة حساس للحقل",
+  addSensorModalBody: "اختر اسماً بسيطاً للجهاز. سنعطيك مفتاحاً سرياً تضعه بداخله.",
+  sensorNameLabel: "اسم الحساس",
+  sensorNamePlaceholder: "مثال: حساس قطعة الزيتون",
+  createSensorBtn: "أنشئ المفتاح",
+  creatingSensor: "جارٍ إنشاء المفتاح…",
+  sensorCreateError: "تعذّر إنشاء المفتاح. تحقق من الإنترنت وحاول مجدداً.",
+  sensorKeyReadyTitle: "انسخ مفتاح الحساس الآن",
+  sensorKeyOnceWarning: "سيظهر هذا المفتاح مرة واحدة فقط. انسخه واحفظه في جهازك الآن.",
+  sensorKeyInstructions: "ضع هذا المفتاح مقابل DEVICE_KEY في ملف secrets.h داخل الجهاز.",
+  copyKeyBtn: "نسخ المفتاح",
+  keyCopied: "تم النسخ!",
+  closeBtn: "تم",
+  removeSensorBtn: "فصل الحساس",
+  waterTodayFromSensorDry: "اسقِ اليوم — التربة جافة",
+  skipWaterTodayFromSensorWet: "لا تسقِ اليوم — التربة ما زالت رطبة",
+  connectBluetoothBtn: "اتصل عبر البلوتوث",
+  connectingBluetooth: "جارٍ الاتصال…",
+  bluetoothConnectedBadge: "بلوتوث مباشر",
+  disconnectBluetoothBtn: "قطع الاتصال",
+  bluetoothConnectionFailed: "تعذّر الاتصال بالحساس عبر البلوتوث. تأكد أن الجهاز مشتغل وقريب منك.",
+  bluetoothUnsupportedHint: "استعمل Chrome أو Edge للاتصال المباشر بالبلوتوث، أو أضف مفتاح واي فاي.",
 };
 
 export const SCREEN_STRINGS: Record<AppLanguage, ScreenStrings> = { en: EN, fr: FR, ar: AR };

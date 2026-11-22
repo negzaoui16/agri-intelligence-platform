@@ -2,6 +2,7 @@ import type {
   CompleteFarmAnalysisBundle,
   FarmerProfileRecord,
   FarmRecord,
+  FarmSensorsBundle,
   FeasibilityReportPayload,
   OnboardingProgressRecord,
   SyncQueueItem,
@@ -321,4 +322,43 @@ export async function clearUserLocalCacheOnLogout(): Promise<void> {
   await offlineDb.analyses.clear();
   await offlineDb.reports.clear();
   await offlineDb.onboarding.clear();
+}
+
+export async function cacheFarmSensorsLocally(bundle: FarmSensorsBundle): Promise<void> {
+  const key = `sensors_${bundle.farmId}`;
+  try {
+    if (offlineDb) {
+      await offlineDb.settings.put({ key, value: bundle });
+    }
+  } catch {
+    // Ignore IndexedDB quota/private-mode errors
+  }
+  try {
+    if (typeof localStorage !== "undefined") {
+      localStorage.setItem(`terrapulse_${key}`, JSON.stringify(bundle));
+    }
+  } catch {
+    // Ignore storage errors
+  }
+}
+
+export async function getLocalFarmSensors(farmId: string): Promise<FarmSensorsBundle | null> {
+  const key = `sensors_${farmId}`;
+  try {
+    if (offlineDb) {
+      const row = await offlineDb.settings.get(key);
+      if (row?.value) return row.value as FarmSensorsBundle;
+    }
+  } catch {
+    // Fallback to localStorage
+  }
+  try {
+    if (typeof localStorage !== "undefined") {
+      const raw = localStorage.getItem(`terrapulse_${key}`);
+      if (raw) return JSON.parse(raw) as FarmSensorsBundle;
+    }
+  } catch {
+    // Ignore parse errors
+  }
+  return null;
 }

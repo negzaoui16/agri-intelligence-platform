@@ -3,6 +3,7 @@ import { fullEnglishMonthName } from "@/lib/i18n/translations";
 import type {
   CompleteFarmAnalysisBundle,
   FarmRecord,
+  SensorReadingRecord,
   WaterSourceFeature,
 } from "@/types/agri";
 
@@ -86,7 +87,24 @@ export interface FarmerMetricsSnapshot {
   // Headline problem priority
   primaryProblem: "WATER_SHORT" | "NO_WATER_SOURCE" | "WEATHER_ALERT" | "SOLAR_SHORT" | "NONE";
   isRainfedCrop: boolean;
+
+  // Live field sensor integration (ESP32 node)
+  sensorReading: SensorReadingRecord | null;
+  isSensorFresh: boolean;
+  isSensorStale: boolean;
+  hasSensorFault: boolean;
+  tempSource: "SENSOR" | "FORECAST";
+  tempSourceLabel: "from your sensor" | "from the forecast";
+  waterAdviceSource: "SENSOR" | "FORECAST";
+  waterAdviceSourceLabel: "from your sensor" | "from the forecast";
+  liveSoilMoisturePct: number | null;
+  liveAirHumidityPct: number | null;
+  liveWaterLevelPct: number | null;
+  livePumpOn: boolean | null;
 }
+
+export const SENSOR_STALE_AFTER_MS = 15 * 60 * 1000;
+export const SOIL_DRY_THRESHOLD_PCT = 45;
 
 function mapSourceRow(s: WaterSourceFeature): FarmerWaterSourceRow {
   const diff = s.elevationDiffFromFarmM;
@@ -122,7 +140,9 @@ function mapSourceRow(s: WaterSourceFeature): FarmerWaterSourceRow {
 
 export function selectFarmerMetrics(
   farm: FarmRecord,
-  analysis?: CompleteFarmAnalysisBundle | null
+  analysis?: CompleteFarmAnalysisBundle | null,
+  latestSensorReading?: SensorReadingRecord | null,
+  nowMs: number = Date.now()
 ): FarmerMetricsSnapshot {
   const cropSpec = getCropSpec(farm.irrigationConfig.cropCode);
   const isRainfedCrop = farm.irrigationConfig.irrigationMethod === "NONE";
@@ -257,6 +277,50 @@ export function selectFarmerMetrics(
   else if (isSolarShortInSummer && !isRainfedCrop)
     primaryProblem = "SOLAR_SHORT";
 
+  const sensorTsMs = latestSensorReading
+    ? new Date(latestSensorReading.recordedAt || latestSensorReading.receivedAt).getTime()
+    : NaN;
+  const isSensorFresh = Boolean(
+    latestSensorReading &&
+      Number.isFinite(sensorTsMs) &&
+      nowMs - sensorTsMs < SENSOR_STALE_AFTER_MS
+  );
+  const isSensorStale = Boolean(latestSensorReading && !isSensorFresh);
+  const hasSensorFault = Boolean(latestSensorReading?.soilFault);
+  const canUseSensorSoil = Boolean(
+    isSensorFresh &&
+      latestSensorReading &&
+      !latestSensorReading.soilFault &&
+      latestSensorReading.soilMoisturePct !== null
+  );
+  const canUseSensorTemp = Boolean(
+    isSensorFresh &&
+      latestSensorReading &&
+      latestSensorReading.airTempC !== null
+  );
+
+  const currentTempC = canUseSensorTemp
+    ? Math.round(latestSensorReading!.airTempC!)
+    : analysis
+      ? Math.round(analysis.weather.current.temperatureC)
+      : null;
+  const tempSource: FarmerMetricsSnapshot["tempSource"] = canUseSensorTemp
+    ? "SENSOR"
+    : "FORECAST";
+  const tempSourceLabel: FarmerMetricsSnapshot["tempSourceLabel"] = canUseSensorTemp
+    ? "from your sensor"
+    : "from the forecast";
+
+  const shouldWaterToday = canUseSensorSoil
+    ? latestSensorReading!.soilMoisturePct! < SOIL_DRY_THRESHOLD_PCT
+    : (today?.precipMm ?? 0) < 5;
+  const waterAdviceSource: FarmerMetricsSnapshot["waterAdviceSource"] = canUseSensorSoil
+    ? "SENSOR"
+    : "FORECAST";
+  const waterAdviceSourceLabel: FarmerMetricsSnapshot["waterAdviceSourceLabel"] = canUseSensorSoil
+    ? "from your sensor"
+    : "from the forecast";
+
   return {
     hasAnalysis: Boolean(analysis),
     farmId: farm.id,
@@ -301,13 +365,13 @@ export function selectFarmerMetrics(
       : null,
     recommendedPanelsPeak500W,
 
-    currentTempC: analysis ? Math.round(analysis.weather.current.temperatureC) : null,
+    currentTempC,
     todayMaxTempC: today ? Math.round(today.tempMaxC) : null,
     weatherSummary: analysis?.weather.current.weatherSummary ?? null,
     todayPrecipMm: today?.precipMm ?? 0,
     todayEt0Mm:
       today?.et0Mm !== null && today?.et0Mm !== undefined ? Math.round(today.et0Mm) : null,
-    shouldWaterToday: (today?.precipMm ?? 0) < 5,
+    shouldWaterToday,
     hasFrostAlert,
     hasHeatAlert,
     hasWindAlert,
@@ -321,5 +385,21 @@ export function selectFarmerMetrics(
 
     primaryProblem,
     isRainfedCrop,
+
+    sensorReading: latestSensorReading ?? null,
+    isSensorFresh,
+    isSensorStale,
+    hasSensorFault,
+    tempSource,
+    tempSourceLabel,
+    waterAdviceSource,
+    waterAdviceSourceLabel,
+    liveSoilMoisturePct:
+      latestSensorReading && !latestSensorReading.soilFault
+        ? latestSensorReading.soilMoisturePct
+        : null,
+    liveAirHumidityPct: latestSensorReading?.airHumidityPct ?? null,
+    liveWaterLevelPct: latestSensorReading?.waterLevelPct ?? null,
+    livePumpOn: latestSensorReading ? latestSensorReading.pumpOn : null,
   };
 }

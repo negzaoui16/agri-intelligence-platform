@@ -23,6 +23,32 @@ const nextConfig = {
       ],
     },
   ],
+  rewrites: async () => [
+    {
+      source: "/farmbrain/:sub(analyze|overview|savings|history|recalculate)",
+      destination: "/api/farmbrain/:sub",
+    },
+    {
+      source: "/simulator/:sub(scenarios|compare)",
+      destination: "/api/simulator/:sub",
+    },
+    {
+      source: "/simulator/scenarios/:path*",
+      destination: "/api/simulator/scenarios/:path*",
+    },
+    {
+      source: "/predict/:path*",
+      destination: "/api/predict/:path*",
+    },
+    {
+      source: "/optimize/:path*",
+      destination: "/api/optimize/:path*",
+    },
+    {
+      source: "/simulate/:path*",
+      destination: "/api/simulate/:path*",
+    },
+  ],
 };
 
 export default nextConfig;
